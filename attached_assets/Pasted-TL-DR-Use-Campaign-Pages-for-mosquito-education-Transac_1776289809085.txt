@@ -1,0 +1,79 @@
+TL;DR: Use Campaign Pages for mosquito education, Transaction Pages for reports and payments, and Information Pages for educational guides, all written at a 5th-grade level.
+
+Here is the final technical instruction for your agent. This breakdown uses the specific vocabulary of the Karl CMS to ensure the output is ready to be plugged into the Wagtail editor.
+
+HHVC Site Architecture: Karl CMS Instruction
+1. Community Hub (Campaign Page)
+Karl Content Type: Campaign Page
+
+Content Title: HHVC - Community - Mosquito Education
+
+Service Title: Learn how to stop mosquitoes
+
+Summary: Join a workshop to learn how to keep your school and home safe from bugs.
+
+Primary Goal: Awareness and education for teachers and students.
+
+2. Tenant Hub (Information & Transaction Pages)
+Karl Content Type: Transaction Page (Primary)
+
+Content Title: HHVC - Tenant - Report a Problem
+
+Service Title: Get help with pests, mold, and trash
+
+Summary: If your landlord won't fix a health problem, we can help.
+
+CTA Button: Start a report
+
+Karl Content Type: Information Page (Sub-pages)
+
+Content Title: HHVC - Tenant - [Topic] (e.g., Mold, Trash, Pests)
+
+Service Title: [Simple Topic Name] (e.g., Help with mold)
+
+Summary: Easy steps to follow if you have [Topic] in your home.
+
+3. Owner Hub (Transaction & Information Pages)
+Karl Content Type: Transaction Page
+
+Content Title: HHVC - Owner - Pay Building Fee
+
+Service Title: Pay your annual building fee
+
+Summary: Owners of buildings with 3 or more apartments must pay this fee every year.
+
+CTA Button: Pay my fee online
+
+Karl Content Type: Information Page
+
+Content Title: HHVC - Owner - Fee Info
+
+Service Title: How much is my fee?
+
+Summary: See the costs and deadlines for building owners.
+
+4. Vector Services (Transaction Pages)
+Karl Content Type: Transaction Page
+
+Content Title: HHVC - Vector - Dead Bird Report
+
+Service Title: Report a dead bird
+
+Summary: Tell us if you find a dead bird so we can check if it is sick.
+
+CTA Button: Report bird location
+
+Global Writing Constraints for the Agent
+Readability: Strictly 5th-grade level. Use "Trash" instead of "Sanitation," and "Bugs" or "Pests" instead of "Vectors."
+
+Tone: Helpful, professional, and clear.
+
+Structure:
+
+Content Title: Internal name for CMS organization.
+
+Service Title: Public H1 header.
+
+Summary: Short blurb under the header.
+
+Body Content: Use Step-by-Step blocks for processes and Fact Items for contact info.
