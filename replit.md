@@ -56,6 +56,10 @@ When a user selects one or more reference documents in the Builder's "Reference 
 | POST | /api/planned-pages | Create planned page |
 | PATCH | /api/planned-pages/:id | Update planned page (name, type, builtPageId) |
 | DELETE | /api/planned-pages/:id | Delete planned page |
+| POST | /api/improve-structure | Second AI pass — improves page structure using Claude Sonnet |
+| GET | /api/preferences | List all user preferences |
+| POST | /api/preferences | Create a preference (body: preference, source) |
+| DELETE | /api/preferences/:id | Delete a preference |
 
 ## Database Schema
 
@@ -63,6 +67,7 @@ When a user selects one or more reference documents in the Builder's "Reference 
 CREATE TABLE pages (id TEXT PRIMARY KEY, data JSONB NOT NULL, created_at TIMESTAMP DEFAULT NOW());
 CREATE TABLE todos (id SERIAL PRIMARY KEY, topic TEXT, user_type TEXT, done BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT NOW());
 CREATE TABLE planned_pages (id SERIAL PRIMARY KEY, name TEXT, page_type TEXT, user_type TEXT, parent_id INTEGER REFERENCES planned_pages(id) ON DELETE SET NULL, built_page_id TEXT, created_at TIMESTAMP DEFAULT NOW());
+CREATE TABLE user_preferences (id SERIAL PRIMARY KEY, preference TEXT NOT NULL, source TEXT DEFAULT 'manual', created_at TIMESTAMP DEFAULT NOW());
 ```
 
 Tables are auto-created by `initDb()` on server start.
@@ -73,7 +78,9 @@ Tables are auto-created by `initDb()` on server start.
 - **Streaming:** Claude responses stream via SSE. Backend forwards raw stream; frontend reads live.
 - **Karl integration:** MCP server URL passed in Anthropic request. Shows "Karl connected" when active.
 - **Karl evaluation:** Separate `POST /api/evaluate` call runs after generation using `claude-haiku-4-20250514`.
-- **Storage:** PostgreSQL via `pg` pool. `pagesApi`/`todosApi` in `utils.ts` are typed REST clients. `lsLegacy` handles one-time migration of legacy `hhvc:*` localStorage keys.
+- **Second AI agent:** After initial generation, `POST /api/improve-structure` runs a second Claude Sonnet pass focused on structural improvements (heading hierarchy, section ordering, accessibility). User preferences are injected into both generation and structure-improvement prompts.
+- **User preferences:** Stored in `user_preferences` table. Can be added manually in the sidebar or auto-learned from successful refine instructions. Preferences influence all future generations and structure improvements.
+- **Storage:** PostgreSQL via `pg` pool. `pagesApi`/`todosApi`/`preferencesApi` in `utils.ts` are typed REST clients. `lsLegacy` handles one-time migration of legacy `hhvc:*` localStorage keys.
 - **Model:** `claude-sonnet-4-20250514` with `anthropic-beta: mcp-client-2025-04-04`
 
 ## Required Secrets

@@ -52,6 +52,14 @@ async function initDb() {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_preferences (
+        id SERIAL PRIMARY KEY,
+        preference TEXT NOT NULL,
+        source TEXT DEFAULT 'manual',
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
     console.log("Database tables ready");
   } catch (err) {
     console.error("DB init error:", err.message);
@@ -328,6 +336,101 @@ For every item in warnings and failed, write the feedback as a specific, actiona
   } catch (err) {
     console.error("Evaluation error:", err);
     res.status(500).json({ error: "Evaluation failed" });
+  }
+});
+
+app.post("/api/improve-structure", async (req, res) => {
+  if (!ANTHROPIC_API_KEY) {
+    return res.status(500).json({ error: "ANTHROPIC_API_KEY not configured" });
+  }
+
+  const { raw, preferences } = req.body;
+  if (!raw) return res.status(400).json({ error: "Missing raw page content" });
+
+  const prefBlock = preferences && preferences.length > 0
+    ? `\n\nUSER PREFERENCES (apply these to all content decisions):\n${preferences.map((p, i) => `${i + 1}. ${p}`).join("\n")}`
+    : "";
+
+  const improvePrompt = `You are an SF.gov page structure editor. Your job is to improve the structure and readability of an existing HHVC page draft WITHOUT changing its factual content.
+
+RULES:
+- Keep the EXACT SAME output format (PAGE NAME:, PRIMARY USER:, etc.)
+- Keep all factual information, ordinance references, and legal details unchanged
+- Improve section ordering so the most important user action comes first
+- Ensure the page flows logically: context → action → details → related
+- Consolidate duplicate or overlapping sections
+- Move any buried calls-to-action (like calling 311) to a more prominent position
+- Ensure section titles are clear and action-oriented
+- Keep content concise — remove redundant sentences
+- NEVER add new factual claims or legal requirements${prefBlock}
+
+Here is the page to improve:
+
+${raw}
+
+Return the COMPLETE improved page in exactly the same format. Change structure and flow, not facts.`;
+
+  try {
+    const upstream = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "anthropic-beta": "mcp-client-2025-04-04",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4000,
+        system: "You are an SF.gov content structure editor. Improve page structure and readability without changing facts.",
+        messages: [{ role: "user", content: improvePrompt }],
+      }),
+    });
+
+    if (!upstream.ok) {
+      const text = await upstream.text();
+      return res.status(upstream.status).json({ error: text });
+    }
+
+    const data = await upstream.json();
+    const improved = data.content?.find(c => c.type === "text")?.text || "";
+    res.json({ improved });
+  } catch (err) {
+    console.error("Structure improvement error:", err);
+    res.status(500).json({ error: "Structure improvement failed" });
+  }
+});
+
+app.get("/api/preferences", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM user_preferences ORDER BY created_at DESC");
+    res.json({ preferences: result.rows.map(r => ({ id: r.id, preference: r.preference, source: r.source, createdAt: r.created_at })) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/preferences", async (req, res) => {
+  const { preference, source } = req.body;
+  if (!preference) return res.status(400).json({ error: "Missing preference" });
+  try {
+    const result = await pool.query(
+      "INSERT INTO user_preferences (preference, source) VALUES ($1, $2) RETURNING *",
+      [preference.slice(0, 500), source || "manual"]
+    );
+    const r = result.rows[0];
+    res.json({ id: r.id, preference: r.preference, source: r.source, createdAt: r.created_at });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/api/preferences/:id", async (req, res) => {
+  try {
+    await pool.query("DELETE FROM user_preferences WHERE id = $1", [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

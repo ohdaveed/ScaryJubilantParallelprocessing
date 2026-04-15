@@ -71,6 +71,13 @@ export interface DriveFile {
   modifiedTime?: string;
 }
 
+export interface UserPreference {
+  id: number;
+  preference: string;
+  source: string;
+  createdAt: string;
+}
+
 export interface PlannedPage {
   id: number;
   name: string;

@@ -209,6 +209,43 @@ export const plannedPagesApi = {
   }
 };
 
+export const preferencesApi = {
+  list: async (): Promise<import("./types").UserPreference[]> => {
+    const res = await fetch(`${API_BASE}/preferences`);
+    if (!res.ok) throw new Error(`Failed to load preferences: ${res.status}`);
+    const data = await res.json();
+    return data.preferences || [];
+  },
+  create: async (preference: string, source: string = "manual"): Promise<import("./types").UserPreference> => {
+    const res = await fetch(`${API_BASE}/preferences`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ preference, source })
+    });
+    if (!res.ok) throw new Error(`Failed to create preference: ${res.status}`);
+    return res.json();
+  },
+  delete: async (id: number): Promise<void> => {
+    const res = await fetch(`${API_BASE}/preferences/${id}`, { method: "DELETE" });
+    if (!res.ok) throw new Error(`Failed to delete preference: ${res.status}`);
+  }
+};
+
+export const improveStructure = async (raw: string, preferences: string[]): Promise<string | null> => {
+  try {
+    const res = await fetch(`${API_BASE}/improve-structure`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ raw, preferences })
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.improved || null;
+  } catch {
+    return null;
+  }
+};
+
 export const driveApi = {
   listFiles: async (): Promise<import("./types").DriveFile[]> => {
     const res = await fetch(`${API_BASE}/drive/files`);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { PageDraft, TodoItem, KarlEvaluation, PlannedPage } from "./types";
+import { PageDraft, TodoItem, KarlEvaluation, PlannedPage, UserPreference } from "./types";
 import { USER_TYPES, PAGE_TYPES, SYSTEM_PROMPT, SUGGESTED_PAGES, TYPE_META } from "./constants";
-import { clean, isPest, parsePage, parseRel, parseDraftSections, getSectionStyle, pagesApi, todosApi, plannedPagesApi, runKarlEvaluation, lsLegacy, driveApi } from "./utils";
+import { clean, isPest, parsePage, parseRel, parseDraftSections, getSectionStyle, pagesApi, todosApi, plannedPagesApi, preferencesApi, improveStructure, runKarlEvaluation, lsLegacy, driveApi } from "./utils";
 import { DriveFile } from "./types";
 import { Badge, Label, Divider, Btn, Card, Field, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar, SectionIcon, iStyle, ResponsibilitiesTable, ActionStepList, ChecklistRow, PreventionSection, RelatedPagePills } from "./components/ui";
 
@@ -630,6 +630,8 @@ export default function App() {
   const [topicTouched, setTopicTouched] = useState(false);
   const [refineInput, setRefineInput] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [preferences, setPreferences] = useState<UserPreference[]>([]);
+  const [newPref, setNewPref] = useState("");
   const [driveFiles, setDriveFiles] = useState<DriveFile[]>([]);
   const [driveLoading, setDriveLoading] = useState(true);
   const [driveError, setDriveError] = useState("");
@@ -709,6 +711,9 @@ export default function App() {
       .then(files => setDriveFiles(files))
       .catch(err => setDriveError(err.message || "Could not load Drive files"))
       .finally(() => setDriveLoading(false));
+    preferencesApi.list()
+      .then(prefs => setPreferences(prefs))
+      .catch(() => {});
   }, []);
 
   const toggleDriveFile = async (file: DriveFile) => {
@@ -753,7 +758,10 @@ export default function App() {
     const pestNote = isPest(t) ? " Note: pest-related — MUST be Transaction page." : "";
     const effectivePageType = ov.pageType || pendingPageType;
     const pageTypeHint = effectivePageType ? `\nPage type: ${effectivePageType} (use this specific Karl content type)` : "";
-    const msg = `Design a page for: "${t}"\nPrimary user: ${ov.userType || userType}${pageTypeHint}${(ov.notes || notes) ? `\nContext: ${ov.notes || notes}` : ""}${pestNote}`;
+    const prefHints = preferences.length > 0
+      ? `\n\nUSER PREFERENCES (important — apply these to your design):\n${preferences.map(p => `- ${p.preference}`).join("\n")}`
+      : "";
+    const msg = `Design a page for: "${t}"\nPrimary user: ${ov.userType || userType}${pageTypeHint}${(ov.notes || notes) ? `\nContext: ${ov.notes || notes}` : ""}${pestNote}${prefHints}`;
     let karlHit = false;
 
     const driveContext = selectedDriveIds.size > 0
@@ -813,13 +821,25 @@ export default function App() {
       }
       if (!karlHit) setKarlStatus("fallback");
 
-      const parsed = parsePage(streamRef.current);
+      let parsed = parsePage(streamRef.current);
       if (!parsed.valid) setParseWarn(true);
       const id = `page_${Date.now()}`;
-      let page: PageDraft = { ...parsed, id, createdAt: new Date().toISOString(), inputs: lastInput.current, karlConnected: karlHit } as PageDraft;
 
       setStreaming(false);
       setEvaluating(true);
+      adv(88, "Improving page structure…");
+
+      const prefTexts = preferences.map(p => p.preference);
+      const improved = await improveStructure(streamRef.current, prefTexts);
+      if (improved) {
+        const improvedParsed = parsePage(improved);
+        if (improvedParsed.valid) {
+          parsed = improvedParsed;
+        }
+      }
+
+      let page: PageDraft = { ...parsed, id, createdAt: new Date().toISOString(), inputs: lastInput.current, karlConnected: karlHit } as PageDraft;
+
       adv(93, "Evaluating against Karl standards…");
 
       const evaluation = await runKarlEvaluation({
@@ -861,7 +881,7 @@ export default function App() {
       setStreaming(false); setEvaluating(false); setKarlStatus("fallback");
     }
     setLoading(false);
-  }, [topic, userType, notes, selectedDriveIds, driveContents, driveFiles, plannedPages, linkPlannedPage, pendingPlannedId, pendingPageType]);
+  }, [topic, userType, notes, selectedDriveIds, driveContents, driveFiles, plannedPages, linkPlannedPage, pendingPlannedId, pendingPageType, preferences]);
 
   const regenerate = useCallback((p: PageDraft) => { if (p?.inputs) generate({ topic: p.inputs.topic, userType: p.inputs.userType, notes: p.inputs.notes }); }, [generate]);
 
@@ -923,6 +943,10 @@ export default function App() {
       try { await pagesApi.save(selected.id, updated); } catch { setError("Revised but could not save."); }
       setPages(prev => prev.map(p => p.id === selected.id ? updated : p));
       setSelected(updated);
+
+      preferencesApi.create(instruction, "refine")
+        .then(pref => setPreferences(prev => [pref, ...prev]))
+        .catch(() => {});
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
       setError(`Refinement failed: ${msg}`);
@@ -1119,6 +1143,52 @@ export default function App() {
                   </p>
                 </div>
               )}
+            </Card>
+
+            <Card style={{ padding: "14px 16px", marginBottom: 12 }}>
+              <Label style={{ marginBottom: 8 }}>Preferences</Label>
+              <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", margin: "0 0 8px", lineHeight: 1.5 }}>
+                The agent remembers these when generating and improving pages.
+              </p>
+              {preferences.map(p => (
+                <div key={p.id} style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: 5, padding: "5px 8px", background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-md)", border: "0.5px solid var(--color-border-tertiary)" }}>
+                  <span style={{ fontSize: 11, color: "var(--color-text-primary)", flex: 1, lineHeight: 1.5 }}>{p.preference}</span>
+                  <span style={{ fontSize: 9, color: "var(--color-text-tertiary)", flexShrink: 0, marginTop: 2 }}>{p.source}</span>
+                  <button
+                    onClick={async () => { await preferencesApi.delete(p.id).catch(() => {}); setPreferences(prev => prev.filter(x => x.id !== p.id)); }}
+                    style={{ background: "none", border: "none", cursor: "pointer", padding: "0 2px", fontSize: 11, color: "var(--color-text-tertiary)", flexShrink: 0, lineHeight: 1 }}
+                    title="Remove preference"
+                  >&#10005;</button>
+                </div>
+              ))}
+              {preferences.length === 0 && (
+                <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", margin: "0 0 6px", fontStyle: "italic" }}>No preferences yet. Add one below or refine a page to teach the agent.</p>
+              )}
+              <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                <input
+                  style={{ ...iStyle({ fontSize: 11 }), flex: 1 }}
+                  placeholder='e.g. "Always lead with tenant rights"'
+                  value={newPref}
+                  onChange={e => setNewPref(e.target.value)}
+                  onKeyDown={async e => {
+                    if (e.key === "Enter" && newPref.trim()) {
+                      const pref = await preferencesApi.create(newPref.trim(), "manual");
+                      setPreferences(prev => [pref, ...prev]);
+                      setNewPref("");
+                    }
+                  }}
+                />
+                <Btn
+                  variant="ghost" size="sm"
+                  disabled={!newPref.trim()}
+                  onClick={async () => {
+                    if (!newPref.trim()) return;
+                    const pref = await preferencesApi.create(newPref.trim(), "manual");
+                    setPreferences(prev => [pref, ...prev]);
+                    setNewPref("");
+                  }}
+                >Add</Btn>
+              </div>
             </Card>
 
             {pages.length > 0 && (
