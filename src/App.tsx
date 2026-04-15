@@ -629,6 +629,7 @@ export default function App() {
   const [copied, setCopied] = useState(false);
   const [topicTouched, setTopicTouched] = useState(false);
   const [refineInput, setRefineInput] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [driveFiles, setDriveFiles] = useState<DriveFile[]>([]);
   const [driveLoading, setDriveLoading] = useState(true);
   const [driveError, setDriveError] = useState("");
@@ -999,8 +1000,38 @@ export default function App() {
       </div>
 
       {tab === "builder" && (
-        <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 16, alignItems: "start" }}>
-          <div>
+        <div style={{ display: "grid", gridTemplateColumns: sidebarOpen ? "300px 1fr" : "40px 1fr", gap: sidebarOpen ? 16 : 8, alignItems: "start", transition: "grid-template-columns 0.25s ease, gap 0.25s ease" }}>
+          <div style={{ position: "relative", overflow: "hidden", transition: "width 0.25s ease" }}>
+            <button
+              onClick={() => setSidebarOpen(o => !o)}
+              title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+              style={{
+                position: sidebarOpen ? "absolute" : "relative",
+                top: sidebarOpen ? 8 : 0,
+                right: sidebarOpen ? 8 : undefined,
+                zIndex: 2,
+                width: sidebarOpen ? 24 : 36,
+                height: sidebarOpen ? 24 : 36,
+                borderRadius: "var(--border-radius-md)",
+                border: "0.5px solid var(--color-border-secondary)",
+                background: "var(--color-background-primary)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 0,
+                color: "var(--color-text-tertiary)",
+                transition: "all 0.15s"
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--color-border-primary)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--color-border-secondary)"; e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: sidebarOpen ? "none" : "rotate(180deg)", transition: "transform 0.2s" }}>
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </button>
+
+            {sidebarOpen && <>
             <Card style={{ padding: "18px 20px", marginBottom: 12 }}>
               <KarlStatus status={karlStatus} />
               <Field label="Topic" hint={topicError ? "Required" : undefined}>
@@ -1109,6 +1140,7 @@ export default function App() {
                 })}
               </Card>
             )}
+            </>}
           </div>
 
           <Card style={{ padding: "20px 24px", minHeight: 400 }}>
