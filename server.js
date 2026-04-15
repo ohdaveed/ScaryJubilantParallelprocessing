@@ -2,6 +2,9 @@ import express from "express";
 import { createServer } from "http";
 import pkg from "pg";
 const { Pool } = pkg;
+import { ReplitConnectors } from "@replit/connectors-sdk";
+
+const DRIVE_FOLDER_ID = "1SrKB78oWGHhILjQxS7R-ZqCXkzuAlvKi";
 
 const app = express();
 app.use(express.json({ limit: "2mb" }));
@@ -41,9 +44,94 @@ async function initDb() {
 
 initDb();
 
+app.get("/api/drive/files", async (req, res) => {
+  try {
+    const connectors = new ReplitConnectors();
+    const response = await connectors.proxy(
+      "google-drive",
+      `/drive/v3/files?q='${DRIVE_FOLDER_ID}'+in+parents+and+trashed=false&fields=files(id,name,mimeType,modifiedTime)&pageSize=50&orderBy=name`,
+      { method: "GET" }
+    );
+    if (!response.ok) {
+      const text = await response.text();
+      return res.status(response.status).json({ error: text });
+    }
+    const data = await response.json();
+    res.json({ files: data.files || [] });
+  } catch (err) {
+    console.error("Drive list error:", err);
+    res.status(500).json({ error: "Failed to list Drive files" });
+  }
+});
+
+app.get("/api/drive/files/:fileId", async (req, res) => {
+  const { fileId } = req.params;
+  try {
+    const connectors = new ReplitConnectors();
+    const metaRes = await connectors.proxy(
+      "google-drive",
+      `/drive/v3/files/${fileId}?fields=id,name,mimeType`,
+      { method: "GET" }
+    );
+    if (!metaRes.ok) {
+      return res.status(metaRes.status).json({ error: "File not found" });
+    }
+    const meta = await metaRes.json();
+    const mimeType = meta.mimeType || "";
+
+    let exportMime = "text/plain";
+    if (mimeType === "application/vnd.google-apps.document") exportMime = "text/plain";
+    else if (mimeType === "application/vnd.google-apps.spreadsheet") exportMime = "text/csv";
+    else if (mimeType === "application/vnd.google-apps.presentation") exportMime = "text/plain";
+
+    const isGoogleDoc = mimeType.startsWith("application/vnd.google-apps.");
+    let contentText = "";
+
+    if (isGoogleDoc) {
+      const exportRes = await connectors.proxy(
+        "google-drive",
+        `/drive/v3/files/${fileId}/export?mimeType=${encodeURIComponent(exportMime)}`,
+        { method: "GET" }
+      );
+      if (!exportRes.ok) return res.status(exportRes.status).json({ error: "Export failed" });
+      contentText = await exportRes.text();
+    } else {
+      const downloadRes = await connectors.proxy(
+        "google-drive",
+        `/drive/v3/files/${fileId}?alt=media`,
+        { method: "GET" }
+      );
+      if (!downloadRes.ok) return res.status(downloadRes.status).json({ error: "Download failed" });
+      const buf = await downloadRes.arrayBuffer();
+      contentText = new TextDecoder("utf-8", { fatal: false }).decode(buf);
+    }
+
+    res.json({ id: fileId, name: meta.name, mimeType, content: contentText.slice(0, 20000) });
+  } catch (err) {
+    console.error("Drive read error:", err);
+    res.status(500).json({ error: "Failed to read Drive file" });
+  }
+});
+
 app.post("/api/chat", async (req, res) => {
   if (!ANTHROPIC_API_KEY) {
     return res.status(500).json({ error: "ANTHROPIC_API_KEY is not configured. Please add it in the Secrets panel." });
+  }
+
+  const { driveContext, ...anthropicBody } = req.body;
+
+  let body = anthropicBody;
+  if (driveContext && typeof driveContext === "string" && driveContext.trim()) {
+    const msgs = Array.isArray(body.messages) ? [...body.messages] : [];
+    if (msgs.length > 0 && msgs[msgs.length - 1].role === "user") {
+      const last = msgs[msgs.length - 1];
+      const existingContent = typeof last.content === "string" ? last.content : JSON.stringify(last.content);
+      msgs[msgs.length - 1] = {
+        ...last,
+        content: `REFERENCE DOCUMENTS FROM GOOGLE DRIVE:\n\n${driveContext}\n\n---\n\n${existingContent}`
+      };
+    }
+    body = { ...anthropicBody, messages: msgs };
   }
 
   try {
@@ -55,7 +143,7 @@ app.post("/api/chat", async (req, res) => {
         "anthropic-version": "2023-06-01",
         "anthropic-beta": "mcp-client-2025-04-04",
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify(body),
     });
 
     res.status(upstream.status);

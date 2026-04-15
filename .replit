@@ -10,7 +10,7 @@ run = [
 hidden = [".deno"]
 
 entrypoint = "index.ts"
-modules = ["nodejs-20", "postgresql-16"]
+modules = ["nodejs-20", "postgresql-16", "python-3.11"]
 
 [languages.deno]
 pattern = "**/*.{ts,js}"
@@ -49,6 +49,7 @@ externalPort = 3000
 
 [agent]
 expertMode = true
+integrations = ["google-drive:1.0.0"]
 
 [workflows]
 runButton = "Project"

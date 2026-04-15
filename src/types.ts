@@ -63,3 +63,10 @@ export interface TodoItem {
   userType: string;
   done: boolean;
 }
+
+export interface DriveFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  modifiedTime?: string;
+}

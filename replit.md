@@ -28,12 +28,23 @@ scripts/
   post-merge.sh     — Post-merge setup: npm install
 ```
 
+## Google Drive Integration
+
+The app connects to a specific HHVC Google Drive folder (`1SrKB78oWGHhILjQxS7R-ZqCXkzuAlvKi`) via Replit's connectors SDK (`@replit/connectors-sdk`). The folder contains inspection reports, pest control guides, mold recommendations, SF Article 19, and other reference documents used as context for page generation.
+
+When a user selects one or more reference documents in the Builder's "Reference Documents" panel, their text content is fetched server-side and injected into the Claude generation request alongside the user's topic. This ensures generated pages are grounded in actual HHVC department language and requirements.
+
+**Connection:** `connection:conn_google-drive_01KK8MCD03FQTZ5P80AZ6F1V2K` (authorized via Replit OAuth)  
+**SDK:** `@replit/connectors-sdk` — tokens injected automatically, never touch frontend
+
 ## API Endpoints (server.js)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | /api/chat | Stream Anthropic page generation (with Karl MCP) |
+| POST | /api/chat | Stream Anthropic page generation (with Karl MCP + optional driveContext) |
 | POST | /api/evaluate | Karl evaluation score for a generated page |
+| GET | /api/drive/files | List files from HHVC Google Drive folder |
+| GET | /api/drive/files/:fileId | Fetch text content of a Drive file |
 | GET | /api/pages | List all pages from DB |
 | POST | /api/pages | Save/upsert a page |
 | DELETE | /api/pages/:id | Delete a page |

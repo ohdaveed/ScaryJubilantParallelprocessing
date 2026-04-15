@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { PageDraft, TodoItem, KarlEvaluation } from "./types";
 import { USER_TYPES, PAGE_TYPES, SYSTEM_PROMPT, SUGGESTED_PAGES, TYPE_META } from "./constants";
-import { clean, isPest, parsePage, parseRel, parseDraftSections, getSectionStyle, pagesApi, todosApi, runKarlEvaluation, lsLegacy } from "./utils";
+import { clean, isPest, parsePage, parseRel, parseDraftSections, getSectionStyle, pagesApi, todosApi, runKarlEvaluation, lsLegacy, driveApi } from "./utils";
+import { DriveFile } from "./types";
 import { Badge, Label, Divider, Btn, Card, Field, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar, SectionIcon, iStyle } from "./components/ui";
 
 function renderLines(lines: string[]) {
@@ -355,6 +356,13 @@ export default function App() {
   const [parseWarn, setParseWarn] = useState(false);
   const [copied, setCopied] = useState(false);
   const [topicTouched, setTopicTouched] = useState(false);
+  const [driveFiles, setDriveFiles] = useState<DriveFile[]>([]);
+  const [driveLoading, setDriveLoading] = useState(true);
+  const [driveError, setDriveError] = useState("");
+  const [driveOpen, setDriveOpen] = useState(false);
+  const [selectedDriveIds, setSelectedDriveIds] = useState<Set<string>>(new Set());
+  const [driveContents, setDriveContents] = useState<Record<string, string>>({});
+  const [driveLoadingIds, setDriveLoadingIds] = useState<Set<string>>(new Set());
   const streamRef = useRef("");
   const lastInput = useRef<{ topic: string; userType: string; notes: string }>({ topic: "", userType: "", notes: "" });
 
@@ -401,6 +409,37 @@ export default function App() {
     loadAndMigrate();
   }, []);
 
+  useEffect(() => {
+    driveApi.listFiles()
+      .then(files => setDriveFiles(files))
+      .catch(err => setDriveError(err.message || "Could not load Drive files"))
+      .finally(() => setDriveLoading(false));
+  }, []);
+
+  const toggleDriveFile = async (file: DriveFile) => {
+    const id = file.id;
+    const next = new Set(selectedDriveIds);
+    if (next.has(id)) {
+      next.delete(id);
+      setSelectedDriveIds(next);
+    } else {
+      next.add(id);
+      setSelectedDriveIds(next);
+      if (!driveContents[id]) {
+        setDriveLoadingIds(prev => new Set(prev).add(id));
+        try {
+          const { content } = await driveApi.readFile(id);
+          setDriveContents(prev => ({ ...prev, [id]: content }));
+        } catch {
+          next.delete(id);
+          setSelectedDriveIds(new Set(next));
+        } finally {
+          setDriveLoadingIds(prev => { const s = new Set(prev); s.delete(id); return s; });
+        }
+      }
+    }
+  };
+
   const adv = (pct: number, lbl: string) => { setProgress(pct); setProgressLabel(lbl); };
 
   const generate = useCallback(async (ov: Partial<{ topic: string; userType: string; notes: string }> = {}) => {
@@ -413,6 +452,16 @@ export default function App() {
     const msg = `Design a page for: "${t}"\nPrimary user: ${ov.userType || userType}${(ov.notes || notes) ? `\nContext: ${ov.notes || notes}` : ""}${pestNote}`;
     let karlHit = false;
 
+    const driveContext = selectedDriveIds.size > 0
+      ? [...selectedDriveIds]
+          .filter(id => driveContents[id])
+          .map(id => {
+            const file = driveFiles.find(f => f.id === id);
+            return `=== ${file?.name || id} ===\n${driveContents[id]}`;
+          })
+          .join("\n\n")
+      : undefined;
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -423,7 +472,8 @@ export default function App() {
           stream: true,
           system: SYSTEM_PROMPT,
           messages: [{ role: "user", content: msg }],
-          mcp_servers: [{ type: "url", url: "https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/~gitbook/mcp", name: "karl-docs" }]
+          mcp_servers: [{ type: "url", url: "https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/~gitbook/mcp", name: "karl-docs" }],
+          ...(driveContext ? { driveContext } : {})
         })
       });
 
@@ -568,8 +618,64 @@ export default function App() {
                 <input style={iStyle()} placeholder="Add context or requirements…" value={notes} onChange={e => setNotes(e.target.value)} onKeyDown={e => e.key === "Enter" && generate()} />
               </Field>
               <Btn onClick={() => generate()} variant="primary" size="md" fullWidth disabled={loading}>
-                {loading ? (streaming ? "Generating…" : evaluating ? "Evaluating…" : "Working…") : "Generate page"}
+                {loading ? (streaming ? "Generating…" : evaluating ? "Evaluating…" : "Working…") : `Generate page${selectedDriveIds.size > 0 ? ` (${selectedDriveIds.size} doc${selectedDriveIds.size !== 1 ? "s" : ""})` : ""}`}
               </Btn>
+            </Card>
+
+            <Card style={{ padding: "14px 16px", marginBottom: 12 }}>
+              <button
+                onClick={() => setDriveOpen(o => !o)}
+                style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--color-text-tertiary)" }}><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" /></svg>
+                  <Label style={{ margin: 0, cursor: "pointer" }}>Reference documents</Label>
+                  {selectedDriveIds.size > 0 && (
+                    <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 10, background: "#185FA5", color: "#fff", fontWeight: 500 }}>{selectedDriveIds.size}</span>
+                  )}
+                </div>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--color-text-tertiary)", transform: driveOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}><path d="M6 9l6 6 6-6" /></svg>
+              </button>
+
+              {driveOpen && (
+                <div style={{ marginTop: 12 }}>
+                  {driveLoading && <p style={{ fontSize: 12, color: "var(--color-text-tertiary)", margin: 0, textAlign: "center" }}>Loading Drive files…</p>}
+                  {driveError && !driveLoading && (
+                    <p style={{ fontSize: 11, color: "#791F1F", margin: 0, lineHeight: 1.5 }}>Could not load Drive files: {driveError}</p>
+                  )}
+                  {!driveLoading && !driveError && driveFiles.length === 0 && (
+                    <p style={{ fontSize: 12, color: "var(--color-text-tertiary)", margin: 0, textAlign: "center" }}>No files found in folder.</p>
+                  )}
+                  {!driveLoading && driveFiles.map(file => {
+                    const selected = selectedDriveIds.has(file.id);
+                    const loading = driveLoadingIds.has(file.id);
+                    const isDoc = file.mimeType.includes("google-apps") || file.mimeType.includes("text") || file.mimeType.includes("pdf") || file.mimeType.includes("word");
+                    return (
+                      <button
+                        key={file.id}
+                        onClick={() => !loading && toggleDriveFile(file)}
+                        disabled={loading}
+                        style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: "var(--border-radius-md)", background: selected ? "#E6F1FB" : "transparent", border: `0.5px solid ${selected ? "#185FA5" : "transparent"}`, cursor: loading ? "default" : "pointer", textAlign: "left", marginBottom: 3, transition: "background 0.12s" }}>
+                        <div style={{ width: 14, height: 14, borderRadius: 3, border: `1.5px solid ${selected ? "#185FA5" : "var(--color-border-secondary)"}`, background: selected ? "#185FA5" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.12s" }}>
+                          {selected && <svg width="9" height="9" viewBox="0 0 10 10"><path d="M1.5 5l3 3 4-5" stroke="#fff" strokeWidth="1.5" fill="none" strokeLinecap="round" /></svg>}
+                        </div>
+                        <span style={{ fontSize: 11, color: selected ? "#0C447C" : "var(--color-text-primary)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.4 }}>{file.name}</span>
+                        {loading && <span style={{ fontSize: 10, color: "var(--color-text-tertiary)" }}>…</span>}
+                        {!isDoc && !loading && <span style={{ fontSize: 9, color: "var(--color-text-tertiary)" }}>binary</span>}
+                      </button>
+                    );
+                  })}
+                  {selectedDriveIds.size > 0 && (
+                    <button
+                      onClick={() => setSelectedDriveIds(new Set())}
+                      style={{ marginTop: 6, fontSize: 11, color: "var(--color-text-tertiary)", background: "none", border: "none", cursor: "pointer", padding: "3px 0" }}>
+                      Clear selection
+                    </button>
+                  )}
+                  <p style={{ fontSize: 10, color: "var(--color-text-tertiary)", margin: "8px 0 0", lineHeight: 1.5 }}>
+                    Selected documents are included as context when generating pages.
+                  </p>
+                </div>
+              )}
             </Card>
 
             {pages.length > 0 && (
