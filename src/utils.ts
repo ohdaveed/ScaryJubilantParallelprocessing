@@ -101,21 +101,88 @@ export const parseDraftSections = (draft: string): DraftSection[] => {
   return sections;
 };
 
-export const storage = {
-  get: (key: string): Promise<{ value: string } | null> => {
-    const val = localStorage.getItem(key);
-    return Promise.resolve(val !== null ? { value: val } : null);
+const API_BASE = "/api";
+
+export const pagesApi = {
+  list: async (): Promise<import("./types").PageDraft[]> => {
+    const res = await fetch(`${API_BASE}/pages`);
+    if (!res.ok) throw new Error(`Failed to load pages: ${res.status}`);
+    const data = await res.json();
+    return data.pages || [];
   },
-  set: (key: string, value: string): Promise<void> => {
-    localStorage.setItem(key, value);
-    return Promise.resolve();
+  save: async (id: string, page: import("./types").PageDraft): Promise<void> => {
+    const res = await fetch(`${API_BASE}/pages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, data: page })
+    });
+    if (!res.ok) throw new Error(`Failed to save page: ${res.status}`);
   },
-  delete: (key: string): Promise<void> => {
-    localStorage.removeItem(key);
-    return Promise.resolve();
-  },
-  list: (prefix: string): Promise<{ keys: string[] }> => {
-    const keys = Object.keys(localStorage).filter(k => k.startsWith(prefix));
-    return Promise.resolve({ keys });
+  delete: async (id: string): Promise<void> => {
+    const res = await fetch(`${API_BASE}/pages/${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (!res.ok) throw new Error(`Failed to delete page: ${res.status}`);
   }
+};
+
+export const todosApi = {
+  list: async (): Promise<import("./types").TodoItem[]> => {
+    const res = await fetch(`${API_BASE}/todos`);
+    if (!res.ok) throw new Error(`Failed to load todos: ${res.status}`);
+    const data = await res.json();
+    return data.todos || [];
+  },
+  create: async (topic: string, userType: string): Promise<import("./types").TodoItem> => {
+    const res = await fetch(`${API_BASE}/todos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topic, userType })
+    });
+    if (!res.ok) throw new Error(`Failed to create todo: ${res.status}`);
+    return res.json();
+  },
+  toggle: async (id: number, done: boolean): Promise<void> => {
+    const res = await fetch(`${API_BASE}/todos/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ done })
+    });
+    if (!res.ok) throw new Error(`Failed to update todo: ${res.status}`);
+  },
+  delete: async (id: number): Promise<void> => {
+    const res = await fetch(`${API_BASE}/todos/${id}`, { method: "DELETE" });
+    if (!res.ok) throw new Error(`Failed to delete todo: ${res.status}`);
+  }
+};
+
+export const runKarlEvaluation = async (page: {
+  name: string;
+  pageType: string;
+  draft: string;
+  userType: string;
+}): Promise<import("./types").KarlEvaluation | null> => {
+  try {
+    const res = await fetch(`${API_BASE}/evaluate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pageName: page.name,
+        pageType: page.pageType,
+        draft: page.draft,
+        userType: page.userType
+      })
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+};
+
+export const lsLegacy = {
+  listPageKeys: (): string[] =>
+    Object.keys(localStorage).filter(k => k.startsWith("hhvc:") && k !== "hhvc:todos"),
+  getPage: (key: string): string | null => localStorage.getItem(key),
+  removePage: (key: string): void => { localStorage.removeItem(key); },
+  getTodos: (): string | null => localStorage.getItem("hhvc:todos"),
+  removeTodos: (): void => { localStorage.removeItem("hhvc:todos"); }
 };

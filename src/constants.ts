@@ -152,5 +152,6 @@ export const MILESTONE_DOTS: Milestone[] = [
   { pct: 30, label: "Karl docs" },
   { pct: 50, label: "Standards" },
   { pct: 80, label: "Drafting" },
+  { pct: 95, label: "Evaluating" },
   { pct: 100, label: "Done" },
 ];

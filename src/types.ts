@@ -1,3 +1,12 @@
+export interface KarlEvaluation {
+  score: number;
+  grade: string;
+  summary: string;
+  passed: string[];
+  warnings: string[];
+  failed: string[];
+}
+
 export interface PageDraft {
   id: string;
   name: string;
@@ -15,6 +24,7 @@ export interface PageDraft {
   raw: string;
   createdAt: string;
   karlConnected: boolean;
+  karlEvaluation?: KarlEvaluation;
   inputs: {
     topic: string;
     userType: string;

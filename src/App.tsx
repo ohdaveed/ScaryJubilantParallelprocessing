@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { PageDraft, TodoItem } from "./types";
+import { PageDraft, TodoItem, KarlEvaluation } from "./types";
 import { USER_TYPES, PAGE_TYPES, SYSTEM_PROMPT, SUGGESTED_PAGES, TYPE_META } from "./constants";
-import { clean, isPest, parsePage, parseRel, parseDraftSections, getSectionStyle, storage } from "./utils";
-import { Badge, Label, Divider, Btn, Card, Field, ComponentChips, RelPanel, KarlStatus, ProgressBar, SectionIcon, iStyle } from "./components/ui";
+import { clean, isPest, parsePage, parseRel, parseDraftSections, getSectionStyle, pagesApi, todosApi, runKarlEvaluation, lsLegacy } from "./utils";
+import { Badge, Label, Divider, Btn, Card, Field, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar, SectionIcon, iStyle } from "./components/ui";
 
 function renderLines(lines: string[]) {
   const result: { paras: string[]; bullets: string[] } = { paras: [], bullets: [] };
@@ -96,18 +96,62 @@ function StreamRenderer({ text }: { text: string }) {
   );
 }
 
-function SuccessState({ page, onView }: { page: PageDraft; onView: () => void }) {
+function EvaluatingState() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "52px 24px", textAlign: "center", gap: 18, animation: "fadeUp 0.35s ease forwards" }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "52px 24px", textAlign: "center", gap: 14 }}>
+      <div style={{ width: 52, height: 52, borderRadius: "50%", background: "#E6F1FB", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#185FA5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 1.2s linear infinite" }}>
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+        </svg>
+      </div>
+      <div>
+        <p style={{ fontSize: 16, fontWeight: 500, margin: "0 0 4px", color: "var(--color-text-primary)" }}>Evaluating against Karl standards</p>
+        <p style={{ fontSize: 13, color: "var(--color-text-secondary)", margin: 0, lineHeight: 1.6 }}>Checking SF.gov best practices and content standards…</p>
+      </div>
+    </div>
+  );
+}
+
+function SuccessState({ page, onView }: { page: PageDraft; onView: () => void }) {
+  const ev = page.karlEvaluation;
+  const gradeColor: Record<string, string> = { A: "#0F6E56", B: "#185FA5", C: "#854F0B", D: "#A32D2D", F: "#A32D2D" };
+  const gradeBg: Record<string, string> = { A: "#E1F5EE", B: "#E6F1FB", C: "#FAEEDA", D: "#FCEBEB", F: "#FCEBEB" };
+  const grade = ev?.grade || "—";
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px", textAlign: "center", gap: 16, animation: "fadeUp 0.35s ease forwards" }}>
       <div style={{ width: 52, height: 52, borderRadius: "50%", background: "var(--color-background-success)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12l5 5 11-11" /></svg>
       </div>
-      <div style={{ maxWidth: 280 }}>
+      <div style={{ maxWidth: 300 }}>
         <p style={{ fontSize: 17, fontWeight: 500, margin: "0 0 6px", color: "var(--color-text-primary)" }}>{clean(page?.name) || "Page generated"}</p>
-        <p style={{ fontSize: 13, color: "var(--color-text-secondary)", margin: 0, lineHeight: 1.6 }}>Checked against Karl content standards and SF.gov best practices.</p>
+        <p style={{ fontSize: 13, color: "var(--color-text-secondary)", margin: 0, lineHeight: 1.6 }}>Page draft created and evaluated against Karl content standards.</p>
       </div>
-      <Badge type={clean(page?.pageType)} />
-      <Btn onClick={onView} variant="primary" size="md">View page →</Btn>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+        <Badge type={clean(page?.pageType)} />
+        {ev && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 12px", borderRadius: 20, background: gradeBg[grade] || "#F1EFE8", border: `1px solid ${gradeColor[grade] || "#888"}40` }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: gradeColor[grade] || "#444" }}>{grade}</span>
+            <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{ev.score}/100</span>
+          </div>
+        )}
+      </div>
+
+      {ev && (
+        <div style={{ width: "100%", maxWidth: 360, textAlign: "left" }}>
+          <div style={{ padding: "12px 14px", background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-lg)", border: "0.5px solid var(--color-border-tertiary)" }}>
+            <p style={{ fontSize: 12, color: "var(--color-text-secondary)", margin: "0 0 10px", lineHeight: 1.5, fontStyle: "italic" }}>{ev.summary}</p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {ev.passed.length > 0 && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 10, background: "#E1F5EE", color: "#0F6E56", border: "0.5px solid #0F6E5630" }}>✓ {ev.passed.length} passed</span>}
+              {ev.warnings.length > 0 && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 10, background: "#FAEEDA", color: "#854F0B", border: "0.5px solid #854F0B30" }}>⚠ {ev.warnings.length} warnings</span>}
+              {ev.failed.length > 0 && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 10, background: "#FCEBEB", color: "#A32D2D", border: "0.5px solid #A32D2D30" }}>✗ {ev.failed.length} failed</span>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Btn onClick={onView} variant="primary" size="md">View full page →</Btn>
     </div>
   );
 }
@@ -115,9 +159,12 @@ function SuccessState({ page, onView }: { page: PageDraft; onView: () => void })
 function SystemMap({ pages, onSelect }: { pages: PageDraft[]; onSelect: (id: string) => void }) {
   const W = 680, H = 400;
   if (!pages.length) return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 0", gap: 10, color: "var(--color-text-tertiary)" }}>
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="3" /><circle cx="4" cy="6" r="2" /><circle cx="20" cy="6" r="2" /><circle cx="4" cy="18" r="2" /><circle cx="20" cy="18" r="2" /><path d="M6 6l4 4M14 14l4 4M18 6l-4 4M10 14l-4 4" /></svg>
-      <span style={{ fontSize: 13 }}>Generate pages to populate the map</span>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "56px 0", gap: 12, color: "var(--color-text-tertiary)" }}>
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><circle cx="12" cy="12" r="3" /><circle cx="4" cy="6" r="2" /><circle cx="20" cy="6" r="2" /><circle cx="4" cy="18" r="2" /><circle cx="20" cy="18" r="2" /><path d="M6 6l4 4M14 14l4 4M18 6l-4 4M10 14l-4 4" /></svg>
+      <div style={{ textAlign: "center" }}>
+        <p style={{ fontSize: 14, fontWeight: 500, margin: "0 0 4px", color: "var(--color-text-secondary)" }}>No pages yet</p>
+        <p style={{ fontSize: 13, margin: 0, lineHeight: 1.5 }}>Generate pages in the Builder tab to populate the system map.</p>
+      </div>
     </div>
   );
 
@@ -162,20 +209,43 @@ function TodoPanel({ pages, onGenerate }: { pages: PageDraft[]; onGenerate: (top
   const [newTopic, setNewTopic] = useState("");
   const [newUT, setNewUT] = useState(USER_TYPES[0]);
   const [adding, setAdding] = useState(false);
+  const [loadingTodos, setLoadingTodos] = useState(true);
 
   useEffect(() => {
-    storage.get("hhvc:todos").then(r => { if (r?.value) try { setTodos(JSON.parse(r.value)); } catch {} }).catch(() => {});
+    todosApi.list()
+      .then(setTodos)
+      .catch(() => setTodos([]))
+      .finally(() => setLoadingTodos(false));
   }, []);
-
-  const save = async (u: TodoItem[]) => { setTodos(u); await storage.set("hhvc:todos", JSON.stringify(u)).catch(() => {}); };
 
   const builtNames = new Set(pages.map(p => (clean(p.name) || "").toLowerCase()));
   const suggested = SUGGESTED_PAGES.filter(s => !builtNames.has(s.topic.toLowerCase()) && !todos.some(t => t.topic.toLowerCase() === s.topic.toLowerCase()));
 
-  const addTodo = () => { if (!newTopic.trim()) return; save([...todos, { id: Date.now(), topic: newTopic.trim(), userType: newUT, done: false }]); setNewTopic(""); setAdding(false); };
-  const toggle = (id: number) => save(todos.map(t => t.id === id ? { ...t, done: !t.done } : t));
-  const remove = (id: number) => save(todos.filter(t => t.id !== id));
-  const addSug = (s: { topic: string; userType: string; pageType: string }) => save([...todos, { id: Date.now(), topic: s.topic, userType: s.userType, done: false }]);
+  const addTodo = async () => {
+    if (!newTopic.trim()) return;
+    try {
+      const created = await todosApi.create(newTopic.trim(), newUT);
+      setTodos(prev => [...prev, created]);
+      setNewTopic(""); setAdding(false);
+    } catch {}
+  };
+
+  const toggle = async (id: number, currentDone: boolean) => {
+    setTodos(prev => prev.map(t => t.id === id ? { ...t, done: !currentDone } : t));
+    try { await todosApi.toggle(id, !currentDone); } catch {}
+  };
+
+  const remove = async (id: number) => {
+    setTodos(prev => prev.filter(t => t.id !== id));
+    try { await todosApi.delete(id); } catch {}
+  };
+
+  const addSug = async (s: { topic: string; userType: string; pageType: string }) => {
+    try {
+      const created = await todosApi.create(s.topic, s.userType);
+      setTodos(prev => [...prev, created]);
+    } catch {}
+  };
 
   const pending = todos.filter(t => !t.done), done = todos.filter(t => t.done);
 
@@ -186,9 +256,18 @@ function TodoPanel({ pages, onGenerate }: { pages: PageDraft[]; onGenerate: (top
         {pending.length > 0 && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 10, background: "var(--color-text-primary)", color: "var(--color-background-primary)", fontWeight: 500 }}>{pending.length}</span>}
       </div>
 
+      {loadingTodos && <p style={{ fontSize: 12, color: "var(--color-text-tertiary)", margin: "0 0 8px", textAlign: "center" }}>Loading…</p>}
+
+      {!loadingTodos && pending.length === 0 && done.length === 0 && (
+        <div style={{ textAlign: "center", padding: "14px 0 10px", color: "var(--color-text-tertiary)" }}>
+          <p style={{ fontSize: 12, margin: "0 0 4px" }}>No pages queued</p>
+          <p style={{ fontSize: 11, margin: 0 }}>Add topics below or pick from suggestions</p>
+        </div>
+      )}
+
       {pending.map(t => (
         <div key={t.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 7, padding: "9px 10px", background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-md)" }}>
-          <button onClick={() => toggle(t.id)} aria-label="Mark done" style={{ marginTop: 2, width: 15, height: 15, borderRadius: 3, border: "1.5px solid var(--color-border-secondary)", background: "transparent", cursor: "pointer", flexShrink: 0, padding: 0, outline: "none" }} />
+          <button onClick={() => toggle(t.id, t.done)} aria-label="Mark done" style={{ marginTop: 2, width: 15, height: 15, borderRadius: 3, border: "1.5px solid var(--color-border-secondary)", background: "transparent", cursor: "pointer", flexShrink: 0, padding: 0, outline: "none" }} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontSize: 12, fontWeight: 500, margin: "0 0 2px", lineHeight: 1.4, color: "var(--color-text-primary)" }}>{t.topic}</p>
             <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", margin: 0 }}>{t.userType}</p>
@@ -202,7 +281,7 @@ function TodoPanel({ pages, onGenerate }: { pages: PageDraft[]; onGenerate: (top
 
       {done.map(t => (
         <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", opacity: 0.4 }}>
-          <button onClick={() => toggle(t.id)} aria-label="Unmark" style={{ width: 15, height: 15, borderRadius: 3, border: "1.5px solid var(--color-border-secondary)", background: "var(--color-background-secondary)", cursor: "pointer", flexShrink: 0, padding: 0, display: "flex", alignItems: "center", justifyContent: "center", outline: "none" }}>
+          <button onClick={() => toggle(t.id, t.done)} aria-label="Unmark" style={{ width: 15, height: 15, borderRadius: 3, border: "1.5px solid var(--color-border-secondary)", background: "var(--color-background-secondary)", cursor: "pointer", flexShrink: 0, padding: 0, display: "flex", alignItems: "center", justifyContent: "center", outline: "none" }}>
             <svg width="9" height="9" viewBox="0 0 10 10"><path d="M1.5 5l3 3 4-5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" /></svg>
           </button>
           <p style={{ fontSize: 12, margin: 0, color: "var(--color-text-tertiary)", textDecoration: "line-through", flex: 1 }}>{t.topic}</p>
@@ -259,12 +338,14 @@ export default function App() {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [streaming, setStreaming] = useState(false);
+  const [evaluating, setEvaluating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [streamText, setStreamText] = useState("");
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState("");
   const [karlStatus, setKarlStatus] = useState("idle");
   const [pages, setPages] = useState<PageDraft[]>([]);
+  const [pagesLoading, setPagesLoading] = useState(true);
   const [selected, setSelected] = useState<PageDraft | null>(null);
   const [justGenerated, setJustGenerated] = useState<PageDraft | null>(null);
   const [search, setSearch] = useState("");
@@ -278,21 +359,53 @@ export default function App() {
   const lastInput = useRef<{ topic: string; userType: string; notes: string }>({ topic: "", userType: "", notes: "" });
 
   useEffect(() => {
-    storage.list("hhvc:").then(r => {
-      if (r?.keys?.length) {
-        Promise.all(r.keys.filter(k => k !== "hhvc:todos").map(k => storage.get(k)))
-          .then(res => {
-            setPages(res.filter(Boolean).map(r2 => { try { return JSON.parse(r2!.value); } catch { return null; } }).filter(Boolean));
-          });
+    const loadAndMigrate = async () => {
+      try {
+        const dbPages = await pagesApi.list();
+
+        const lsPageKeys = lsLegacy.listPageKeys();
+        const migrated: PageDraft[] = [];
+        for (const k of lsPageKeys) {
+          try {
+            const val = lsLegacy.getPage(k);
+            if (val) {
+              const p = JSON.parse(val) as PageDraft;
+              const newId = p.id.startsWith("hhvc:") ? `page_${p.id.slice(5)}` : p.id;
+              const updated = { ...p, id: newId };
+              await pagesApi.save(newId, updated);
+              migrated.push(updated);
+              lsLegacy.removePage(k);
+            }
+          } catch {}
+        }
+
+        const lsTodosRaw = lsLegacy.getTodos();
+        if (lsTodosRaw) {
+          try {
+            const lsTodos = JSON.parse(lsTodosRaw) as TodoItem[];
+            let allOk = true;
+            for (const t of lsTodos) {
+              try { await todosApi.create(t.topic, t.userType); }
+              catch { allOk = false; }
+            }
+            if (allOk) lsLegacy.removeTodos();
+          } catch {}
+        }
+
+        setPages([...dbPages, ...migrated]);
+      } catch (err) {
+        console.error("Failed to load pages:", err);
       }
-    }).catch(() => {});
+      setPagesLoading(false);
+    };
+    loadAndMigrate();
   }, []);
 
   const adv = (pct: number, lbl: string) => { setProgress(pct); setProgressLabel(lbl); };
 
   const generate = useCallback(async (ov: Partial<{ topic: string; userType: string; notes: string }> = {}) => {
     const t = ov.topic || topic; if (!t.trim()) { setTopicTouched(true); return; }
-    setLoading(true); setStreaming(true); setShowSuccess(false); setStreamText(""); setError(""); setParseWarn(false); setSelected(null);
+    setLoading(true); setStreaming(true); setEvaluating(false); setShowSuccess(false); setStreamText(""); setError(""); setParseWarn(false); setSelected(null);
     setKarlStatus("connecting");
     adv(0, "Connecting to Karl docs…");
     streamRef.current = ""; lastInput.current = { topic: t, userType: ov.userType || userType, notes: ov.notes || notes };
@@ -337,35 +450,57 @@ export default function App() {
             if (j.type === "content_block_delta" && j.delta?.type === "text_delta") {
               streamRef.current += j.delta.text; setStreamText(s => s + j.delta.text);
               charCount += j.delta.text.length;
-              const pct = Math.min(97, 50 + Math.round((charCount / 2200) * 47));
-              const lbl = pct < 65 ? "Drafting page structure…" : pct < 80 ? "Writing page content…" : pct < 90 ? "Adding compliance checks…" : "Finalizing page…";
+              const pct = Math.min(88, 50 + Math.round((charCount / 2200) * 38));
+              const lbl = pct < 65 ? "Drafting page structure…" : pct < 75 ? "Writing page content…" : pct < 85 ? "Adding compliance checks…" : "Finalizing page…";
               adv(pct, lbl);
             }
           } catch {}
         }
       }
       if (!karlHit) setKarlStatus("fallback");
-      adv(100, "Done");
+
       const parsed = parsePage(streamRef.current);
       if (!parsed.valid) setParseWarn(true);
-      const id = `hhvc:${Date.now()}`;
-      const page: PageDraft = { ...parsed, id, createdAt: new Date().toISOString(), inputs: lastInput.current, karlConnected: karlHit } as PageDraft;
-      await storage.set(id, JSON.stringify(page));
+      const id = `page_${Date.now()}`;
+      let page: PageDraft = { ...parsed, id, createdAt: new Date().toISOString(), inputs: lastInput.current, karlConnected: karlHit } as PageDraft;
+
+      setStreaming(false);
+      setEvaluating(true);
+      adv(93, "Evaluating against Karl standards…");
+
+      const evaluation = await runKarlEvaluation({
+        name: page.name,
+        pageType: page.pageType,
+        draft: page.draft,
+        userType: page.userType
+      });
+
+      if (evaluation) {
+        page = { ...page, karlEvaluation: evaluation };
+      }
+
+      adv(100, "Done");
+      setEvaluating(false);
+
+      try {
+        await pagesApi.save(id, page);
+      } catch {
+        setError("Page generated but could not be saved to the database. Refresh to retry.");
+      }
       setPages(prev => [...prev, page]);
       setJustGenerated(page);
-      setStreaming(false);
       setTimeout(() => setShowSuccess(true), 150);
       setTopic(""); setNotes(""); setTopicTouched(false);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
       setError(`Generation failed: ${msg}`);
-      setStreaming(false); setKarlStatus("fallback");
+      setStreaming(false); setEvaluating(false); setKarlStatus("fallback");
     }
     setLoading(false);
   }, [topic, userType, notes]);
 
   const regenerate = useCallback((p: PageDraft) => { if (p?.inputs) generate({ topic: p.inputs.topic, userType: p.inputs.userType, notes: p.inputs.notes }); }, [generate]);
-  const deletePage = async (id: string) => { await storage.delete(id).catch(() => {}); setPages(p => p.filter(x => x.id !== id)); if (selected?.id === id) setSelected(null); };
+  const deletePage = async (id: string) => { await pagesApi.delete(id).catch(() => {}); setPages(p => p.filter(x => x.id !== id)); if (selected?.id === id) setSelected(null); };
   const selectById = (id: string) => { const p = pages.find(x => x.id === id); if (p) { setSelected(p); setShowSuccess(false); setTab("builder"); } };
   const handleCopy = (text: string) => { navigator.clipboard.writeText(text).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); };
   const handleDownload = (text: string, name: string) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "text/plain" })); a.download = name; a.click(); };
@@ -378,129 +513,126 @@ export default function App() {
     const active = tab === id;
     return (
       <button onClick={() => setTab(id)} aria-current={active ? "page" : undefined}
-        style={{ padding: "10px 18px", fontSize: 13, fontWeight: active ? 500 : 400, color: active ? "var(--color-text-primary)" : "var(--color-text-secondary)", background: "transparent", border: "none", borderBottom: active ? "2px solid var(--color-text-primary)" : "2px solid transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, transition: "color 0.15s, border-color 0.15s", outline: "none" }}
-        onMouseEnter={e => { if (!active) e.currentTarget.style.color = "var(--color-text-primary)"; }}
-        onMouseLeave={e => { if (!active) e.currentTarget.style.color = "var(--color-text-secondary)"; }}
-      >
+        style={{
+          fontSize: 13, fontWeight: active ? 500 : 400,
+          color: active ? "var(--color-text-primary)" : "var(--color-text-tertiary)",
+          background: "none", border: "none", cursor: "pointer",
+          padding: "8px 2px", borderBottom: `2px solid ${active ? "var(--color-text-primary)" : "transparent"}`,
+          transition: "color 0.15s, border-color 0.15s", position: "relative", display: "inline-flex", alignItems: "center", gap: 6
+        }}>
         {label}
-        {badge ? <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 10, background: "var(--color-text-primary)", color: "var(--color-background-primary)", fontWeight: 500, lineHeight: 1.4 }}>{badge}</span> : null}
+        {badge !== undefined && badge > 0 && (
+          <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 10, background: active ? "var(--color-text-primary)" : "var(--color-background-secondary)", color: active ? "var(--color-background-primary)" : "var(--color-text-secondary)", border: "0.5px solid var(--color-border-secondary)" }}>{badge}</span>
+        )}
       </button>
     );
   };
 
   return (
-    <div style={{ fontFamily: "var(--font-sans)", padding: "0.5rem 0 2rem" }}>
-      <style>{`
-        @keyframes blink { 0%, 100% { opacity: 1 } 50% { opacity: 0 } }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: translateY(0) } }
-        @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }
-        *:focus-visible { outline: 2px solid var(--color-border-info) !important; outline-offset: 2px; }
-      `}</style>
-      <h2 className="sr-only">HHVC SF.gov content design tool</h2>
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--font-sans)", minHeight: "100vh" }}>
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 4 }}>
+          <h1 style={{ fontSize: 20, fontWeight: 500, margin: 0, letterSpacing: "-0.3px", color: "var(--color-text-primary)" }}>HHVC Page Builder</h1>
+          <span style={{ fontSize: 11, color: "var(--color-text-tertiary)" }}>SF.gov · Healthy Housing & Vector Control</span>
+        </div>
+        <p style={{ fontSize: 13, color: "var(--color-text-secondary)", margin: 0, lineHeight: 1.5 }}>Design SF.gov-compliant content pages for Healthy Housing & Vector Control.</p>
+      </div>
 
-      <div style={{ borderBottom: "0.5px solid var(--color-border-tertiary)", marginBottom: 20, display: "flex" }}>
-        <Tab id="builder" label="Page builder" />
-        <Tab id="map" label="System map" />
+      <div style={{ display: "flex", gap: 24, borderBottom: "0.5px solid var(--color-border-tertiary)", marginBottom: 24 }}>
+        <Tab id="builder" label="Builder" />
         <Tab id="library" label="Library" badge={pages.length} />
+        <Tab id="map" label="System Map" />
       </div>
 
       {tab === "builder" && (
-        <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 16, alignItems: "start" }}>
-          <Card style={{ padding: "18px 16px" }}>
-            <Label>New page</Label>
-            <KarlStatus status={karlStatus} />
-
-            <Field label="Topic" hint={isPest(topic) ? "→ Transaction page" : ""}>
-              <input style={{ ...iStyle(), borderColor: topicError ? "var(--color-border-danger)" : "var(--color-border-secondary)" }}
-                placeholder="e.g. Report rats in my building" value={topic}
-                onChange={e => { setTopic(e.target.value); setTopicTouched(false); }}
-                onBlur={() => setTopicTouched(true)}
-                onKeyDown={e => e.key === "Enter" && !loading && generate()}
-                onFocus={e => e.target.style.borderColor = "var(--color-border-primary)"}
-                aria-label="Page topic" aria-invalid={topicError} />
-              {topicError && <p style={{ fontSize: 11, color: "var(--color-text-danger)", margin: "4px 0 0" }} role="alert">Please enter a page topic.</p>}
-            </Field>
-
-            <Field label="Primary user">
-              <select style={iStyle()} value={userType} onChange={e => setUserType(e.target.value)}>
-                {USER_TYPES.map(u => <option key={u}>{u}</option>)}
-              </select>
-            </Field>
-
-            <Field label="Context" hint="optional">
-              <textarea style={{ ...iStyle({ height: 88, resize: "vertical" }) }} value={notes} onChange={e => setNotes(e.target.value)} aria-label="Additional context"
-                placeholder={`Optional — include any of:\n• Parent/sibling pages that exist\n• SF Health Code sections that apply\n• Enforcement limits inspectors face\n• Overlapping DBI or other city pages\n• Audience nuance (SROs, Section 8…)\n• Urgency level (active vs. prevention)\n• Specific CTAs that must appear`} />
-            </Field>
-
-            <Btn onClick={() => generate()} disabled={loading} variant="primary" size="lg" fullWidth style={{ marginTop: 4 }}>
-              {loading ? "Generating…" : "Generate page"}
-            </Btn>
-            {error && <p style={{ fontSize: 12, color: "var(--color-text-danger)", marginTop: 8, marginBottom: 0 }} role="alert">{error}</p>}
+        <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 16, alignItems: "start" }}>
+          <div>
+            <Card style={{ padding: "18px 20px", marginBottom: 12 }}>
+              <KarlStatus status={karlStatus} />
+              <Field label="Topic" hint={topicError ? "Required" : undefined}>
+                <textarea
+                  style={{ ...iStyle({ minHeight: 70, resize: "vertical", fontSize: 13, borderColor: topicError ? "var(--color-border-danger)" : undefined }), lineHeight: 1.6 }}
+                  placeholder="Describe the page topic…"
+                  value={topic}
+                  onChange={e => { setTopic(e.target.value); setTopicTouched(true); }}
+                  onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) generate(); }}
+                />
+                {topicError && <p style={{ fontSize: 11, color: "var(--color-text-danger)", margin: "3px 0 0" }}>Enter a topic to continue</p>}
+              </Field>
+              <Field label="Primary user">
+                <select style={iStyle()} value={userType} onChange={e => setUserType(e.target.value)}>
+                  {USER_TYPES.map(u => <option key={u}>{u}</option>)}
+                </select>
+              </Field>
+              <Field label="Context / notes" hint="Optional">
+                <input style={iStyle()} placeholder="Add context or requirements…" value={notes} onChange={e => setNotes(e.target.value)} onKeyDown={e => e.key === "Enter" && generate()} />
+              </Field>
+              <Btn onClick={() => generate()} variant="primary" size="md" fullWidth disabled={loading}>
+                {loading ? (streaming ? "Generating…" : evaluating ? "Evaluating…" : "Working…") : "Generate page"}
+              </Btn>
+            </Card>
 
             {pages.length > 0 && (
-              <>
-                <Divider m="18px 0 14px" />
-                <Label>Recent</Label>
-                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  {pages.slice(-6).reverse().map(p => {
-                    const c = TYPE_META[clean(p.pageType)] || { dot: "#888" };
-                    const isSel = selected?.id === p.id && !showSuccess;
-                    return (
-                      <button key={p.id} onClick={() => { setSelected(p); setShowSuccess(false); }} aria-label={`Open ${clean(p.name)}`}
-                        style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 10px", background: isSel ? "var(--color-background-secondary)" : "transparent", border: isSel ? "0.5px solid var(--color-border-secondary)" : "0.5px solid transparent", borderRadius: "var(--border-radius-md)", cursor: "pointer", textAlign: "left", width: "100%", transition: "background 0.1s", outline: "none" }}
-                        onMouseEnter={e => { if (!isSel) e.currentTarget.style.background = "var(--color-background-secondary)"; }}
-                        onMouseLeave={e => { if (!isSel) e.currentTarget.style.background = "transparent"; }}>
-                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: c.dot, flexShrink: 0 }} />
-                        <span style={{ fontSize: 12, fontWeight: isSel ? 500 : 400, color: "var(--color-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{clean(p.name) || "Untitled"}</span>
-                        {!p.karlConnected && <span title="Generated without Karl docs" style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#FAEEDA", color: "#854F0B", flexShrink: 0 }}>no Karl</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
+              <Card style={{ padding: "14px 16px" }}>
+                <Label>Recent pages</Label>
+                {[...pages].reverse().slice(0, 5).map(p => {
+                  const c = TYPE_META[clean(p.pageType)] || { dot: "#888" };
+                  return (
+                    <button key={p.id} onClick={() => { setSelected(p); setShowSuccess(false); }}
+                      style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: "var(--border-radius-md)", background: selected?.id === p.id ? "var(--color-background-secondary)" : "transparent", border: "none", cursor: "pointer", textAlign: "left", transition: "background 0.12s" }}>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: c.dot, flexShrink: 0 }} />
+                      <span style={{ fontSize: 12, color: "var(--color-text-primary)", lineHeight: 1.4, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{clean(p.name) || "Untitled"}</span>
+                      {p.karlEvaluation && (
+                        <span style={{ fontSize: 10, fontWeight: 600, color: { A: "#0F6E56", B: "#185FA5", C: "#854F0B", D: "#A32D2D", F: "#A32D2D" }[p.karlEvaluation.grade] || "#888" }}>
+                          {p.karlEvaluation.grade}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </Card>
             )}
-          </Card>
+          </div>
 
-          <Card style={{ padding: "22px 26px", minHeight: 480 }}>
+          <Card style={{ padding: "20px 24px", minHeight: 400 }}>
             {streaming && (
               <div>
                 <ProgressBar progress={progress} label={progressLabel} />
-                <Divider m="0 0 18px" />
                 <StreamRenderer text={streamText} />
               </div>
             )}
 
-            {!streaming && showSuccess && justGenerated && <SuccessState page={justGenerated} onView={() => { setSelected(justGenerated); setShowSuccess(false); }} />}
+            {!streaming && evaluating && <EvaluatingState />}
 
-            {!streaming && !showSuccess && parseWarn && (
-              <div role="alert" style={{ background: "var(--color-background-warning)", border: "0.5px solid var(--color-border-warning)", borderRadius: "var(--border-radius-md)", padding: "10px 14px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                <p style={{ fontSize: 13, color: "var(--color-text-warning)", margin: 0 }}>Some fields may be incomplete.</p>
-                <Btn onClick={() => selected && regenerate(selected)} variant="ghost" size="sm" style={{ borderColor: "var(--color-border-warning)", color: "var(--color-text-warning)" }}>Retry</Btn>
-              </div>
+            {!streaming && !evaluating && showSuccess && justGenerated && (
+              <SuccessState page={justGenerated} onView={() => { setSelected(justGenerated); setShowSuccess(false); }} />
             )}
 
-            {!streaming && !showSuccess && selected && (
+            {!streaming && !evaluating && !showSuccess && selected && (
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, gap: 12, flexWrap: "wrap" }}>
-                  <div>
-                    <h3 style={{ fontSize: 22, fontWeight: 500, margin: "0 0 10px", letterSpacing: "-0.3px", color: "var(--color-text-primary)" }}>{clean(selected.name) || "Untitled"}</h3>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
                       <Badge type={clean(selected.pageType)} />
-                      {selected.karlConnected
-                        ? <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "#E1F5EE", color: "#0F6E56", border: "0.5px solid #5DCAA5" }}>Karl verified</span>
-                        : <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "#FAEEDA", color: "#854F0B", border: "0.5px solid #EF9F27" }}>Base standards only</span>
-                      }
+                      {selected.karlConnected && (
+                        <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: "#E1F5EE", color: "#0F6E56", border: "0.5px solid #0F6E5630" }}>Karl verified</span>
+                      )}
+                      {selected.karlEvaluation && (
+                        <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: { A: "#E1F5EE", B: "#E6F1FB", C: "#FAEEDA", D: "#FCEBEB", F: "#FCEBEB" }[selected.karlEvaluation.grade] || "#F1EFE8", color: { A: "#0F6E56", B: "#185FA5", C: "#854F0B", D: "#A32D2D", F: "#A32D2D" }[selected.karlEvaluation.grade] || "#444", fontWeight: 600 }}>
+                          Grade {selected.karlEvaluation.grade} · {selected.karlEvaluation.score}/100
+                        </span>
+                      )}
                     </div>
+                    <h2 style={{ fontSize: 20, fontWeight: 500, margin: 0, letterSpacing: "-0.3px", lineHeight: 1.25, color: "var(--color-text-primary)" }}>{clean(selected.name) || "Untitled"}</h2>
                   </div>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                    <Btn onClick={() => handleCopy(selected.raw)} variant="ghost" size="sm">{copied ? "Copied ✓" : "Copy"}</Btn>
-                    <Btn onClick={() => handleDownload(selected.raw, (clean(selected.name) || "page").toLowerCase().replace(/\s+/g, "-") + ".txt")} variant="ghost" size="sm">Download</Btn>
-                    <Btn onClick={() => regenerate(selected)} disabled={loading} variant="ghost" size="sm">Regenerate</Btn>
+                  <div style={{ display: "flex", gap: 6, flexShrink: 0, marginLeft: 12 }}>
+                    <Btn onClick={() => handleCopy(selected.raw)} variant="ghost" size="sm">{copied ? "Copied!" : "Copy"}</Btn>
+                    <Btn onClick={() => regenerate(selected)} variant="ghost" size="sm">Regen</Btn>
                     <Btn onClick={() => deletePage(selected.id)} variant="danger" size="sm">Delete</Btn>
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8, marginBottom: 20 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8, marginBottom: 16 }}>
                   {[["User", selected.userType], ["Goal", selected.userGoal], ["Purpose", selected.purpose]].map(([k, v]) => (
                     <div key={k} style={{ background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-md)", padding: "10px 12px" }}>
                       <Label style={{ margin: "0 0 3px" }}>{k}</Label>
@@ -508,6 +640,8 @@ export default function App() {
                     </div>
                   ))}
                 </div>
+
+                {selected.karlEvaluation && <KarlEvalPanel evaluation={selected.karlEvaluation} />}
 
                 <ComponentChips components={selected.components} />
                 <RelPanel rel={selected.relationships} />
@@ -524,10 +658,34 @@ export default function App() {
               </div>
             )}
 
-            {!streaming && !showSuccess && !selected && (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 360, gap: 12, color: "var(--color-text-tertiary)" }}>
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M9 12h6M12 9v6" /></svg>
-                <p style={{ fontSize: 13, margin: 0, textAlign: "center", maxWidth: 200, lineHeight: 1.6 }}>Enter a topic in the form to generate your first page</p>
+            {!streaming && !evaluating && !showSuccess && !selected && (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 360, gap: 14, color: "var(--color-text-tertiary)" }}>
+                {pagesLoading ? (
+                  <>
+                    <div style={{ width: 32, height: 32, borderRadius: "50%", border: "2px solid var(--color-border-secondary)", borderTopColor: "var(--color-text-secondary)", animation: "spin 0.8s linear infinite" }} />
+                    <p style={{ fontSize: 13, margin: 0 }}>Loading pages…</p>
+                  </>
+                ) : (
+                  <>
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M9 12h6M12 9v6" /></svg>
+                    <div style={{ textAlign: "center", maxWidth: 220 }}>
+                      <p style={{ fontSize: 14, fontWeight: 500, margin: "0 0 4px", color: "var(--color-text-secondary)" }}>{pages.length === 0 ? "No pages yet" : "Select a page"}</p>
+                      <p style={{ fontSize: 13, margin: 0, lineHeight: 1.6 }}>{pages.length === 0 ? "Enter a topic in the form and click Generate to create your first page." : "Choose a page from the Recent list or Library tab."}</p>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {error && (
+              <div style={{ marginTop: 16, padding: "12px 16px", background: "#FCEBEB", borderRadius: "var(--border-radius-md)", border: "0.5px solid #A32D2D30" }}>
+                <p style={{ fontSize: 13, color: "#791F1F", margin: "0 0 6px", fontWeight: 500 }}>Generation failed</p>
+                <p style={{ fontSize: 12, color: "#791F1F", margin: 0, lineHeight: 1.5 }}>{error}</p>
+              </div>
+            )}
+            {parseWarn && !error && (
+              <div style={{ marginTop: 12, padding: "10px 14px", background: "#FAEEDA", borderRadius: "var(--border-radius-md)", border: "0.5px solid #854F0B30" }}>
+                <p style={{ fontSize: 12, color: "#633806", margin: 0 }}>Page was generated but some fields could not be parsed fully. Review the draft carefully.</p>
               </div>
             )}
           </Card>
@@ -560,24 +718,43 @@ export default function App() {
             <Btn onClick={() => setSortNewest(s => !s)} variant="ghost" size="sm">{sortNewest ? "Newest first" : "Oldest first"}</Btn>
             {pages.length > 0 && <Btn onClick={() => handleDownload(pages.map(p => p.raw).join("\n\n---\n\n"), "hhvc-pages-export.txt")} variant="ghost" size="sm">Export all</Btn>}
           </div>
-          {sorted.length === 0 && (
+          {pagesLoading && (
             <div style={{ textAlign: "center", padding: "56px 0", color: "var(--color-text-tertiary)" }}>
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" style={{ marginBottom: 10, display: "block", margin: "0 auto 10px" }}><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 9h6M9 12h6M9 15h4" /></svg>
-              <p style={{ fontSize: 13, margin: 0 }}>{pages.length === 0 ? "No pages yet — generate one in the builder." : "No pages match your filter."}</p>
+              <div style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid var(--color-border-secondary)", borderTopColor: "var(--color-text-secondary)", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
+              <p style={{ fontSize: 13, margin: 0 }}>Loading pages…</p>
             </div>
           )}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 12 }}>
+          {!pagesLoading && sorted.length === 0 && (
+            <div style={{ textAlign: "center", padding: "64px 0", color: "var(--color-text-tertiary)" }}>
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" style={{ marginBottom: 12, display: "block", margin: "0 auto 12px" }}><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 9h6M9 12h6M9 15h4" /></svg>
+              <p style={{ fontSize: 14, fontWeight: 500, margin: "0 0 4px", color: "var(--color-text-secondary)" }}>{pages.length === 0 ? "No pages yet" : "No results"}</p>
+              <p style={{ fontSize: 13, margin: 0, lineHeight: 1.5 }}>{pages.length === 0 ? "Generate your first page in the Builder tab." : "Try adjusting your search or filter."}</p>
+            </div>
+          )}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(230px,1fr))", gap: 12 }}>
             {sorted.map(p => {
               const c = TYPE_META[clean(p.pageType)] || { dot: "#888" };
+              const ev = p.karlEvaluation;
+              const gradeColor: Record<string, string> = { A: "#0F6E56", B: "#185FA5", C: "#854F0B", D: "#A32D2D", F: "#A32D2D" };
               return (
                 <Card key={p.id} onClick={() => { setSelected(p); setShowSuccess(false); setTab("builder"); }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 9 }}>
                     <span style={{ width: 6, height: 6, borderRadius: "50%", background: c.dot, flexShrink: 0 }} />
                     <Badge type={clean(p.pageType)} small />
-                    {!p.karlConnected && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#FAEEDA", color: "#854F0B", marginLeft: "auto" }}>no Karl</span>}
+                    <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4 }}>
+                      {ev && <span style={{ fontSize: 10, fontWeight: 700, color: gradeColor[ev.grade] || "#888" }}>{ev.grade}</span>}
+                      {!p.karlConnected && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#FAEEDA", color: "#854F0B" }}>no Karl</span>}
+                    </div>
                   </div>
                   <p style={{ fontSize: 13, fontWeight: 500, margin: "0 0 6px", lineHeight: 1.4, color: "var(--color-text-primary)" }}>{clean(p.name) || "Untitled"}</p>
                   <p style={{ fontSize: 12, color: "var(--color-text-secondary)", margin: "0 0 12px", lineHeight: 1.5 }}>{(clean(p.userGoal) || "").slice(0, 70)}{(clean(p.userGoal) || "").length > 70 ? "…" : ""}</p>
+                  {ev && (
+                    <div style={{ display: "flex", gap: 4, marginBottom: 10, flexWrap: "wrap" }}>
+                      {ev.passed.length > 0 && <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 8, background: "#E1F5EE", color: "#0F6E56" }}>✓ {ev.passed.length}</span>}
+                      {ev.warnings.length > 0 && <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 8, background: "#FAEEDA", color: "#854F0B" }}>⚠ {ev.warnings.length}</span>}
+                      {ev.failed.length > 0 && <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 8, background: "#FCEBEB", color: "#A32D2D" }}>✗ {ev.failed.length}</span>}
+                    </div>
+                  )}
                   <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", margin: 0 }}>{new Date(p.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
                 </Card>
               );

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { TYPE_META, MILESTONE_DOTS } from "../constants";
 import { clean, parseRel } from "../utils";
+import { KarlEvaluation } from "../types";
 
 export const Badge: React.FC<{ type: string; small?: boolean }> = ({ type, small }) => {
   const t = clean(type);
@@ -168,6 +169,83 @@ export const SectionIcon: React.FC<{ type: string }> = ({ type }) => {
     info: <><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" /><path d="M12 16v-4M12 8h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none" /></>,
   };
   return <svg width="15" height="15" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>{icons[type] || icons.info}</svg>;
+};
+
+export const KarlEvalPanel: React.FC<{ evaluation: KarlEvaluation }> = ({ evaluation }) => {
+  const [expanded, setExpanded] = useState(false);
+  const gradeColor: Record<string, string> = { A: "#0F6E56", B: "#185FA5", C: "#854F0B", D: "#A32D2D", F: "#A32D2D" };
+  const gradeBg: Record<string, string> = { A: "#E1F5EE", B: "#E6F1FB", C: "#FAEEDA", D: "#FCEBEB", F: "#FCEBEB" };
+  const grade = evaluation.grade || "—";
+  const color = gradeColor[grade] || "#5F5E5A";
+  const bg = gradeBg[grade] || "#F7F6F2";
+
+  const scoreWidth = `${Math.min(100, evaluation.score || 0)}%`;
+
+  return (
+    <div style={{ borderRadius: "var(--border-radius-lg)", border: `0.5px solid ${color}33`, overflow: "hidden", marginBottom: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: bg, borderBottom: expanded ? `0.5px solid ${color}22` : "none" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: "50%", background: "white", border: `2px solid ${color}40`, flexShrink: 0 }}>
+          <span style={{ fontSize: 16, fontWeight: 700, color }}>{grade}</span>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+            <span style={{ fontSize: 12, fontWeight: 500, color }}>Karl evaluation · {evaluation.score}/100</span>
+            <div style={{ display: "flex", gap: 6 }}>
+              {evaluation.passed.length > 0 && <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 8, background: "#E1F5EE", color: "#0F6E56" }}>✓ {evaluation.passed.length}</span>}
+              {evaluation.warnings.length > 0 && <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 8, background: "#FAEEDA", color: "#854F0B" }}>⚠ {evaluation.warnings.length}</span>}
+              {evaluation.failed.length > 0 && <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 8, background: "#FCEBEB", color: "#A32D2D" }}>✗ {evaluation.failed.length}</span>}
+            </div>
+          </div>
+          <div style={{ height: 3, background: `${color}20`, borderRadius: 2, overflow: "hidden" }}>
+            <div style={{ height: "100%", background: color, width: scoreWidth, borderRadius: 2, transition: "width 0.5s ease" }} />
+          </div>
+        </div>
+        <button onClick={() => setExpanded(e => !e)} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", color, opacity: 0.7, flexShrink: 0 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d={expanded ? "M18 15l-6-6-6 6" : "M6 9l6 6 6-6"} />
+          </svg>
+        </button>
+      </div>
+      {expanded && (
+        <div style={{ padding: "12px 14px", background: "var(--color-background-primary)" }}>
+          <p style={{ fontSize: 12, color: "var(--color-text-secondary)", margin: "0 0 12px", lineHeight: 1.55, fontStyle: "italic" }}>{evaluation.summary}</p>
+          {evaluation.passed.length > 0 && (
+            <div style={{ marginBottom: 10 }}>
+              <p style={{ fontSize: 10, fontWeight: 500, color: "#0F6E56", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 5px" }}>Passed</p>
+              {evaluation.passed.map((item, i) => (
+                <div key={i} style={{ display: "flex", gap: 7, alignItems: "flex-start", marginBottom: 4 }}>
+                  <span style={{ fontSize: 11, color: "#0F6E56", flexShrink: 0, marginTop: 1 }}>✓</span>
+                  <span style={{ fontSize: 12, color: "var(--color-text-primary)", lineHeight: 1.5 }}>{item}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {evaluation.warnings.length > 0 && (
+            <div style={{ marginBottom: 10 }}>
+              <p style={{ fontSize: 10, fontWeight: 500, color: "#854F0B", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 5px" }}>Warnings</p>
+              {evaluation.warnings.map((item, i) => (
+                <div key={i} style={{ display: "flex", gap: 7, alignItems: "flex-start", marginBottom: 4 }}>
+                  <span style={{ fontSize: 11, color: "#854F0B", flexShrink: 0, marginTop: 1 }}>⚠</span>
+                  <span style={{ fontSize: 12, color: "var(--color-text-primary)", lineHeight: 1.5 }}>{item}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {evaluation.failed.length > 0 && (
+            <div>
+              <p style={{ fontSize: 10, fontWeight: 500, color: "#A32D2D", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 5px" }}>Failed</p>
+              {evaluation.failed.map((item, i) => (
+                <div key={i} style={{ display: "flex", gap: 7, alignItems: "flex-start", marginBottom: 4 }}>
+                  <span style={{ fontSize: 11, color: "#A32D2D", flexShrink: 0, marginTop: 1 }}>✗</span>
+                  <span style={{ fontSize: 12, color: "var(--color-text-primary)", lineHeight: 1.5 }}>{item}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 };
 
 export const ProgressBar: React.FC<{ progress: number; label: string }> = ({ progress, label }) => {
