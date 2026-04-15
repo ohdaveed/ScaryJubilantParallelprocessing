@@ -246,6 +246,30 @@ export const improveStructure = async (raw: string, preferences: string[]): Prom
   }
 };
 
+export const skeletonToPageDraft = (tmpl: import("./types").SkeletonTemplate): import("./types").PageDraft => {
+  const parentLine = tmpl.parentName
+    ? `Parent: ${tmpl.parentName}`
+    : "Parent: Healthy Housing and Vector Control (Topic)";
+  const relatedList = (tmpl.related || []).map(r => `- ${r}`).join("\n");
+  const sectionBlocks = tmpl.sections.map(s =>
+    `Section heading: ${s.heading}\nSection body: ${s.body}`
+  ).join("\n\n");
+  const calloutBlocks = (tmpl.callouts || []).map(c => `Callout: ${c}`).join("\n\n");
+  const ctaBlock = tmpl.cta ? `\nButton link: ${tmpl.cta}\n` : "";
+
+  const raw = `PAGE NAME:\n${tmpl.name}\n\nPRIMARY USER:\n${tmpl.userType}\n\nUSER GOAL:\n[To be generated]\n\nPRIMARY PURPOSE:\n${tmpl.summary}\n\nPAGE TYPE:\n${tmpl.pageType}\n\nRECOMMENDED COMPONENTS:\n- Section\n- Callout\n- Text${tmpl.cta ? "\n- Button link" : ""}\n\nSYSTEM RELATIONSHIPS:\n${parentLine}\nSiblings: [To be determined]\nChildren: [To be determined]\nEntry Points: [To be determined]\nNext Steps: [To be determined]\n\nDUPLICATION RISKS:\n- [To be checked during generation]\n\nENFORCEMENT CHECK:\n- What can be verified: [To be checked during generation]\n- What is unclear or not enforceable: [To be checked during generation]\n\nPAGE DRAFT\n\n# ${tmpl.serviceTitle}\n\nDescription: ${tmpl.summary}\n\n## What to know\n${sectionBlocks}\n\n${calloutBlocks ? calloutBlocks + "\n\n" : ""}## What to do\n${ctaBlock}\nPhone number: 311\n\n## Related\n${relatedList}\n\nINTEGRATION NOTES:\n- Content Title: ${tmpl.contentTitle}\n- Hub: ${tmpl.hub}\n- This is a skeleton draft. Generate with AI to fill in the content.`;
+
+  const parsed = parsePage(raw);
+  return {
+    ...parsed,
+    id: `skeleton_${tmpl.name.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`,
+    createdAt: new Date().toISOString(),
+    karlConnected: false,
+    skeleton: true,
+    inputs: { topic: tmpl.name, userType: tmpl.userType, notes: `Hub: ${tmpl.hub}` }
+  } as import("./types").PageDraft;
+};
+
 export const driveApi = {
   listFiles: async (): Promise<import("./types").DriveFile[]> => {
     const res = await fetch(`${API_BASE}/drive/files`);

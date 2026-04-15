@@ -249,7 +249,7 @@ Evaluate and return ONLY this JSON structure (no other text, no markdown):
 }
 
 VALID KARL CONTENT TYPES (only these are acceptable):
-Transaction, Information, Step by step, Topic, Resource Collection
+Transaction, Information, Step by step, Topic, Resource Collection, Campaign Page
 
 INVALID CONTENT TYPES (flag as FAILED if any appear):
 Guidance page, Issue page, Enforcement page, Support page, Hub page, any other type not in the valid list above
@@ -374,7 +374,17 @@ REGULATORY ALIGNMENT CHECKS:
 WAGTAIL CMS ALIGNMENT:
 - Ensure Spotlight components are used on Topic and Resource Collection pages to feature key sub-pages
 - Ensure Action Links are used for primary calls-to-action (311, external services)
-- Flag any potential duplication with existing SF.gov pages in DUPLICATION RISKS${prefBlock}
+- Flag any potential duplication with existing SF.gov pages in DUPLICATION RISKS
+
+3-HUB ORGANIZATIONAL CHECK:
+- Verify the page fits within one of the three hubs: Tenant Hub, Owner Hub, or Community/Teacher Hub (plus Vector Services and shared Contact Us)
+- Ensure Karl CMS field conventions are followed: Content Title (internal, "HHVC - [Hub] - [Name]"), Service Title (public H1), Summary (one sentence)
+- For Transaction pages, ensure a clear CTA button label exists
+- Group contact info (311, office address) in a distinct section at the bottom (Law of Common Region)
+
+VOCABULARY ENFORCEMENT:
+- Replace "Sanitation" with "Trash", "Vectors" with "Bugs" or "Pests", "Waste management" with "Messes", "Remediate" with "Fix"
+- Ensure all text is at a strict 5th-grade reading level${prefBlock}
 
 Here is the page to improve:
 

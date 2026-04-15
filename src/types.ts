@@ -25,11 +25,27 @@ export interface PageDraft {
   createdAt: string;
   karlConnected: boolean;
   karlEvaluation?: KarlEvaluation;
+  skeleton?: boolean;
   inputs: {
     topic: string;
     userType: string;
     notes: string;
   };
+}
+
+export interface SkeletonTemplate {
+  name: string;
+  contentTitle: string;
+  serviceTitle: string;
+  summary: string;
+  pageType: string;
+  userType: string;
+  hub: string;
+  parentName?: string;
+  cta?: string;
+  sections: { heading: string; body: string }[];
+  callouts?: string[];
+  related?: string[];
 }
 
 export interface SuggestedPage {

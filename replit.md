@@ -72,6 +72,32 @@ CREATE TABLE user_preferences (id SERIAL PRIMARY KEY, preference TEXT NOT NULL, 
 
 Tables are auto-created by `initDb()` on server start.
 
+## 3-Hub Sitemap Architecture
+
+All HHVC pages are organized into three hubs plus shared pages:
+
+- **Tenant Hub** (For Renters): Main Transaction page + 4 Information sub-pages (pests, mold, trash, plants)
+- **Owner Hub** (For Landlords): Main Transaction page + 3 Information sub-pages (fees, violations, rules)
+- **Community & Teacher Hub**: 2 Campaign Pages (mosquito education, school workshops)
+- **Vector Services**: 1 Transaction page (dead bird reporting)
+- **Shared**: 1 Information page (Contact HHVC)
+
+On first load with empty planned_pages table, the app auto-seeds 13 planned pages and 13 skeleton PageDrafts (with `skeleton: true` flag). Skeleton drafts use a purple dashed badge and show a "Generate with AI" button to fill in full content.
+
+## Karl CMS Field Conventions
+
+- **Content Title**: Internal CMS name (format: "HHVC - [Hub] - [Page Name]")
+- **Service Title**: Public H1 shown to users (plain language, 5th-grade reading level)
+- **Summary**: One-sentence blurb under the header
+- **CTA Button**: For Transaction pages only
+
+## Vocabulary Rules
+
+- "Trash" not "Sanitation"
+- "Bugs"/"Pests" not "Vectors"
+- "Messes" not "Waste management"
+- "Fix" not "Remediate"
+
 ## Key Design Decisions
 
 - **API key security:** `ANTHROPIC_API_KEY` lives only in the backend. Frontend calls `/api/chat`.
@@ -79,7 +105,9 @@ Tables are auto-created by `initDb()` on server start.
 - **Karl integration:** MCP server URL passed in Anthropic request. Shows "Karl connected" when active.
 - **Karl evaluation:** Separate `POST /api/evaluate` call runs after generation using `claude-haiku-4-20250514`.
 - **Regulatory alignment:** System prompt includes SF Health Code Article 11 compliance, 48-hour emergency response protocol (sewage/bed bugs), DPH vs. DBI jurisdictional clarity with external link guidance, SEO Description strategy ("We inspect..." for hub), H3-separated content structure, competitive deduplication checks, and Wagtail CMS component guidance (Spotlight, Action Link).
-- **Second AI agent:** After initial generation, `POST /api/improve-structure` runs a second Claude Sonnet pass focused on structural improvements (heading hierarchy, section ordering, accessibility, regulatory alignment checks). User preferences are injected into both generation and structure-improvement prompts.
+- **3-hub architecture:** System prompt and structure-improvement prompt include full 3-hub sitemap (Tenant/Owner/Community), Karl CMS field conventions, vocabulary enforcement, and UX design standards (Hick's Law, Law of Common Region).
+- **Skeleton drafts:** `SITEMAP_SKELETON` in constants.ts defines 13 SkeletonTemplate entries. `skeletonToPageDraft()` in utils.ts converts them to PageDraft objects with `skeleton: true`. Auto-seeded on first load.
+- **Second AI agent:** After initial generation, `POST /api/improve-structure` runs a second Claude Sonnet pass focused on structural improvements (heading hierarchy, section ordering, accessibility, regulatory alignment, 3-hub organizational check, vocabulary enforcement). User preferences are injected into both generation and structure-improvement prompts.
 - **User preferences:** Stored in `user_preferences` table. Can be added manually in the sidebar or auto-learned from successful refine instructions. Preferences influence all future generations and structure improvements.
 - **Storage:** PostgreSQL via `pg` pool. `pagesApi`/`todosApi`/`preferencesApi` in `utils.ts` are typed REST clients. `lsLegacy` handles one-time migration of legacy `hhvc:*` localStorage keys.
 - **Model:** `claude-sonnet-4-20250514` with `anthropic-beta: mcp-client-2025-04-04`

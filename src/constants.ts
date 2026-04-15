@@ -1,4 +1,4 @@
-import { SuggestedPage, Milestone, ComponentStyle } from "./types";
+import { SuggestedPage, Milestone, ComponentStyle, SkeletonTemplate } from "./types";
 
 export const SYSTEM_PROMPT = `You are an SF.gov content system and UX design agent for the San Francisco Department of Public Health (SFDPH) Healthy Housing & Vector Control (HHVC).
 
@@ -91,6 +91,7 @@ REAL KARL CONTENT TYPES (use ONLY these):
 - Step by step: A guided process with ordered steps the user must follow in sequence.
 - Topic: A hub page that collects related content. Used for the HHVC main hub and major theme pages.
 - Resource Collection: A curated list of resources, links, or documents grouped by theme.
+- Campaign Page: An awareness/education page for outreach, workshops, or community programs. Used for mosquito education and public health campaigns.
 
 REAL KARL COMPONENT LIBRARY (use ONLY these):
 Reusable components: Address, Media (images, PDFs, documents), Profile, Resource tile
@@ -194,9 +195,55 @@ Callout — Tenant responsibilities:
 
 INTEGRATION NOTES:
 - plain text only
-- Note: If this is a Transaction or Step by step page, tagging it with the HHVC Topic will surface it automatically on the Healthy Housing and Vector Control hub page.`;
+- Note: If this is a Transaction or Step by step page, tagging it with the HHVC Topic will surface it automatically on the Healthy Housing and Vector Control hub page.
 
-export const PAGE_TYPES = ["Transaction", "Information", "Step by step", "Topic", "Resource Collection"];
+HHVC 3-HUB SITE ARCHITECTURE:
+All HHVC pages are organized into three hubs plus shared pages. When generating a page, place it within the correct hub and follow the Karl CMS naming conventions below.
+
+Hub 1 — Tenant Hub (For Renters):
+  Main: "Get help with pests, mold, and trash" (Transaction) — Content Title: HHVC - Tenant - Report a Problem / CTA: "Start a report"
+  Sub: "Help with pests and bugs" (Information) — Rats, roaches, and bed bugs
+  Sub: "Help with mold and water" (Information) — Leaks and damp walls
+  Sub: "Help with trash and messes" (Information) — Garbage, sewage, and waste
+  Sub: "Help with plants and weeds" (Information) — Overgrown yards and tall grass
+
+Hub 2 — Owner Hub (For Landlords):
+  Main: "Pay your annual building fee" (Transaction) — Content Title: HHVC - Owner - Pay Building Fee / CTA: "Pay my fee online"
+  Sub: "Fee deadlines and late costs" (Information) — When to pay and late costs
+  Sub: "Fixing a violation" (Information) — What to do after an inspection
+  Sub: "Owner rules for buildings with 3+ units" (Information) — Requirements for larger buildings
+
+Hub 3 — Community & Teacher Hub:
+  Main: "Learn how to stop mosquitoes" (Campaign Page) — Content Title: HHVC - Community - Mosquito Education
+  Sub: "Mosquito classes for schools" (Campaign Page) — Sign up for a teacher workshop
+
+Vector Services:
+  "Report a dead bird" (Transaction) — Content Title: HHVC - Vector - Dead Bird Report / CTA: "Report bird location"
+
+Shared:
+  "Contact HHVC" (Information) — Call 311 or visit 49 South Van Ness, Suite 600
+
+KARL CMS FIELD CONVENTIONS:
+- Content Title: Internal name for CMS organization (not shown to public). Format: "HHVC - [Hub] - [Page Name]"
+- Service Title: Public H1 header shown to users. Plain language, 5th-grade level.
+- Summary: Short blurb under the header. One sentence, action-oriented.
+- Body Content: Use Step-by-Step blocks for processes and Fact Items for contact info.
+
+VOCABULARY RULES:
+- Use "Trash" not "Sanitation"
+- Use "Bugs" or "Pests" not "Vectors"
+- Use "Messes" not "Waste management"
+- Use "Fix" not "Remediate"
+- All public-facing text must be at a strict 5th-grade reading level.
+
+UX DESIGN STANDARDS:
+- Hick's Law: Keep the HHVC home/hub page simple by showing only three hub links (Tenant, Owner, Community). Do not overload with options.
+- Law of Common Region: Group contact info (311, office address) in a distinct section at the bottom of every page.
+- Use the SF.gov "Service Page" (Transaction) content type for action-oriented tasks: reporting, paying, signing up.
+- Reference the Healthy Housing Smart Inspection Form for digital reporting where applicable.`;
+
+
+export const PAGE_TYPES = ["Transaction", "Information", "Step by step", "Topic", "Resource Collection", "Campaign Page"];
 export const USER_TYPES = ["Resident / tenant", "Property owner / landlord", "Business owner", "HHVC staff", "General public"];
 export const PEST_KW = ["rodent", "rat", "mouse", "mice", "cockroach", "roach", "flea", "mosquito", "fly", "flies", "bed bug", "bedbug", "tick", "ant", "wasp", "bee", "pest"];
 
@@ -208,6 +255,7 @@ export const TYPE_META: Record<string, { fill: string; stroke: string; text: str
   "Step by step":        { fill: "#EEEDFE", stroke: "#3C3489", text: "#26215C", dot: "#7F77DD" },
   "Topic":               { fill: "#EAF3DE", stroke: "#3B6D11", text: "#27500A", dot: "#639922" },
   "Resource Collection": { fill: "#E1F5EE", stroke: "#0F6E56", text: "#04342C", dot: "#1D9E75" },
+  "Campaign Page":       { fill: "#F3E8FF", stroke: "#6B21A8", text: "#4C1D95", dot: "#9333EA" },
 };
 
 export const SECTION_STYLES: Record<string, ComponentStyle> = {
@@ -226,27 +274,23 @@ export const SECTION_STYLES: Record<string, ComponentStyle> = {
   "warning":             { accent: "#A32D2D", bg: "#FCEBEB", icon: "info" },
   "spotlight":           { accent: "#185FA5", bg: "#E6F1FB", icon: "link" },
   "action link":         { accent: "#0F6E56", bg: "#E1F5EE", icon: "arrow" },
+  "campaign":            { accent: "#6B21A8", bg: "#F3E8FF", icon: "info" },
 };
 
 export const SUGGESTED_PAGES: SuggestedPage[] = [
-  { topic: "Healthy Housing and Vector Control hub", userType: "General public", pageType: "Topic" },
-  { topic: "Report rats in my building", userType: "Resident / tenant", pageType: "Transaction" },
-  { topic: "Report cockroaches in my unit", userType: "Resident / tenant", pageType: "Transaction" },
-  { topic: "Fix mold in my rental", userType: "Resident / tenant", pageType: "Transaction" },
-  { topic: "Understand my rights as a tenant", userType: "Resident / tenant", pageType: "Information" },
-  { topic: "What landlords must fix in my home", userType: "Resident / tenant", pageType: "Information" },
-  { topic: "Request a housing inspection", userType: "Resident / tenant", pageType: "Transaction" },
-  { topic: "Report bed bugs in my home", userType: "Resident / tenant", pageType: "Transaction" },
-  { topic: "Fix a water leak in my rental", userType: "Property owner / landlord", pageType: "Information" },
-  { topic: "Understand landlord pest control duties", userType: "Property owner / landlord", pageType: "Information" },
-  { topic: "Appeal a housing violation notice", userType: "Property owner / landlord", pageType: "Transaction" },
-  { topic: "Report mosquitoes near my home", userType: "Resident / tenant", pageType: "Transaction" },
-  { topic: "Get help with lead paint in my home", userType: "Resident / tenant", pageType: "Information" },
-  { topic: "Understand HHVC enforcement process", userType: "General public", pageType: "Information" },
-  { topic: "Report fleas in my building", userType: "Resident / tenant", pageType: "Transaction" },
-  { topic: "Fix heating problems in my rental", userType: "Resident / tenant", pageType: "Transaction" },
-  { topic: "HHVC housing health resources", userType: "General public", pageType: "Resource Collection" },
-  { topic: "How to document housing problems step by step", userType: "Resident / tenant", pageType: "Step by step" },
+  { topic: "Get help with pests, mold, and trash", userType: "Resident / tenant", pageType: "Transaction" },
+  { topic: "Help with pests and bugs", userType: "Resident / tenant", pageType: "Information" },
+  { topic: "Help with mold and water", userType: "Resident / tenant", pageType: "Information" },
+  { topic: "Help with trash and messes", userType: "Resident / tenant", pageType: "Information" },
+  { topic: "Help with plants and weeds", userType: "Resident / tenant", pageType: "Information" },
+  { topic: "Pay your annual building fee", userType: "Property owner / landlord", pageType: "Transaction" },
+  { topic: "Fee deadlines and late costs", userType: "Property owner / landlord", pageType: "Information" },
+  { topic: "Fixing a violation", userType: "Property owner / landlord", pageType: "Information" },
+  { topic: "Owner rules for buildings with 3+ units", userType: "Property owner / landlord", pageType: "Information" },
+  { topic: "Learn how to stop mosquitoes", userType: "General public", pageType: "Campaign Page" },
+  { topic: "Mosquito classes for schools", userType: "General public", pageType: "Campaign Page" },
+  { topic: "Report a dead bird", userType: "General public", pageType: "Transaction" },
+  { topic: "Contact HHVC", userType: "General public", pageType: "Information" },
 ];
 
 export const MILESTONE_DOTS: Milestone[] = [
@@ -256,4 +300,206 @@ export const MILESTONE_DOTS: Milestone[] = [
   { pct: 80, label: "Drafting" },
   { pct: 95, label: "Evaluating" },
   { pct: 100, label: "Done" },
+];
+
+export const SITEMAP_SKELETON: SkeletonTemplate[] = [
+  {
+    name: "Get help with pests, mold, and trash",
+    contentTitle: "HHVC - Tenant - Report a Problem",
+    serviceTitle: "Get help with pests, mold, and trash",
+    summary: "If your landlord won't fix a health problem, we can help.",
+    pageType: "Transaction",
+    userType: "Resident / tenant",
+    hub: "Tenant Hub",
+    cta: "Start a report",
+    sections: [
+      { heading: "What we inspect", body: "[Content to be generated]" },
+      { heading: "How to report a problem", body: "[Content to be generated]" }
+    ],
+    callouts: ["Your landlord must fix health problems. Write to your landlord first and wait 72 hours before contacting the city."],
+    related: ["Help with pests and bugs", "Help with mold and water", "Help with trash and messes", "Contact HHVC"]
+  },
+  {
+    name: "Help with pests and bugs",
+    contentTitle: "HHVC - Tenant - Pests and Bugs",
+    serviceTitle: "Help with pests and bugs",
+    summary: "Easy steps to follow if you have rats, roaches, or bed bugs in your home.",
+    pageType: "Information",
+    userType: "Resident / tenant",
+    hub: "Tenant Hub",
+    parentName: "Get help with pests, mold, and trash",
+    sections: [
+      { heading: "Common pests we handle", body: "[Content to be generated]" },
+      { heading: "Tenant and owner responsibilities", body: "[Content to be generated]" }
+    ],
+    callouts: ["Sewage and bed bug reports receive a response within 48 hours."],
+    related: ["Get help with pests, mold, and trash", "Help with mold and water"]
+  },
+  {
+    name: "Help with mold and water",
+    contentTitle: "HHVC - Tenant - Mold and Water",
+    serviceTitle: "Help with mold and water",
+    summary: "Easy steps to follow if you have leaks or damp walls in your home.",
+    pageType: "Information",
+    userType: "Resident / tenant",
+    hub: "Tenant Hub",
+    parentName: "Get help with pests, mold, and trash",
+    sections: [
+      { heading: "Signs of mold and water damage", body: "[Content to be generated]" },
+      { heading: "Tenant and owner responsibilities", body: "[Content to be generated]" }
+    ],
+    related: ["Get help with pests, mold, and trash", "Help with pests and bugs"]
+  },
+  {
+    name: "Help with trash and messes",
+    contentTitle: "HHVC - Tenant - Trash and Messes",
+    serviceTitle: "Help with trash and messes",
+    summary: "Easy steps to follow if you have garbage, sewage, or waste problems.",
+    pageType: "Information",
+    userType: "Resident / tenant",
+    hub: "Tenant Hub",
+    parentName: "Get help with pests, mold, and trash",
+    sections: [
+      { heading: "Trash and waste problems we handle", body: "[Content to be generated]" },
+      { heading: "Tenant and owner responsibilities", body: "[Content to be generated]" }
+    ],
+    callouts: ["Sewage and bed bug reports receive a response within 48 hours."],
+    related: ["Get help with pests, mold, and trash", "Help with mold and water"]
+  },
+  {
+    name: "Help with plants and weeds",
+    contentTitle: "HHVC - Tenant - Plants and Weeds",
+    serviceTitle: "Help with plants and weeds",
+    summary: "What to do about overgrown yards and tall grass near your home.",
+    pageType: "Information",
+    userType: "Resident / tenant",
+    hub: "Tenant Hub",
+    parentName: "Get help with pests, mold, and trash",
+    sections: [
+      { heading: "Yard and weed problems we handle", body: "[Content to be generated]" },
+      { heading: "Owner responsibilities", body: "[Content to be generated]" }
+    ],
+    related: ["Get help with pests, mold, and trash", "Help with trash and messes"]
+  },
+  {
+    name: "Pay your annual building fee",
+    contentTitle: "HHVC - Owner - Pay Building Fee",
+    serviceTitle: "Pay your annual building fee",
+    summary: "Owners of buildings with 3 or more apartments must pay this fee every year.",
+    pageType: "Transaction",
+    userType: "Property owner / landlord",
+    hub: "Owner Hub",
+    cta: "Pay my fee online",
+    sections: [
+      { heading: "Who must pay", body: "[Content to be generated]" },
+      { heading: "How to pay", body: "[Content to be generated]" }
+    ],
+    related: ["Fee deadlines and late costs", "Owner rules for buildings with 3+ units", "Contact HHVC"]
+  },
+  {
+    name: "Fee deadlines and late costs",
+    contentTitle: "HHVC - Owner - Fee Deadlines",
+    serviceTitle: "How much is my fee?",
+    summary: "See the costs and deadlines for building owners.",
+    pageType: "Information",
+    userType: "Property owner / landlord",
+    hub: "Owner Hub",
+    parentName: "Pay your annual building fee",
+    sections: [
+      { heading: "Fee amounts", body: "[Content to be generated]" },
+      { heading: "Payment deadlines", body: "[Content to be generated]" },
+      { heading: "Late fees", body: "[Content to be generated]" }
+    ],
+    related: ["Pay your annual building fee", "Owner rules for buildings with 3+ units"]
+  },
+  {
+    name: "Fixing a violation",
+    contentTitle: "HHVC - Owner - Fixing a Violation",
+    serviceTitle: "Fix a violation after an inspection",
+    summary: "What to do after you get a notice from an HHVC inspection.",
+    pageType: "Information",
+    userType: "Property owner / landlord",
+    hub: "Owner Hub",
+    parentName: "Pay your annual building fee",
+    sections: [
+      { heading: "What a violation notice means", body: "[Content to be generated]" },
+      { heading: "Steps to fix the problem", body: "[Content to be generated]" },
+      { heading: "What happens if you do not fix it", body: "[Content to be generated]" }
+    ],
+    related: ["Pay your annual building fee", "Owner rules for buildings with 3+ units"]
+  },
+  {
+    name: "Owner rules for buildings with 3+ units",
+    contentTitle: "HHVC - Owner - Owner Rules",
+    serviceTitle: "Rules for building owners",
+    summary: "Requirements for owners of buildings with 3 or more apartments.",
+    pageType: "Information",
+    userType: "Property owner / landlord",
+    hub: "Owner Hub",
+    parentName: "Pay your annual building fee",
+    sections: [
+      { heading: "Buildings that must register", body: "[Content to be generated]" },
+      { heading: "Owner requirements", body: "[Content to be generated]" }
+    ],
+    related: ["Pay your annual building fee", "Fee deadlines and late costs", "Fixing a violation"]
+  },
+  {
+    name: "Learn how to stop mosquitoes",
+    contentTitle: "HHVC - Community - Mosquito Education",
+    serviceTitle: "Learn how to stop mosquitoes",
+    summary: "Join a workshop to learn how to keep your school and home safe from bugs.",
+    pageType: "Campaign Page",
+    userType: "General public",
+    hub: "Community Hub",
+    sections: [
+      { heading: "Why mosquitoes are a health risk", body: "[Content to be generated]" },
+      { heading: "Workshops and classes", body: "[Content to be generated]" }
+    ],
+    related: ["Mosquito classes for schools", "Report a dead bird"]
+  },
+  {
+    name: "Mosquito classes for schools",
+    contentTitle: "HHVC - Community - School Workshops",
+    serviceTitle: "Mosquito classes for schools",
+    summary: "Sign up for a teacher workshop about mosquito safety.",
+    pageType: "Campaign Page",
+    userType: "General public",
+    hub: "Community Hub",
+    parentName: "Learn how to stop mosquitoes",
+    cta: "Sign up for a class",
+    sections: [
+      { heading: "What teachers learn", body: "[Content to be generated]" },
+      { heading: "How to sign up", body: "[Content to be generated]" }
+    ],
+    related: ["Learn how to stop mosquitoes", "Report a dead bird"]
+  },
+  {
+    name: "Report a dead bird",
+    contentTitle: "HHVC - Vector - Dead Bird Report",
+    serviceTitle: "Report a dead bird",
+    summary: "Tell us if you find a dead bird so we can check if it is sick.",
+    pageType: "Transaction",
+    userType: "General public",
+    hub: "Vector Services",
+    cta: "Report bird location",
+    sections: [
+      { heading: "Why to report dead birds", body: "[Content to be generated]" },
+      { heading: "How to report", body: "[Content to be generated]" }
+    ],
+    related: ["Learn how to stop mosquitoes", "Contact HHVC"]
+  },
+  {
+    name: "Contact HHVC",
+    contentTitle: "HHVC - Contact Us",
+    serviceTitle: "Contact us",
+    summary: "Call 311 or visit our office for help with housing and pest problems.",
+    pageType: "Information",
+    userType: "General public",
+    hub: "Shared",
+    sections: [
+      { heading: "Call 311", body: "Call 311 to report problems and ask for inspections. You can call 24 hours a day, 7 days a week." },
+      { heading: "Visit our office", body: "49 South Van Ness Avenue, Suite 600, San Francisco, CA 94103. Open Monday through Friday for payments and bills." }
+    ],
+    related: ["Get help with pests, mold, and trash", "Pay your annual building fee", "Report a dead bird"]
+  }
 ];

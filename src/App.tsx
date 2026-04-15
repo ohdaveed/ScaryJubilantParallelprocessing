@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { PageDraft, TodoItem, KarlEvaluation, PlannedPage, UserPreference } from "./types";
-import { USER_TYPES, PAGE_TYPES, SYSTEM_PROMPT, SUGGESTED_PAGES, TYPE_META } from "./constants";
-import { clean, isPest, parsePage, parseRel, parseDraftSections, getSectionStyle, pagesApi, todosApi, plannedPagesApi, preferencesApi, improveStructure, runKarlEvaluation, lsLegacy, driveApi } from "./utils";
+import { USER_TYPES, PAGE_TYPES, SYSTEM_PROMPT, SUGGESTED_PAGES, TYPE_META, SITEMAP_SKELETON } from "./constants";
+import { clean, isPest, parsePage, parseRel, parseDraftSections, getSectionStyle, pagesApi, todosApi, plannedPagesApi, preferencesApi, improveStructure, runKarlEvaluation, lsLegacy, driveApi, skeletonToPageDraft } from "./utils";
 import { DriveFile } from "./types";
 import { Badge, Label, Divider, Btn, Card, Field, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar, SectionIcon, iStyle, ResponsibilitiesTable, ActionStepList, ChecklistRow, PreventionSection, RelatedPagePills } from "./components/ui";
 
@@ -691,10 +691,55 @@ export default function App() {
     loadAndMigrate();
   }, []);
 
+  const [seeding, setSeeding] = useState(false);
+
   useEffect(() => {
     plannedPagesApi.list()
-      .then(setPlannedPages)
-      .catch(() => setPlannedPages([]))
+      .then(async (existing) => {
+        if (existing.length > 0) {
+          setPlannedPages(existing);
+          return;
+        }
+        setSeeding(true);
+        try {
+          const hubRoots: Record<string, number> = {};
+          const rootTemplates = SITEMAP_SKELETON.filter(t => !t.parentName);
+          for (const tmpl of rootTemplates) {
+            const created = await plannedPagesApi.create(tmpl.name, tmpl.pageType, tmpl.userType, null);
+            hubRoots[tmpl.name] = created.id;
+          }
+          const childTemplates = SITEMAP_SKELETON.filter(t => t.parentName);
+          for (const tmpl of childTemplates) {
+            const parentId = hubRoots[tmpl.parentName!] || null;
+            await plannedPagesApi.create(tmpl.name, tmpl.pageType, tmpl.userType, parentId);
+          }
+          const seeded = await plannedPagesApi.list();
+          setPlannedPages(seeded);
+
+          const skeletons = SITEMAP_SKELETON.map(tmpl => skeletonToPageDraft(tmpl));
+          for (const skel of skeletons) {
+            try { await pagesApi.save(skel.id, skel); } catch {}
+          }
+          setPages(prev => {
+            const existingIds = new Set(prev.map(p => p.id));
+            const newSkels = skeletons.filter(s => !existingIds.has(s.id));
+            return [...prev, ...newSkels];
+          });
+
+          for (const pp of seeded) {
+            const matchingSkel = skeletons.find(s => s.inputs.topic === pp.name);
+            if (matchingSkel) {
+              try { await plannedPagesApi.update(pp.id, { builtPageId: matchingSkel.id }); } catch {}
+            }
+          }
+          const finalPlanned = await plannedPagesApi.list();
+          setPlannedPages(finalPlanned);
+        } catch {
+          setPlannedPages([]);
+        }
+        setSeeding(false);
+      })
+      .catch(() => { setPlannedPages([]); setSeeding(false); })
       .finally(() => setPlannedLoading(false));
   }, []);
 
@@ -749,7 +794,7 @@ export default function App() {
     } catch {}
   }, []);
 
-  const generate = useCallback(async (ov: Partial<{ topic: string; userType: string; notes: string; pageType: string }> = {}) => {
+  const generate = useCallback(async (ov: Partial<{ topic: string; userType: string; notes: string; pageType: string; replaceSkeletonId: string }> = {}) => {
     const t = ov.topic || topic; if (!t.trim()) { setTopicTouched(true); return; }
     setLoading(true); setStreaming(true); setEvaluating(false); setShowSuccess(false); setStreamText(""); setError(""); setParseWarn(false); setSelected(null);
     setKarlStatus("connecting");
@@ -823,7 +868,7 @@ export default function App() {
 
       let parsed = parsePage(streamRef.current);
       if (!parsed.valid) setParseWarn(true);
-      const id = `page_${Date.now()}`;
+      const id = ov.replaceSkeletonId || `page_${Date.now()}`;
 
       setStreaming(false);
       setEvaluating(true);
@@ -861,11 +906,16 @@ export default function App() {
       } catch {
         setError("Page generated but could not be saved to the database. Refresh to retry.");
       }
-      setPages(prev => [...prev, page]);
+      if (ov.replaceSkeletonId) {
+        setPages(prev => prev.map(p => p.id === ov.replaceSkeletonId ? page : p));
+      } else {
+        setPages(prev => [...prev, page]);
+      }
       setJustGenerated(page);
       setTimeout(() => setShowSuccess(true), 150);
 
       const plannedIdToLink = pendingPlannedId
+        || plannedPages.find(pp => pp.builtPageId === ov.replaceSkeletonId && ov.replaceSkeletonId)?.id
         || plannedPages.find(pp => !pp.builtPageId && pp.name.toLowerCase() === t.trim().toLowerCase())?.id
         || null;
       if (plannedIdToLink) {
@@ -1235,6 +1285,9 @@ export default function App() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 7, flexWrap: "wrap" }}>
                       <Badge type={clean(selected.pageType)} />
+                      {selected.skeleton && (
+                        <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: "#F3E8FF", color: "#6B21A8", border: "1px dashed #6B21A866", fontWeight: 500 }}>Skeleton</span>
+                      )}
                       {selected.karlConnected && (
                         <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: "#E1F5EE", color: "#0F6E56", border: "0.5px solid #0F6E5630" }}>Karl verified</span>
                       )}
@@ -1248,8 +1301,12 @@ export default function App() {
                     <p style={{ fontSize: 12, margin: 0, color: "var(--color-text-tertiary)" }}>SF.gov · Healthy Housing &amp; Vector Control</p>
                   </div>
                   <div style={{ display: "flex", gap: 6, flexShrink: 0, marginLeft: 12 }}>
+                    {selected.skeleton && (
+                      <Btn onClick={() => { if (selected.inputs) generate({ topic: selected.inputs.topic, userType: selected.inputs.userType, notes: selected.inputs.notes, replaceSkeletonId: selected.id }); }} variant="primary" size="sm">Generate with AI</Btn>
+                    )}
                     <Btn onClick={() => handleCopy(selected.raw)} variant="ghost" size="sm">{copied ? "Copied!" : "Copy"}</Btn>
-                    <Btn onClick={() => regenerate(selected)} variant="ghost" size="sm">Regenerate</Btn>
+                    <Btn onClick={() => handleDownload(selected.raw, (clean(selected.name) || "page").toLowerCase().replace(/\s+/g, "-") + ".txt")} variant="ghost" size="sm">Download</Btn>
+                    {!selected.skeleton && <Btn onClick={() => regenerate(selected)} variant="ghost" size="sm">Regenerate</Btn>}
                     <Btn onClick={() => deletePage(selected.id)} variant="danger" size="sm">Delete</Btn>
                   </div>
                 </div>
@@ -1439,7 +1496,14 @@ export default function App() {
             <Btn onClick={() => setSortNewest(s => !s)} variant="ghost" size="sm">{sortNewest ? "Newest first" : "Oldest first"}</Btn>
             {pages.length > 0 && <Btn onClick={() => handleDownload(pages.map(p => p.raw).join("\n\n---\n\n"), "hhvc-pages-export.txt")} variant="ghost" size="sm">Export all</Btn>}
           </div>
-          {pagesLoading && (
+          {seeding && (
+            <div style={{ textAlign: "center", padding: "24px 0 12px", color: "#6B21A8" }}>
+              <div style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid #6B21A833", borderTopColor: "#6B21A8", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
+              <p style={{ fontSize: 13, margin: 0, fontWeight: 500 }}>Seeding 3-hub sitemap skeleton…</p>
+              <p style={{ fontSize: 12, margin: "4px 0 0", color: "var(--color-text-tertiary)" }}>Creating 13 planned pages with skeleton drafts</p>
+            </div>
+          )}
+          {pagesLoading && !seeding && (
             <div style={{ textAlign: "center", padding: "56px 0", color: "var(--color-text-tertiary)" }}>
               <div style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid var(--color-border-secondary)", borderTopColor: "var(--color-text-secondary)", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
               <p style={{ fontSize: 13, margin: 0 }}>Loading pages…</p>
@@ -1460,11 +1524,12 @@ export default function App() {
               return (
                 <Card key={p.id} onClick={() => { setSelected(p); setShowSuccess(false); setTab("builder"); }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 9 }}>
-                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: c.dot, flexShrink: 0 }} />
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: c.dot, flexShrink: 0, ...(p.skeleton ? { border: "1.5px dashed #6B21A8", background: "transparent" } : {}) }} />
                     <Badge type={clean(p.pageType)} small />
+                    {p.skeleton && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#F3E8FF", color: "#6B21A8", border: "1px dashed #6B21A866" }}>skeleton</span>}
                     <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4 }}>
                       {ev && <span style={{ fontSize: 10, fontWeight: 700, color: gradeColor[ev.grade] || "#888" }}>{ev.grade}</span>}
-                      {!p.karlConnected && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#FAEEDA", color: "#854F0B" }}>no Karl</span>}
+                      {!p.karlConnected && !p.skeleton && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#FAEEDA", color: "#854F0B" }}>no Karl</span>}
                     </div>
                   </div>
                   <p style={{ fontSize: 13, fontWeight: 500, margin: "0 0 6px", lineHeight: 1.4, color: "var(--color-text-primary)" }}>{clean(p.name) || "Untitled"}</p>
