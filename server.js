@@ -12,7 +12,7 @@ const pdfParse = require("pdf-parse");
 const DRIVE_FOLDER_ID = "1SrKB78oWGHhILjQxS7R-ZqCXkzuAlvKi";
 
 const app = express();
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "20mb" }));
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
@@ -171,11 +171,12 @@ app.post("/api/chat", async (req, res) => {
     return res.status(500).json({ error: "ANTHROPIC_API_KEY is not configured. Please add it in the Secrets panel." });
   }
 
-  const { driveContext, ...anthropicBody } = req.body;
+  const { driveContext, images, ...anthropicBody } = req.body;
 
   let body = anthropicBody;
+  const msgs = Array.isArray(body.messages) ? [...body.messages] : [];
+
   if (driveContext && typeof driveContext === "string" && driveContext.trim()) {
-    const msgs = Array.isArray(body.messages) ? [...body.messages] : [];
     if (msgs.length > 0 && msgs[msgs.length - 1].role === "user") {
       const last = msgs[msgs.length - 1];
       const existingContent = typeof last.content === "string" ? last.content : JSON.stringify(last.content);
@@ -184,8 +185,41 @@ app.post("/api/chat", async (req, res) => {
         content: `REFERENCE DOCUMENTS FROM GOOGLE DRIVE:\n\n${driveContext}\n\n---\n\n${existingContent}`
       };
     }
-    body = { ...anthropicBody, messages: msgs };
   }
+
+  if (Array.isArray(images) && images.length > 0) {
+    const ALLOWED_MIME = new Set(["image/png", "image/jpeg", "image/webp"]);
+    const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+    const validImages = images
+      .filter(img => img && typeof img.base64 === "string" && typeof img.mimeType === "string"
+        && ALLOWED_MIME.has(img.mimeType)
+        && img.base64.length <= Math.ceil(MAX_IMAGE_BYTES / 3) * 4 + 4)
+      .slice(0, 3);
+
+    if (validImages.length > 0 && msgs.length > 0 && msgs[msgs.length - 1].role === "user") {
+      const last = msgs[msgs.length - 1];
+      const textContent = typeof last.content === "string"
+        ? last.content
+        : Array.isArray(last.content)
+          ? last.content.map(b => b.type === "text" ? b.text : "").join("")
+          : JSON.stringify(last.content);
+
+      const contentBlocks = validImages.map(img => ({
+        type: "image",
+        source: {
+          type: "base64",
+          media_type: img.mimeType,
+          data: img.base64
+        }
+      }));
+
+      contentBlocks.push({ type: "text", text: textContent });
+
+      msgs[msgs.length - 1] = { ...last, content: contentBlocks };
+    }
+  }
+
+  body = { ...anthropicBody, messages: msgs };
 
   try {
     const upstream = await fetch("https://api.anthropic.com/v1/messages", {

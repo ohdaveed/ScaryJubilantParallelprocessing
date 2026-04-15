@@ -456,6 +456,7 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [preferences, setPreferences] = useState<UserPreference[]>([]);
   const [newPref, setNewPref] = useState("");
+  const [screenshots, setScreenshots] = useState<{ name: string; base64: string; mimeType: string }[]>([]);
   const [driveFiles, setDriveFiles] = useState<DriveFile[]>([]);
   const [driveLoading, setDriveLoading] = useState(true);
   const [driveError, setDriveError] = useState("");
@@ -611,6 +612,37 @@ export default function App() {
 
   const adv = (pct: number, lbl: string) => { setProgress(pct); setProgressLabel(lbl); };
 
+  const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
+  const MAX_IMAGE_SIZE = 4 * 1024 * 1024;
+  const MAX_SCREENSHOTS = 3;
+
+  const handleImageFiles = useCallback((fileList: File[]) => {
+    const valid = fileList.filter(f => ALLOWED_IMAGE_TYPES.includes(f.type) && f.size <= MAX_IMAGE_SIZE);
+    setScreenshots(prev => {
+      const remaining = MAX_SCREENSHOTS - prev.length;
+      if (remaining <= 0) return prev;
+      valid.slice(0, remaining).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          const base64 = result.split(",")[1];
+          setScreenshots(p => p.length < MAX_SCREENSHOTS ? [...p, { name: file.name, base64, mimeType: file.type }] : p);
+        };
+        reader.readAsDataURL(file);
+      });
+      return prev;
+    });
+  }, []);
+
+  const browseForImages = useCallback(() => {
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = ALLOWED_IMAGE_TYPES.join(",");
+    inp.multiple = true;
+    inp.onchange = () => handleImageFiles(Array.from(inp.files || []));
+    inp.click();
+  }, [handleImageFiles]);
+
   const linkPlannedPage = useCallback(async (plannedId: number, builtPageId: string) => {
     try {
       const updated = await plannedPagesApi.update(plannedId, { builtPageId });
@@ -658,7 +690,8 @@ export default function App() {
           system: SYSTEM_PROMPT,
           messages: [{ role: "user", content: msg }],
           mcp_servers: [{ type: "url", url: "https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/~gitbook/mcp", name: "karl-docs" }],
-          ...(driveContext ? { driveContext } : {})
+          ...(driveContext ? { driveContext } : {}),
+          ...(screenshots.length > 0 ? { images: screenshots.map(s => ({ base64: s.base64, mimeType: s.mimeType })) } : {})
         })
       });
 
@@ -752,14 +785,14 @@ export default function App() {
       setPendingPlannedId(null);
       setPendingPageType("");
 
-      setTopic(""); setNotes(""); setTopicTouched(false);
+      setTopic(""); setNotes(""); setTopicTouched(false); setScreenshots([]);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
       setError(`Generation failed: ${msg}`);
       setStreaming(false); setEvaluating(false); setKarlStatus("fallback");
     }
     setLoading(false);
-  }, [topic, userType, notes, selectedDriveIds, driveContents, driveFiles, plannedPages, linkPlannedPage, pendingPlannedId, pendingPageType, preferences, pages]);
+  }, [topic, userType, notes, selectedDriveIds, driveContents, driveFiles, plannedPages, linkPlannedPage, pendingPlannedId, pendingPageType, preferences, pages, screenshots]);
 
   const regenerate = useCallback((p: PageDraft) => { if (p?.inputs) generate({ topic: p.inputs.topic, userType: p.inputs.userType, notes: p.inputs.notes }); }, [generate]);
 
@@ -955,6 +988,51 @@ export default function App() {
               <Field label="Context / notes" hint="Optional">
                 <input style={iStyle()} placeholder="Add context or requirements…" value={notes} onChange={e => setNotes(e.target.value)} onKeyDown={e => e.key === "Enter" && generate()} />
               </Field>
+              <div style={{ marginBottom: 8 }}>
+                <Label style={{ marginBottom: 6, fontSize: 11 }}>Screenshots <span style={{ fontWeight: 400, color: "var(--color-text-tertiary)" }}>(optional, up to 3)</span></Label>
+                <div
+                  onDragOver={e => { e.preventDefault(); e.stopPropagation(); e.currentTarget.style.borderColor = "#185FA5"; e.currentTarget.style.background = "#E6F1FB"; }}
+                  onDragLeave={e => { e.preventDefault(); e.currentTarget.style.borderColor = "var(--color-border-secondary)"; e.currentTarget.style.background = "var(--color-background-secondary)"; }}
+                  onDrop={e => {
+                    e.preventDefault(); e.stopPropagation();
+                    e.currentTarget.style.borderColor = "var(--color-border-secondary)"; e.currentTarget.style.background = "var(--color-background-secondary)";
+                    handleImageFiles(Array.from(e.dataTransfer.files));
+                  }}
+                  onClick={() => { if (screenshots.length < MAX_SCREENSHOTS) browseForImages(); }}
+                  style={{ padding: screenshots.length > 0 ? "8px" : "14px 8px", border: "1.5px dashed var(--color-border-secondary)", borderRadius: "var(--border-radius-md)", background: "var(--color-background-secondary)", cursor: screenshots.length >= 3 ? "default" : "pointer", textAlign: "center", transition: "border-color 0.15s, background 0.15s" }}
+                >
+                  {screenshots.length === 0 && (
+                    <div>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 4 }}>
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                      <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", margin: 0, lineHeight: 1.4 }}>Drop images here or click to browse</p>
+                      <p style={{ fontSize: 10, color: "var(--color-text-tertiary)", margin: "2px 0 0", opacity: 0.7 }}>PNG, JPG, WEBP &middot; max 4MB each</p>
+                    </div>
+                  )}
+                  {screenshots.length > 0 && (
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-start" }} onClick={e => e.stopPropagation()}>
+                      {screenshots.map((s, i) => (
+                        <div key={i} style={{ position: "relative", width: 64, height: 64, borderRadius: "var(--border-radius-md)", overflow: "hidden", border: "0.5px solid var(--color-border-secondary)" }}>
+                          <img src={`data:${s.mimeType};base64,${s.base64}`} alt={s.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          <button
+                            onClick={e => { e.stopPropagation(); setScreenshots(prev => prev.filter((_, idx) => idx !== i)); }}
+                            style={{ position: "absolute", top: 2, right: 2, width: 16, height: 16, borderRadius: "50%", background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", cursor: "pointer", fontSize: 10, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
+                          >&#10005;</button>
+                        </div>
+                      ))}
+                      {screenshots.length < MAX_SCREENSHOTS && (
+                        <div
+                          onClick={() => browseForImages()}
+                          style={{ width: 64, height: 64, borderRadius: "var(--border-radius-md)", border: "1.5px dashed var(--color-border-secondary)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--color-text-tertiary)", fontSize: 20, fontWeight: 300 }}
+                        >+</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
               {pendingPageType && (
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, padding: "6px 10px", background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-md)", border: "0.5px solid var(--color-border-tertiary)" }}>
                   <Badge type={pendingPageType} small />
@@ -963,7 +1041,7 @@ export default function App() {
                 </div>
               )}
               <Btn onClick={() => generate()} variant="primary" size="md" fullWidth disabled={loading}>
-                {loading ? (streaming ? "Generating…" : evaluating ? "Evaluating…" : "Working…") : `Generate page${selectedDriveIds.size > 0 ? ` (${selectedDriveIds.size} doc${selectedDriveIds.size !== 1 ? "s" : ""})` : ""}`}
+                {loading ? (streaming ? "Generating…" : evaluating ? "Evaluating…" : "Working…") : `Generate page${selectedDriveIds.size > 0 || screenshots.length > 0 ? ` (${[selectedDriveIds.size > 0 ? `${selectedDriveIds.size} doc${selectedDriveIds.size !== 1 ? "s" : ""}` : "", screenshots.length > 0 ? `${screenshots.length} image${screenshots.length !== 1 ? "s" : ""}` : ""].filter(Boolean).join(", ")})` : ""}`}
               </Btn>
             </Card>
 
