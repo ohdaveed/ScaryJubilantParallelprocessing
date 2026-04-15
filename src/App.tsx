@@ -806,7 +806,11 @@ export default function App() {
     const prefHints = preferences.length > 0
       ? `\n\nUSER PREFERENCES (important — apply these to your design):\n${preferences.map(p => `- ${p.preference}`).join("\n")}`
       : "";
-    const msg = `Design a page for: "${t}"\nPrimary user: ${ov.userType || userType}${pageTypeHint}${(ov.notes || notes) ? `\nContext: ${ov.notes || notes}` : ""}${pestNote}${prefHints}`;
+    const skeletonPage = ov.replaceSkeletonId ? pages.find(p => p.id === ov.replaceSkeletonId) : null;
+    const skeletonContext = skeletonPage
+      ? `\n\nBELOW IS A SKELETON DRAFT WITH PLACEHOLDERS. You MUST preserve the skeleton's structure (headings, sections, CTA, related pages, Content Title, hub assignment) while replacing all "[Content to be generated]" placeholders with real, complete content. Keep the same Service Title, Summary, and section headings unless you have a strong reason to improve them.\n\nSKELETON DRAFT:\n${skeletonPage.raw}`
+      : "";
+    const msg = `Design a page for: "${t}"\nPrimary user: ${ov.userType || userType}${pageTypeHint}${(ov.notes || notes) ? `\nContext: ${ov.notes || notes}` : ""}${pestNote}${prefHints}${skeletonContext}`;
     let karlHit = false;
 
     const driveContext = selectedDriveIds.size > 0
@@ -931,7 +935,7 @@ export default function App() {
       setStreaming(false); setEvaluating(false); setKarlStatus("fallback");
     }
     setLoading(false);
-  }, [topic, userType, notes, selectedDriveIds, driveContents, driveFiles, plannedPages, linkPlannedPage, pendingPlannedId, pendingPageType, preferences]);
+  }, [topic, userType, notes, selectedDriveIds, driveContents, driveFiles, plannedPages, linkPlannedPage, pendingPlannedId, pendingPageType, preferences, pages]);
 
   const regenerate = useCallback((p: PageDraft) => { if (p?.inputs) generate({ topic: p.inputs.topic, userType: p.inputs.userType, notes: p.inputs.notes }); }, [generate]);
 
@@ -1495,6 +1499,7 @@ export default function App() {
             </select>
             <Btn onClick={() => setSortNewest(s => !s)} variant="ghost" size="sm">{sortNewest ? "Newest first" : "Oldest first"}</Btn>
             {pages.length > 0 && <Btn onClick={() => handleDownload(pages.map(p => p.raw).join("\n\n---\n\n"), "hhvc-pages-export.txt")} variant="ghost" size="sm">Export all</Btn>}
+            {pages.some(p => p.skeleton) && <Btn onClick={() => handleDownload(pages.filter(p => p.skeleton).map(p => p.raw).join("\n\n---\n\n"), "hhvc-skeletons-export.txt")} variant="ghost" size="sm">Download skeletons</Btn>}
           </div>
           {seeding && (
             <div style={{ textAlign: "center", padding: "24px 0 12px", color: "#6B21A8" }}>

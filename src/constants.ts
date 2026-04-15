@@ -201,27 +201,70 @@ HHVC 3-HUB SITE ARCHITECTURE:
 All HHVC pages are organized into three hubs plus shared pages. When generating a page, place it within the correct hub and follow the Karl CMS naming conventions below.
 
 Hub 1 — Tenant Hub (For Renters):
-  Main: "Get help with pests, mold, and trash" (Transaction) — Content Title: HHVC - Tenant - Report a Problem / CTA: "Start a report"
-  Sub: "Help with pests and bugs" (Information) — Rats, roaches, and bed bugs
-  Sub: "Help with mold and water" (Information) — Leaks and damp walls
-  Sub: "Help with trash and messes" (Information) — Garbage, sewage, and waste
-  Sub: "Help with plants and weeds" (Information) — Overgrown yards and tall grass
+  Main: "Get help with pests, mold, and trash" (Transaction)
+    Content Title: HHVC - Tenant - Report a Problem
+    Service Title: Get help with pests, mold, and trash
+    Summary: If your landlord won't fix a health problem, we can help.
+    CTA: Start a report
+  Sub: "Help with pests and bugs" (Information)
+    Content Title: HHVC - Tenant - Pests and Bugs
+    Service Title: Help with pests and bugs
+    Summary: Easy steps to follow if you have rats, roaches, or bed bugs in your home.
+  Sub: "Help with mold and water" (Information)
+    Content Title: HHVC - Tenant - Mold and Water
+    Service Title: Help with mold and water
+    Summary: Easy steps to follow if you have leaks or damp walls in your home.
+  Sub: "Help with trash and messes" (Information)
+    Content Title: HHVC - Tenant - Trash and Messes
+    Service Title: Help with trash and messes
+    Summary: Easy steps to follow if you have garbage, sewage, or waste problems.
+  Sub: "Help with plants and weeds" (Information)
+    Content Title: HHVC - Tenant - Plants and Weeds
+    Service Title: Help with plants and weeds
+    Summary: What to do about overgrown yards and tall grass near your home.
 
 Hub 2 — Owner Hub (For Landlords):
-  Main: "Pay your annual building fee" (Transaction) — Content Title: HHVC - Owner - Pay Building Fee / CTA: "Pay my fee online"
-  Sub: "Fee deadlines and late costs" (Information) — When to pay and late costs
-  Sub: "Fixing a violation" (Information) — What to do after an inspection
-  Sub: "Owner rules for buildings with 3+ units" (Information) — Requirements for larger buildings
+  Main: "Pay your annual building fee" (Transaction)
+    Content Title: HHVC - Owner - Pay Building Fee
+    Service Title: Pay your annual building fee
+    Summary: Owners of buildings with 3 or more apartments must pay this fee every year.
+    CTA: Pay my fee online
+  Sub: "Fee deadlines and late costs" (Information)
+    Content Title: HHVC - Owner - Fee Deadlines
+    Service Title: How much is my fee?
+    Summary: See the costs and deadlines for building owners.
+  Sub: "Fixing a violation" (Information)
+    Content Title: HHVC - Owner - Fixing a Violation
+    Service Title: Fix a violation after an inspection
+    Summary: What to do after you get a notice from an HHVC inspection.
+  Sub: "Owner rules for buildings with 3+ units" (Information)
+    Content Title: HHVC - Owner - Owner Rules
+    Service Title: Rules for building owners
+    Summary: Requirements for owners of buildings with 3 or more apartments.
 
 Hub 3 — Community & Teacher Hub:
-  Main: "Learn how to stop mosquitoes" (Campaign Page) — Content Title: HHVC - Community - Mosquito Education
-  Sub: "Mosquito classes for schools" (Campaign Page) — Sign up for a teacher workshop
+  Main: "Learn how to stop mosquitoes" (Campaign Page)
+    Content Title: HHVC - Community - Mosquito Education
+    Service Title: Learn how to stop mosquitoes
+    Summary: Join a workshop to learn how to keep your school and home safe from bugs.
+  Sub: "Mosquito classes for schools" (Campaign Page)
+    Content Title: HHVC - Community - School Workshops
+    Service Title: Mosquito classes for schools
+    Summary: Sign up for a teacher workshop about mosquito safety.
+    CTA: Sign up for a class
 
 Vector Services:
-  "Report a dead bird" (Transaction) — Content Title: HHVC - Vector - Dead Bird Report / CTA: "Report bird location"
+  "Report a dead bird" (Transaction)
+    Content Title: HHVC - Vector - Dead Bird Report
+    Service Title: Report a dead bird
+    Summary: Tell us if you find a dead bird so we can check if it is sick.
+    CTA: Report bird location
 
 Shared:
-  "Contact HHVC" (Information) — Call 311 or visit 49 South Van Ness, Suite 600
+  "Contact HHVC" (Information)
+    Content Title: HHVC - Contact Us
+    Service Title: Contact us
+    Summary: Call 311 or visit our office for help with housing and pest problems.
 
 KARL CMS FIELD CONVENTIONS:
 - Content Title: Internal name for CMS organization (not shown to public). Format: "HHVC - [Hub] - [Page Name]"
