@@ -1,8 +1,13 @@
 import express from "express";
 import { createServer } from "http";
+import { createRequire } from "module";
 import pkg from "pg";
 const { Pool } = pkg;
 import { ReplitConnectors } from "@replit/connectors-sdk";
+import mammoth from "mammoth";
+
+const require = createRequire(import.meta.url);
+const pdfParse = require("pdf-parse");
 
 const DRIVE_FOLDER_ID = "1SrKB78oWGHhILjQxS7R-ZqCXkzuAlvKi";
 
@@ -91,6 +96,8 @@ app.get("/api/drive/files/:fileId", async (req, res) => {
     else if (mimeType === "application/vnd.google-apps.presentation") exportMime = "text/plain";
 
     const isGoogleDoc = mimeType.startsWith("application/vnd.google-apps.");
+    const isPdf = mimeType === "application/pdf";
+    const isDocx = mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     let contentText = "";
 
     if (isGoogleDoc) {
@@ -101,15 +108,36 @@ app.get("/api/drive/files/:fileId", async (req, res) => {
       );
       if (!exportRes.ok) return res.status(exportRes.status).json({ error: "Export failed" });
       contentText = await exportRes.text();
-    } else {
+    } else if (isPdf) {
       const downloadRes = await connectors.proxy(
         "google-drive",
         `/drive/v3/files/${fileId}?alt=media`,
         { method: "GET" }
       );
       if (!downloadRes.ok) return res.status(downloadRes.status).json({ error: "Download failed" });
-      const buf = await downloadRes.arrayBuffer();
-      contentText = new TextDecoder("utf-8", { fatal: false }).decode(buf);
+      const buf = Buffer.from(await downloadRes.arrayBuffer());
+      try {
+        const parsed = await pdfParse(buf);
+        contentText = parsed.text;
+      } catch {
+        return res.status(422).json({ error: "Could not extract text from this PDF. It may be scanned or image-based." });
+      }
+    } else if (isDocx) {
+      const downloadRes = await connectors.proxy(
+        "google-drive",
+        `/drive/v3/files/${fileId}?alt=media`,
+        { method: "GET" }
+      );
+      if (!downloadRes.ok) return res.status(downloadRes.status).json({ error: "Download failed" });
+      const buf = Buffer.from(await downloadRes.arrayBuffer());
+      try {
+        const { value } = await mammoth.extractRawText({ buffer: buf });
+        contentText = value;
+      } catch {
+        return res.status(422).json({ error: "Could not extract text from this DOCX file." });
+      }
+    } else {
+      return res.status(415).json({ error: `Unsupported file type (${mimeType}). Only Google Docs, PDFs, and DOCX files can be used as reference documents.` });
     }
 
     res.json({ id: fileId, name: meta.name, mimeType, content: contentText.slice(0, 20000) });
