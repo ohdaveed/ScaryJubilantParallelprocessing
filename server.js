@@ -239,7 +239,20 @@ Check for:
 - 311 reference for Transaction pages
 - Tenant responsibilities if tenants are primary user
 - SEO summary under 150 characters
-- No markdown formatting in content`;
+- No markdown formatting in content
+
+DIGITAL.GOV PLAIN LANGUAGE CHECKS (check each of these specifically and include the result in passed, warnings, or failed):
+- Sentence length: flag as a failure if multiple sentences consistently exceed 20 words. Identify the specific sentence(s) that are too long, e.g. "Sentence beginning 'You must contact...' exceeds 20 words."
+- One idea per sentence: flag as a warning if any sentence contains more than one distinct idea joined by a conjunction.
+- Active voice: flag as a failure if passive voice is used more than once. Name the specific passive construction found, e.g. "Passive voice: 'must be filed' — rewrite as 'you must file'."
+- Present tense: flag as a warning if past tense is used where present tense would be appropriate.
+- Hidden verbs (nominalizations): flag as a failure for each nominalization found. Provide the specific example and correction, e.g. "Hidden verb: 'make a decision' — use 'decide' instead." Common patterns to detect: 'make a decision', 'submit an application', 'provide notification', 'conduct an inspection', 'give consideration', 'take action', 'reach a conclusion', 'have a requirement'.
+- Paragraph length: flag as a warning if any paragraph exceeds 4 sentences.
+- Leads with the main point: flag as a warning if the first sentence of the page body or a section does not state the key action or conclusion.
+- Reader addressed as "you": flag as a failure if body content does not use "you" to address the reader directly (titles are exempt).
+- Unnecessary filler phrases: flag as a warning for each filler phrase found, e.g. 'in order to', 'it is important to note that', 'please be advised', 'at this point in time'.
+
+For every item in warnings and failed, write the feedback as a specific, actionable instruction referencing the actual text (e.g., "Sentence on line 3 exceeds 20 words — split into two sentences." or "Avoid hidden verbs — use 'decide' not 'make a decision'.").`;
 
   try {
     const upstream = await fetch("https://api.anthropic.com/v1/messages", {
