@@ -70,3 +70,13 @@ export interface DriveFile {
   mimeType: string;
   modifiedTime?: string;
 }
+
+export interface PlannedPage {
+  id: number;
+  name: string;
+  pageType: string;
+  userType: string;
+  parentId: number | null;
+  builtPageId: string | null;
+  createdAt: string;
+}

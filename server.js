@@ -41,6 +41,17 @@ async function initDb() {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS planned_pages (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        page_type TEXT NOT NULL,
+        user_type TEXT NOT NULL,
+        parent_id INTEGER REFERENCES planned_pages(id) ON DELETE SET NULL,
+        built_page_id TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
     console.log("Database tables ready");
   } catch (err) {
     console.error("DB init error:", err.message);
@@ -404,6 +415,84 @@ app.delete("/api/todos/:id", async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     console.error("DELETE /api/todos error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/planned-pages", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM planned_pages ORDER BY created_at ASC");
+    const items = result.rows.map(r => ({
+      id: r.id,
+      name: r.name,
+      pageType: r.page_type,
+      userType: r.user_type,
+      parentId: r.parent_id,
+      builtPageId: r.built_page_id,
+      createdAt: r.created_at
+    }));
+    res.json({ plannedPages: items });
+  } catch (err) {
+    console.error("GET /api/planned-pages error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/planned-pages", async (req, res) => {
+  const { name, pageType, userType, parentId } = req.body;
+  if (!name || !pageType || !userType) return res.status(400).json({ error: "Missing required fields" });
+  if (parentId) {
+    const parentCheck = await pool.query("SELECT id FROM planned_pages WHERE id = $1", [parentId]);
+    if (!parentCheck.rows.length) return res.status(400).json({ error: "Parent not found" });
+  }
+  try {
+    const result = await pool.query(
+      "INSERT INTO planned_pages (name, page_type, user_type, parent_id) VALUES ($1, $2, $3, $4) RETURNING *",
+      [name, pageType, userType, parentId || null]
+    );
+    const r = result.rows[0];
+    res.json({ id: r.id, name: r.name, pageType: r.page_type, userType: r.user_type, parentId: r.parent_id, builtPageId: r.built_page_id, createdAt: r.created_at });
+  } catch (err) {
+    console.error("POST /api/planned-pages error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch("/api/planned-pages/:id", async (req, res) => {
+  const { name, pageType, userType, parentId, builtPageId } = req.body;
+  if (parentId !== undefined && parentId !== null && String(parentId) === String(req.params.id)) {
+    return res.status(400).json({ error: "A page cannot be its own parent" });
+  }
+  try {
+    const fields = [];
+    const vals = [];
+    let idx = 1;
+    if (name !== undefined) { fields.push(`name = $${idx++}`); vals.push(name); }
+    if (pageType !== undefined) { fields.push(`page_type = $${idx++}`); vals.push(pageType); }
+    if (userType !== undefined) { fields.push(`user_type = $${idx++}`); vals.push(userType); }
+    if (parentId !== undefined) { fields.push(`parent_id = $${idx++}`); vals.push(parentId); }
+    if (builtPageId !== undefined) { fields.push(`built_page_id = $${idx++}`); vals.push(builtPageId); }
+    if (fields.length === 0) return res.status(400).json({ error: "No fields to update" });
+    vals.push(req.params.id);
+    const result = await pool.query(
+      `UPDATE planned_pages SET ${fields.join(", ")} WHERE id = $${idx} RETURNING *`,
+      vals
+    );
+    if (!result.rows.length) return res.status(404).json({ error: "Not found" });
+    const r = result.rows[0];
+    res.json({ id: r.id, name: r.name, pageType: r.page_type, userType: r.user_type, parentId: r.parent_id, builtPageId: r.built_page_id, createdAt: r.created_at });
+  } catch (err) {
+    console.error("PATCH /api/planned-pages error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/api/planned-pages/:id", async (req, res) => {
+  try {
+    await pool.query("DELETE FROM planned_pages WHERE id = $1", [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("DELETE /api/planned-pages error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });

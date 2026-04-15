@@ -52,12 +52,17 @@ When a user selects one or more reference documents in the Builder's "Reference 
 | POST | /api/todos | Create todo |
 | PATCH | /api/todos/:id | Toggle done state |
 | DELETE | /api/todos/:id | Delete todo |
+| GET | /api/planned-pages | List all planned pages |
+| POST | /api/planned-pages | Create planned page |
+| PATCH | /api/planned-pages/:id | Update planned page (name, type, builtPageId) |
+| DELETE | /api/planned-pages/:id | Delete planned page |
 
 ## Database Schema
 
 ```sql
 CREATE TABLE pages (id TEXT PRIMARY KEY, data JSONB NOT NULL, created_at TIMESTAMP DEFAULT NOW());
 CREATE TABLE todos (id SERIAL PRIMARY KEY, topic TEXT, user_type TEXT, done BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT NOW());
+CREATE TABLE planned_pages (id SERIAL PRIMARY KEY, name TEXT, page_type TEXT, user_type TEXT, parent_id INTEGER REFERENCES planned_pages(id) ON DELETE SET NULL, built_page_id TEXT, created_at TIMESTAMP DEFAULT NOW());
 ```
 
 Tables are auto-created by `initDb()` on server start.

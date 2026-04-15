@@ -178,6 +178,37 @@ export const runKarlEvaluation = async (page: {
   }
 };
 
+export const plannedPagesApi = {
+  list: async (): Promise<import("./types").PlannedPage[]> => {
+    const res = await fetch(`${API_BASE}/planned-pages`);
+    if (!res.ok) throw new Error(`Failed to load planned pages: ${res.status}`);
+    const data = await res.json();
+    return data.plannedPages || [];
+  },
+  create: async (name: string, pageType: string, userType: string, parentId?: number | null): Promise<import("./types").PlannedPage> => {
+    const res = await fetch(`${API_BASE}/planned-pages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, pageType, userType, parentId: parentId || null })
+    });
+    if (!res.ok) throw new Error(`Failed to create planned page: ${res.status}`);
+    return res.json();
+  },
+  update: async (id: number, updates: Partial<{ name: string; pageType: string; userType: string; parentId: number | null; builtPageId: string | null }>): Promise<import("./types").PlannedPage> => {
+    const res = await fetch(`${API_BASE}/planned-pages/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates)
+    });
+    if (!res.ok) throw new Error(`Failed to update planned page: ${res.status}`);
+    return res.json();
+  },
+  delete: async (id: number): Promise<void> => {
+    const res = await fetch(`${API_BASE}/planned-pages/${id}`, { method: "DELETE" });
+    if (!res.ok) throw new Error(`Failed to delete planned page: ${res.status}`);
+  }
+};
+
 export const driveApi = {
   listFiles: async (): Promise<import("./types").DriveFile[]> => {
     const res = await fetch(`${API_BASE}/drive/files`);

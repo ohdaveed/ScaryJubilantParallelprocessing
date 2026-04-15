@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { PageDraft, TodoItem, KarlEvaluation } from "./types";
+import { PageDraft, TodoItem, KarlEvaluation, PlannedPage } from "./types";
 import { USER_TYPES, PAGE_TYPES, SYSTEM_PROMPT, SUGGESTED_PAGES, TYPE_META } from "./constants";
-import { clean, isPest, parsePage, parseRel, parseDraftSections, getSectionStyle, pagesApi, todosApi, runKarlEvaluation, lsLegacy, driveApi } from "./utils";
+import { clean, isPest, parsePage, parseRel, parseDraftSections, getSectionStyle, pagesApi, todosApi, plannedPagesApi, runKarlEvaluation, lsLegacy, driveApi } from "./utils";
 import { DriveFile } from "./types";
 import { Badge, Label, Divider, Btn, Card, Field, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar, SectionIcon, iStyle, ResponsibilitiesTable, ActionStepList, ChecklistRow, PreventionSection, RelatedPagePills } from "./components/ui";
 
@@ -306,6 +306,177 @@ function SystemMap({ pages, onSelect }: { pages: PageDraft[]; onSelect: (id: str
   );
 }
 
+function PlanDiagram({ planned, pages, onSelectPlanned }: { planned: PlannedPage[]; pages: PageDraft[]; onSelectPlanned: (p: PlannedPage) => void }) {
+  const W = 680, H = 400;
+  if (!planned.length) return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "56px 0", gap: 12, color: "var(--color-text-tertiary)" }}>
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><circle cx="12" cy="12" r="3" /><circle cx="4" cy="6" r="2" /><circle cx="20" cy="6" r="2" /><circle cx="4" cy="18" r="2" /><circle cx="20" cy="18" r="2" /><path d="M6 6l4 4M14 14l4 4M18 6l-4 4M10 14l-4 4" /></svg>
+      <div style={{ textAlign: "center" }}>
+        <p style={{ fontSize: 14, fontWeight: 500, margin: "0 0 4px", color: "var(--color-text-secondary)" }}>No planned pages yet</p>
+        <p style={{ fontSize: 13, margin: 0, lineHeight: 1.5 }}>Add pages using the form to sketch your site architecture.</p>
+      </div>
+    </div>
+  );
+
+  const builtPageIds = new Set(pages.map(p => p.id));
+
+  type PlanNode = { id: number; name: string; type: string; x: number; y: number; built: boolean; parentId: number | null };
+  type PlanEdge = [number, number];
+
+  const roots = planned.filter(p => !p.parentId);
+  const children = planned.filter(p => p.parentId);
+
+  const nodes: PlanNode[] = [];
+  roots.forEach((p, i) => {
+    const a = (2 * Math.PI * i / Math.max(roots.length, 1)) - Math.PI / 2;
+    const r = roots.length === 1 ? 0 : 80;
+    nodes.push({ id: p.id, name: p.name, type: p.pageType, x: W / 2 + r * Math.cos(a), y: H / 2 + r * Math.sin(a) * 0.7, built: !!p.builtPageId && builtPageIds.has(p.builtPageId), parentId: p.parentId });
+  });
+  children.forEach((p, i) => {
+    const a = (2 * Math.PI * i / Math.max(children.length, 1)) - Math.PI / 2;
+    nodes.push({ id: p.id, name: p.name, type: p.pageType, x: W / 2 + 185 * Math.cos(a), y: H / 2 + 165 * Math.sin(a), built: !!p.builtPageId && builtPageIds.has(p.builtPageId), parentId: p.parentId });
+  });
+
+  const edges: PlanEdge[] = [];
+  planned.forEach(p => {
+    if (p.parentId) edges.push([p.parentId, p.id]);
+  });
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto" }}>
+      <defs><marker id="plan-arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#B4B2A9" /></marker></defs>
+      {edges.map(([a, b], i) => { const na = nodes.find(n => n.id === a), nb = nodes.find(n => n.id === b); if (!na || !nb) return null; return <line key={i} x1={na.x} y1={na.y} x2={nb.x} y2={nb.y} stroke="#D3D1C7" strokeWidth="1" markerEnd="url(#plan-arr)" />; })}
+      {nodes.map(n => {
+        const c = TYPE_META[n.type] || { fill: "#F1EFE8", stroke: "#888", text: "#444" };
+        const label = n.name.length > 20 ? n.name.slice(0, 18) + "\u2026" : n.name;
+        const isRoot = !n.parentId;
+        const rx = isRoot ? 72 : 62, ry = isRoot ? 26 : 22;
+        return (
+          <g key={n.id} onClick={() => { const pp = planned.find(p => p.id === n.id); if (pp) onSelectPlanned(pp); }} style={{ cursor: "pointer" }}>
+            <ellipse cx={n.x} cy={n.y} rx={rx} ry={ry} fill={n.built ? c.fill : "var(--color-background-primary)"} stroke={c.stroke} strokeWidth={isRoot ? "2" : "1.5"} strokeDasharray={n.built ? "none" : "5,3"} />
+            {n.built && <ellipse cx={n.x} cy={n.y} rx={rx - 3} ry={ry - 3} fill="none" stroke={c.stroke} strokeWidth="0.5" opacity="0.3" />}
+            <text x={n.x} y={n.y + (n.built ? 2 : 5)} textAnchor="middle" fontSize={isRoot ? 12 : 11} fontWeight={isRoot ? "500" : "400"} fill={c.text}>{label}</text>
+            {n.built && <text x={n.x} y={n.y + (isRoot ? 16 : 14)} textAnchor="middle" fontSize="8" fill="#0F6E56" fontWeight="500">BUILT</text>}
+          </g>
+        );
+      })}
+      <text x={W / 2} y={H - 6} textAnchor="middle" fontSize="11" fill="#B4B2A9">{planned.length} planned · {nodes.filter(n => n.built).length} built · click to manage</text>
+    </svg>
+  );
+}
+
+function PlanSidebar({ planned, pages, selectedPlanned, onSelectPlanned, onAdd, onDelete, onGenerate, onViewPage }: {
+  planned: PlannedPage[];
+  pages: PageDraft[];
+  selectedPlanned: PlannedPage | null;
+  onSelectPlanned: (p: PlannedPage | null) => void;
+  onAdd: (name: string, pageType: string, userType: string, parentId: number | null) => void;
+  onDelete: (id: number) => void;
+  onGenerate: (p: PlannedPage) => void;
+  onViewPage: (pageId: string) => void;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
+  const [pageType, setPageType] = useState(PAGE_TYPES[0]);
+  const [ut, setUt] = useState(USER_TYPES[0]);
+  const [parentId, setParentId] = useState<number | null>(null);
+
+  const handleAdd = () => {
+    if (!name.trim()) return;
+    onAdd(name.trim(), pageType, ut, parentId);
+    setName(""); setPageType(PAGE_TYPES[0]); setUt(USER_TYPES[0]); setParentId(null); setAdding(false);
+  };
+
+  const builtPage = selectedPlanned?.builtPageId ? pages.find(p => p.id === selectedPlanned.builtPageId) : null;
+
+  return (
+    <Card style={{ padding: "16px 18px" }}>
+      {selectedPlanned ? (
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+            <Label style={{ margin: 0 }}>Planned page</Label>
+            <button onClick={() => onSelectPlanned(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "var(--color-text-tertiary)", padding: "2px 4px" }}>&larr; Back</button>
+          </div>
+          <h3 style={{ fontSize: 15, fontWeight: 500, margin: "0 0 10px", color: "var(--color-text-primary)", lineHeight: 1.3 }}>{selectedPlanned.name}</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 }}>
+            <div style={{ display: "flex", gap: 6 }}>
+              <Badge type={selectedPlanned.pageType} small />
+            </div>
+            <p style={{ fontSize: 12, color: "var(--color-text-secondary)", margin: 0 }}>User: {selectedPlanned.userType}</p>
+            {selectedPlanned.parentId && (
+              <p style={{ fontSize: 12, color: "var(--color-text-secondary)", margin: 0 }}>Parent: {planned.find(p => p.id === selectedPlanned.parentId)?.name || "Unknown"}</p>
+            )}
+          </div>
+          {builtPage ? (
+            <div>
+              <div style={{ padding: "10px 12px", background: "#E1F5EE", borderRadius: "var(--border-radius-md)", border: "0.5px solid #0F6E5630", marginBottom: 10 }}>
+                <p style={{ fontSize: 12, color: "#0F6E56", margin: 0, fontWeight: 500 }}>Page has been generated</p>
+                {builtPage.karlEvaluation && (
+                  <p style={{ fontSize: 11, color: "#0F6E56", margin: "4px 0 0" }}>Grade {builtPage.karlEvaluation.grade} &middot; {builtPage.karlEvaluation.score}/100</p>
+                )}
+              </div>
+              <Btn onClick={() => onViewPage(builtPage.id)} variant="primary" size="md" fullWidth>View page &rarr;</Btn>
+            </div>
+          ) : (
+            <Btn onClick={() => onGenerate(selectedPlanned)} variant="primary" size="md" fullWidth>Generate content &rarr;</Btn>
+          )}
+          <Divider m="14px 0" />
+          <Btn onClick={() => onDelete(selectedPlanned.id)} variant="danger" size="sm">Delete from plan</Btn>
+        </div>
+      ) : (
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <Label style={{ margin: 0 }}>Site plan</Label>
+            <span style={{ fontSize: 11, color: "var(--color-text-tertiary)" }}>{planned.length} page{planned.length !== 1 ? "s" : ""}</span>
+          </div>
+
+          {planned.map(p => {
+            const c = TYPE_META[p.pageType] || { fill: "#F1EFE8", stroke: "#888", text: "#444", dot: "#888" };
+            const isBuilt = !!p.builtPageId && pages.some(pg => pg.id === p.builtPageId);
+            return (
+              <button key={p.id} onClick={() => onSelectPlanned(p)}
+                style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: "var(--border-radius-md)", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", marginBottom: 3, transition: "background 0.12s" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "var(--color-background-secondary)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: c.dot || c.stroke, flexShrink: 0 }} />
+                <span style={{ fontSize: 12, color: "var(--color-text-primary)", lineHeight: 1.4, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
+                {isBuilt && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#E1F5EE", color: "#0F6E56", fontWeight: 500 }}>built</span>}
+              </button>
+            );
+          })}
+
+          {adding ? (
+            <div style={{ marginTop: 8, padding: "10px 12px", border: "0.5px solid var(--color-border-secondary)", borderRadius: "var(--border-radius-md)" }}>
+              <input style={{ ...iStyle(), marginBottom: 6, fontSize: 12 }} placeholder="Page name…" value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === "Enter" && handleAdd()} autoFocus />
+              <select style={{ ...iStyle({ fontSize: 12 }), marginBottom: 6 }} value={pageType} onChange={e => setPageType(e.target.value)}>
+                {PAGE_TYPES.map(t => <option key={t}>{t}</option>)}
+              </select>
+              <select style={{ ...iStyle({ fontSize: 12 }), marginBottom: 6 }} value={ut} onChange={e => setUt(e.target.value)}>
+                {USER_TYPES.map(u => <option key={u}>{u}</option>)}
+              </select>
+              <select style={{ ...iStyle({ fontSize: 12 }), marginBottom: 8 }} value={parentId ?? ""} onChange={e => setParentId(e.target.value ? Number(e.target.value) : null)}>
+                <option value="">No parent</option>
+                {planned.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+              <div style={{ display: "flex", gap: 6 }}>
+                <Btn onClick={handleAdd} variant="primary" size="sm">Add</Btn>
+                <Btn onClick={() => { setAdding(false); setName(""); }} variant="ghost" size="sm">Cancel</Btn>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setAdding(true)}
+              style={{ width: "100%", padding: "8px 0", fontSize: 12, border: "0.5px dashed var(--color-border-secondary)", borderRadius: "var(--border-radius-md)", background: "transparent", color: "var(--color-text-secondary)", cursor: "pointer", marginTop: 6, transition: "border-color 0.15s,color 0.15s" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--color-border-primary)"; e.currentTarget.style.color = "var(--color-text-primary)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--color-border-secondary)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}>
+              + Add planned page
+            </button>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function TodoPanel({ pages, onGenerate }: { pages: PageDraft[]; onGenerate: (topic: string, userType: string) => void }) {
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [newTopic, setNewTopic] = useState("");
@@ -465,6 +636,12 @@ export default function App() {
   const [selectedDriveIds, setSelectedDriveIds] = useState<Set<string>>(new Set());
   const [driveContents, setDriveContents] = useState<Record<string, string>>({});
   const [driveLoadingIds, setDriveLoadingIds] = useState<Set<string>>(new Set());
+  const [plannedPages, setPlannedPages] = useState<PlannedPage[]>([]);
+  const [plannedLoading, setPlannedLoading] = useState(true);
+  const [selectedPlanned, setSelectedPlanned] = useState<PlannedPage | null>(null);
+  const [mapMode, setMapMode] = useState<"plan" | "view">("plan");
+  const [pendingPlannedId, setPendingPlannedId] = useState<number | null>(null);
+  const [pendingPageType, setPendingPageType] = useState<string>("");
   const streamRef = useRef("");
   const lastInput = useRef<{ topic: string; userType: string; notes: string }>({ topic: "", userType: "", notes: "" });
 
@@ -512,6 +689,21 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    plannedPagesApi.list()
+      .then(setPlannedPages)
+      .catch(() => setPlannedPages([]))
+      .finally(() => setPlannedLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (selectedPlanned) {
+      const updated = plannedPages.find(p => p.id === selectedPlanned.id);
+      if (!updated) setSelectedPlanned(null);
+      else if (updated.builtPageId !== selectedPlanned.builtPageId) setSelectedPlanned(updated);
+    }
+  }, [plannedPages, selectedPlanned]);
+
+  useEffect(() => {
     driveApi.listFiles()
       .then(files => setDriveFiles(files))
       .catch(err => setDriveError(err.message || "Could not load Drive files"))
@@ -544,14 +736,23 @@ export default function App() {
 
   const adv = (pct: number, lbl: string) => { setProgress(pct); setProgressLabel(lbl); };
 
-  const generate = useCallback(async (ov: Partial<{ topic: string; userType: string; notes: string }> = {}) => {
+  const linkPlannedPage = useCallback(async (plannedId: number, builtPageId: string) => {
+    try {
+      const updated = await plannedPagesApi.update(plannedId, { builtPageId });
+      setPlannedPages(prev => prev.map(p => p.id === plannedId ? updated : p));
+    } catch {}
+  }, []);
+
+  const generate = useCallback(async (ov: Partial<{ topic: string; userType: string; notes: string; pageType: string }> = {}) => {
     const t = ov.topic || topic; if (!t.trim()) { setTopicTouched(true); return; }
     setLoading(true); setStreaming(true); setEvaluating(false); setShowSuccess(false); setStreamText(""); setError(""); setParseWarn(false); setSelected(null);
     setKarlStatus("connecting");
     adv(0, "Connecting to Karl docs…");
     streamRef.current = ""; lastInput.current = { topic: t, userType: ov.userType || userType, notes: ov.notes || notes };
     const pestNote = isPest(t) ? " Note: pest-related — MUST be Transaction page." : "";
-    const msg = `Design a page for: "${t}"\nPrimary user: ${ov.userType || userType}${(ov.notes || notes) ? `\nContext: ${ov.notes || notes}` : ""}${pestNote}`;
+    const effectivePageType = ov.pageType || pendingPageType;
+    const pageTypeHint = effectivePageType ? `\nPage type: ${effectivePageType} (use this specific Karl content type)` : "";
+    const msg = `Design a page for: "${t}"\nPrimary user: ${ov.userType || userType}${pageTypeHint}${(ov.notes || notes) ? `\nContext: ${ov.notes || notes}` : ""}${pestNote}`;
     let karlHit = false;
 
     const driveContext = selectedDriveIds.size > 0
@@ -642,6 +843,16 @@ export default function App() {
       setPages(prev => [...prev, page]);
       setJustGenerated(page);
       setTimeout(() => setShowSuccess(true), 150);
+
+      const plannedIdToLink = pendingPlannedId
+        || plannedPages.find(pp => !pp.builtPageId && pp.name.toLowerCase() === t.trim().toLowerCase())?.id
+        || null;
+      if (plannedIdToLink) {
+        linkPlannedPage(plannedIdToLink, id);
+      }
+      setPendingPlannedId(null);
+      setPendingPageType("");
+
       setTopic(""); setNotes(""); setTopicTouched(false);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
@@ -649,7 +860,7 @@ export default function App() {
       setStreaming(false); setEvaluating(false); setKarlStatus("fallback");
     }
     setLoading(false);
-  }, [topic, userType, notes, selectedDriveIds, driveContents, driveFiles]);
+  }, [topic, userType, notes, selectedDriveIds, driveContents, driveFiles, plannedPages, linkPlannedPage, pendingPlannedId, pendingPageType]);
 
   const regenerate = useCallback((p: PageDraft) => { if (p?.inputs) generate({ topic: p.inputs.topic, userType: p.inputs.userType, notes: p.inputs.notes }); }, [generate]);
 
@@ -724,6 +935,30 @@ export default function App() {
   const handleCopy = (text: string) => { navigator.clipboard.writeText(text).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); };
   const handleDownload = (text: string, name: string) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "text/plain" })); a.download = name; a.click(); };
 
+  const addPlannedPage = async (name: string, pageType: string, userType: string, parentId: number | null) => {
+    try {
+      const created = await plannedPagesApi.create(name, pageType, userType, parentId);
+      setPlannedPages(prev => [...prev, created]);
+    } catch {}
+  };
+
+  const deletePlannedPage = async (id: number) => {
+    setPlannedPages(prev => prev
+      .filter(p => p.id !== id)
+      .map(p => p.parentId === id ? { ...p, parentId: null } : p)
+    );
+    setSelectedPlanned(null);
+    try { await plannedPagesApi.delete(id); } catch {}
+  };
+
+  const generateFromPlanned = (p: PlannedPage) => {
+    setTopic(p.name);
+    setUserType(p.userType);
+    setPendingPlannedId(p.id);
+    setPendingPageType(p.pageType);
+    setTab("builder");
+  };
+
   const filtered = pages.filter(p => { const ms = !search || (clean(p.name) || "").toLowerCase().includes(search.toLowerCase()) || (p.draft || "").toLowerCase().includes(search.toLowerCase()); return ms && (filterType === "All" || clean(p.pageType) === filterType); });
   const sorted = sortNewest ? [...filtered].reverse() : filtered;
   const topicError = topicTouched && !topic.trim();
@@ -786,6 +1021,13 @@ export default function App() {
               <Field label="Context / notes" hint="Optional">
                 <input style={iStyle()} placeholder="Add context or requirements…" value={notes} onChange={e => setNotes(e.target.value)} onKeyDown={e => e.key === "Enter" && generate()} />
               </Field>
+              {pendingPageType && (
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, padding: "6px 10px", background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-md)", border: "0.5px solid var(--color-border-tertiary)" }}>
+                  <Badge type={pendingPageType} small />
+                  <span style={{ fontSize: 11, color: "var(--color-text-secondary)", flex: 1 }}>from plan</span>
+                  <button onClick={() => { setPendingPageType(""); setPendingPlannedId(null); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--color-text-tertiary)", padding: "2px 4px" }}>&#10005;</button>
+                </div>
+              )}
               <Btn onClick={() => generate()} variant="primary" size="md" fullWidth disabled={loading}>
                 {loading ? (streaming ? "Generating…" : evaluating ? "Evaluating…" : "Working…") : `Generate page${selectedDriveIds.size > 0 ? ` (${selectedDriveIds.size} doc${selectedDriveIds.size !== 1 ? "s" : ""})` : ""}`}
               </Btn>
@@ -1017,17 +1259,69 @@ export default function App() {
       )}
 
       {tab === "map" && (
-        <div style={{ marginTop: 20, display: "grid", gridTemplateColumns: "1fr 320px", gap: 16, alignItems: "start" }}>
-          <div>
-            <Card style={{ padding: "16px 20px", marginBottom: 14 }}>
-              <SystemMap pages={pages} onSelect={selectById} />
-            </Card>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-              {PAGE_TYPES.map(t => { const c = TYPE_META[t]; return <span key={t} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: c.fill, color: c.text, border: `1px solid ${c.stroke}` }}>{t}</span>; })}
-              <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "var(--color-background-secondary)", color: "var(--color-text-tertiary)", border: "0.5px dashed var(--color-border-secondary)" }}>orphan</span>
-            </div>
+        <div style={{ marginTop: 20 }}>
+          <div style={{ display: "flex", gap: 2, marginBottom: 16, background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-md)", padding: 3, width: "fit-content" }}>
+            {(["plan", "view"] as const).map(m => (
+              <button key={m} onClick={() => setMapMode(m)}
+                style={{
+                  fontSize: 12, fontWeight: mapMode === m ? 500 : 400,
+                  color: mapMode === m ? "var(--color-text-primary)" : "var(--color-text-tertiary)",
+                  background: mapMode === m ? "var(--color-background-primary)" : "transparent",
+                  border: mapMode === m ? "0.5px solid var(--color-border-tertiary)" : "0.5px solid transparent",
+                  borderRadius: "var(--border-radius-sm, 4px)", padding: "5px 14px", cursor: "pointer",
+                  transition: "all 0.15s"
+                }}>
+                {m === "plan" ? "Plan" : "View"}
+              </button>
+            ))}
           </div>
-          <TodoPanel pages={pages} onGenerate={(t, u) => { setTopic(t); setUserType(u); setTab("builder"); }} />
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 16, alignItems: "start" }}>
+            {mapMode === "view" ? (
+              <>
+                <div>
+                  <Card style={{ padding: "16px 20px", marginBottom: 14 }}>
+                    <SystemMap pages={pages} onSelect={selectById} />
+                  </Card>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                    {PAGE_TYPES.map(t => { const c = TYPE_META[t]; return <span key={t} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: c.fill, color: c.text, border: `1px solid ${c.stroke}` }}>{t}</span>; })}
+                    <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "var(--color-background-secondary)", color: "var(--color-text-tertiary)", border: "0.5px dashed var(--color-border-secondary)" }}>orphan</span>
+                  </div>
+                </div>
+                <TodoPanel pages={pages} onGenerate={(t, u) => { setTopic(t); setUserType(u); setTab("builder"); }} />
+              </>
+            ) : (
+              <>
+                <div>
+                  <Card style={{ padding: "16px 20px", marginBottom: 14 }}>
+                    {plannedLoading ? (
+                      <div style={{ textAlign: "center", padding: "56px 0", color: "var(--color-text-tertiary)" }}>
+                        <div style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid var(--color-border-secondary)", borderTopColor: "var(--color-text-secondary)", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
+                        <p style={{ fontSize: 13, margin: 0 }}>Loading plan…</p>
+                      </div>
+                    ) : (
+                      <PlanDiagram planned={plannedPages} pages={pages} onSelectPlanned={setSelectedPlanned} />
+                    )}
+                  </Card>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                    {PAGE_TYPES.map(t => { const c = TYPE_META[t]; return <span key={t} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: c.fill, color: c.text, border: `1px solid ${c.stroke}` }}>{t}</span>; })}
+                    <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "var(--color-background-primary)", color: "var(--color-text-tertiary)", border: "0.5px dashed var(--color-border-secondary)" }}>planned</span>
+                    <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "var(--color-background-secondary)", color: "#0F6E56", border: "1px solid #0F6E5640" }}>built</span>
+                  </div>
+                </div>
+                <PlanSidebar
+                  planned={plannedPages}
+                  pages={pages}
+                  selectedPlanned={selectedPlanned}
+                  onSelectPlanned={setSelectedPlanned}
+                  onAdd={addPlannedPage}
+                  onDelete={deletePlannedPage}
+                  onGenerate={generateFromPlanned}
+                  onViewPage={selectById}
+                />
+              </>
+            )}
+          </div>
         </div>
       )}
 
