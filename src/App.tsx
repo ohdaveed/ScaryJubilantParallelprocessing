@@ -547,7 +547,7 @@ export default function App() {
       setStreaming(false); setEvaluating(false); setKarlStatus("fallback");
     }
     setLoading(false);
-  }, [topic, userType, notes]);
+  }, [topic, userType, notes, selectedDriveIds, driveContents, driveFiles]);
 
   const regenerate = useCallback((p: PageDraft) => { if (p?.inputs) generate({ topic: p.inputs.topic, userType: p.inputs.userType, notes: p.inputs.notes }); }, [generate]);
   const deletePage = async (id: string) => { await pagesApi.delete(id).catch(() => {}); setPages(p => p.filter(x => x.id !== id)); if (selected?.id === id) setSelected(null); };

@@ -70,13 +70,19 @@ app.get("/api/drive/files/:fileId", async (req, res) => {
     const connectors = new ReplitConnectors();
     const metaRes = await connectors.proxy(
       "google-drive",
-      `/drive/v3/files/${fileId}?fields=id,name,mimeType`,
+      `/drive/v3/files/${fileId}?fields=id,name,mimeType,parents`,
       { method: "GET" }
     );
     if (!metaRes.ok) {
       return res.status(metaRes.status).json({ error: "File not found" });
     }
     const meta = await metaRes.json();
+
+    const parents = meta.parents || [];
+    if (!parents.includes(DRIVE_FOLDER_ID)) {
+      return res.status(403).json({ error: "File is not in the allowed HHVC folder" });
+    }
+
     const mimeType = meta.mimeType || "";
 
     let exportMime = "text/plain";
