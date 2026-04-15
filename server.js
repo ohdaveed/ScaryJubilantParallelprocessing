@@ -498,6 +498,29 @@ app.delete("/api/planned-pages/:id", async (req, res) => {
 });
 
 const PORT = 3001;
-createServer(app).listen(PORT, () => {
-  console.log(`API server running on port ${PORT}`);
-});
+
+function startServer(port) {
+  const server = createServer(app);
+  server.on("error", async (err) => {
+    if (err.code === "EADDRINUSE") {
+      console.log(`Port ${port} in use — killing stale process and retrying…`);
+      try {
+        const { execSync } = await import("child_process");
+        execSync(`fuser -k ${port}/tcp 2>/dev/null`);
+      } catch {}
+      setTimeout(() => {
+        createServer(app).listen(port, () => {
+          console.log(`API server running on port ${port}`);
+        });
+      }, 600);
+    } else {
+      console.error("Server error:", err);
+      process.exit(1);
+    }
+  });
+  server.listen(port, () => {
+    console.log(`API server running on port ${port}`);
+  });
+}
+
+startServer(PORT);
