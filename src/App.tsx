@@ -457,6 +457,7 @@ export default function App() {
   const [parseWarn, setParseWarn] = useState(false);
   const [copied, setCopied] = useState(false);
   const [topicTouched, setTopicTouched] = useState(false);
+  const [refineInput, setRefineInput] = useState("");
   const [driveFiles, setDriveFiles] = useState<DriveFile[]>([]);
   const [driveLoading, setDriveLoading] = useState(true);
   const [driveError, setDriveError] = useState("");
@@ -651,6 +652,73 @@ export default function App() {
   }, [topic, userType, notes, selectedDriveIds, driveContents, driveFiles]);
 
   const regenerate = useCallback((p: PageDraft) => { if (p?.inputs) generate({ topic: p.inputs.topic, userType: p.inputs.userType, notes: p.inputs.notes }); }, [generate]);
+
+  const refine = useCallback(async () => {
+    if (!selected || !refineInput.trim()) return;
+    const instruction = refineInput.trim();
+    setRefineInput("");
+    setLoading(true); setStreaming(true); setEvaluating(false); setShowSuccess(false);
+    setStreamText(""); setError(""); setParseWarn(false);
+    streamRef.current = "";
+    adv(0, "Sending revision request…");
+
+    const msg = `Here is the current HHVC SF.gov page draft to revise:\n\n${selected.raw}\n\nPlease make this specific change: ${instruction}\n\nReturn the COMPLETE revised page in exactly the same format, preserving all sections not being changed.`;
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 4000,
+          stream: true,
+          system: SYSTEM_PROMPT,
+          messages: [{ role: "user", content: msg }],
+          mcp_servers: [{ type: "url", url: "https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/~gitbook/mcp", name: "karl-docs" }]
+        })
+      });
+      if (!res.ok) throw new Error(await res.text());
+
+      const reader = res.body!.getReader(); const dec = new TextDecoder();
+      let charCount = 0;
+      adv(15, "Revising page content…");
+      while (true) {
+        const { done, value } = await reader.read(); if (done) break;
+        for (const line of dec.decode(value).split("\n")) {
+          if (!line.startsWith("data: ")) continue;
+          const d = line.slice(6); if (d === "[DONE]") continue;
+          try {
+            const j = JSON.parse(d);
+            if (j.type === "content_block_delta" && j.delta?.type === "text_delta") {
+              streamRef.current += j.delta.text; setStreamText(s => s + j.delta.text);
+              charCount += j.delta.text.length;
+              const pct = Math.min(88, 15 + Math.round((charCount / 2200) * 73));
+              adv(pct, pct < 45 ? "Revising structure…" : pct < 70 ? "Updating content…" : "Finalizing revisions…");
+            }
+          } catch {}
+        }
+      }
+
+      const parsed = parsePage(streamRef.current);
+      if (!parsed.valid) setParseWarn(true);
+      setStreaming(false); setEvaluating(true);
+      adv(93, "Re-evaluating against Karl standards…");
+
+      const evaluation = await runKarlEvaluation({ name: parsed.name, pageType: parsed.pageType, draft: parsed.draft, userType: parsed.userType });
+      const updated: PageDraft = { ...selected, ...parsed, id: selected.id, createdAt: selected.createdAt, inputs: selected.inputs, ...(evaluation ? { karlEvaluation: evaluation } : {}) };
+
+      adv(100, "Done"); setEvaluating(false);
+      try { await pagesApi.save(selected.id, updated); } catch { setError("Revised but could not save."); }
+      setPages(prev => prev.map(p => p.id === selected.id ? updated : p));
+      setSelected(updated);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      setError(`Refinement failed: ${msg}`);
+      setStreaming(false); setEvaluating(false);
+    }
+    setLoading(false);
+  }, [selected, refineInput]);
+
   const deletePage = async (id: string) => { await pagesApi.delete(id).catch(() => {}); setPages(p => p.filter(x => x.id !== id)); if (selected?.id === id) setSelected(null); };
   const selectById = (id: string) => { const p = pages.find(x => x.id === id); if (p) { setSelected(p); setShowSuccess(false); setTab("builder"); } };
   const handleCopy = (text: string) => { navigator.clipboard.writeText(text).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); };
@@ -817,51 +885,100 @@ export default function App() {
 
             {!streaming && !evaluating && !showSuccess && selected && (
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
+                {/* Page header */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 7, flexWrap: "wrap" }}>
                       <Badge type={clean(selected.pageType)} />
                       {selected.karlConnected && (
                         <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: "#E1F5EE", color: "#0F6E56", border: "0.5px solid #0F6E5630" }}>Karl verified</span>
                       )}
                       {selected.karlEvaluation && (
-                        <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: { A: "#E1F5EE", B: "#E6F1FB", C: "#FAEEDA", D: "#FCEBEB", F: "#FCEBEB" }[selected.karlEvaluation.grade] || "#F1EFE8", color: { A: "#0F6E56", B: "#185FA5", C: "#854F0B", D: "#A32D2D", F: "#A32D2D" }[selected.karlEvaluation.grade] || "#444", fontWeight: 600 }}>
+                        <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, fontWeight: 600, background: ({ A: "#E1F5EE", B: "#E6F1FB", C: "#FAEEDA", D: "#FCEBEB", F: "#FCEBEB" } as Record<string,string>)[selected.karlEvaluation.grade] || "#F1EFE8", color: ({ A: "#0F6E56", B: "#185FA5", C: "#854F0B", D: "#A32D2D", F: "#A32D2D" } as Record<string,string>)[selected.karlEvaluation.grade] || "#444" }}>
                           Grade {selected.karlEvaluation.grade} · {selected.karlEvaluation.score}/100
                         </span>
                       )}
                     </div>
-                    <h2 style={{ fontSize: 20, fontWeight: 500, margin: 0, letterSpacing: "-0.3px", lineHeight: 1.25, color: "var(--color-text-primary)" }}>{clean(selected.name) || "Untitled"}</h2>
+                    <h2 style={{ fontSize: 22, fontWeight: 600, margin: "0 0 2px", letterSpacing: "-0.4px", lineHeight: 1.2, color: "var(--color-text-primary)" }}>{clean(selected.name) || "Untitled"}</h2>
+                    <p style={{ fontSize: 12, margin: 0, color: "var(--color-text-tertiary)" }}>SF.gov · Healthy Housing &amp; Vector Control</p>
                   </div>
                   <div style={{ display: "flex", gap: 6, flexShrink: 0, marginLeft: 12 }}>
                     <Btn onClick={() => handleCopy(selected.raw)} variant="ghost" size="sm">{copied ? "Copied!" : "Copy"}</Btn>
-                    <Btn onClick={() => regenerate(selected)} variant="ghost" size="sm">Regen</Btn>
+                    <Btn onClick={() => regenerate(selected)} variant="ghost" size="sm">Regenerate</Btn>
                     <Btn onClick={() => deletePage(selected.id)} variant="danger" size="sm">Delete</Btn>
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8, marginBottom: 16 }}>
-                  {[["User", selected.userType], ["Goal", selected.userGoal], ["Purpose", selected.purpose]].map(([k, v]) => (
-                    <div key={k} style={{ background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-md)", padding: "10px 12px" }}>
-                      <Label style={{ margin: "0 0 3px" }}>{k}</Label>
-                      <p style={{ fontSize: 12, margin: 0, lineHeight: 1.5, color: "var(--color-text-primary)" }}>{clean(v as string) || "—"}</p>
+                {/* Compact metadata row */}
+                <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
+                  {[["User", selected.userType], ["Goal", selected.userGoal], ["Purpose", selected.purpose]].map(([k, v]) => v && (
+                    <div key={k} style={{ display: "flex", alignItems: "baseline", gap: 5, padding: "5px 10px", background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-md)", border: "0.5px solid var(--color-border-tertiary)" }}>
+                      <span style={{ fontSize: 10, fontWeight: 500, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.07em", flexShrink: 0 }}>{k}</span>
+                      <span style={{ fontSize: 12, color: "var(--color-text-primary)", lineHeight: 1.4 }}>{clean(v as string)}</span>
                     </div>
                   ))}
                 </div>
 
                 {selected.karlEvaluation && <KarlEvalPanel evaluation={selected.karlEvaluation} />}
 
+                {/* SF.gov page preview */}
+                <div style={{ border: "0.5px solid var(--color-border-secondary)", borderRadius: "var(--border-radius-lg)", overflow: "hidden", marginBottom: 14 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px", background: "var(--color-background-secondary)", borderBottom: "0.5px solid var(--color-border-tertiary)" }}>
+                    <span style={{ fontSize: 10, fontWeight: 500, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.09em" }}>Page draft</span>
+                    <Btn onClick={() => handleDownload(selected.draft, (clean(selected.name) || "page").toLowerCase().replace(/\s+/g, "-") + "-draft.txt")} variant="ghost" size="sm">Export</Btn>
+                  </div>
+                  <div style={{ padding: "20px 22px", background: "var(--color-background-primary)" }}>
+                    <DraftRenderer draft={selected.draft} />
+                  </div>
+                </div>
+
+                {/* Enforcement & integration notes */}
+                {selected.enforcement && (
+                  <div style={{ borderRadius: "var(--border-radius-md)", border: "0.5px solid #854F0B33", overflow: "hidden", marginBottom: 10 }}>
+                    <div style={{ padding: "7px 14px", background: "#FAEEDA88", borderBottom: "0.5px solid #854F0B22" }}>
+                      <span style={{ fontSize: 10, fontWeight: 500, color: "#854F0B", textTransform: "uppercase", letterSpacing: "0.08em" }}>Enforcement check</span>
+                    </div>
+                    <div style={{ padding: "12px 14px" }}>
+                      {clean(selected.enforcement).split("\n").filter(l => l.trim()).map((line, i) => (
+                        <p key={i} style={{ fontSize: 12, margin: "0 0 6px", lineHeight: 1.65, color: "var(--color-text-secondary)" }}>{line}</p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {selected.integration && (
+                  <div style={{ borderRadius: "var(--border-radius-md)", border: "0.5px solid #185FA533", overflow: "hidden", marginBottom: 10 }}>
+                    <div style={{ padding: "7px 14px", background: "#E6F1FB88", borderBottom: "0.5px solid #185FA522" }}>
+                      <span style={{ fontSize: 10, fontWeight: 500, color: "#185FA5", textTransform: "uppercase", letterSpacing: "0.08em" }}>Integration notes</span>
+                    </div>
+                    <div style={{ padding: "12px 14px" }}>
+                      {clean(selected.integration).split("\n").filter(l => l.trim()).map((line, i) => (
+                        <p key={i} style={{ fontSize: 12, margin: "0 0 6px", lineHeight: 1.65, color: "var(--color-text-secondary)" }}>{line}</p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <ComponentChips components={selected.components} />
                 <RelPanel rel={selected.relationships} />
-                <Divider />
 
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <Label style={{ margin: 0 }}>Page draft</Label>
-                  <Btn onClick={() => handleDownload(selected.draft, (clean(selected.name) || "page").toLowerCase().replace(/\s+/g, "-") + "-draft.txt")} variant="ghost" size="sm">Export draft</Btn>
+                {/* Refine panel */}
+                <div style={{ marginTop: 20, borderTop: "0.5px solid var(--color-border-tertiary)", paddingTop: 16 }}>
+                  <Label style={{ marginBottom: 8 }}>Refine this page</Label>
+                  <p style={{ fontSize: 12, color: "var(--color-text-tertiary)", margin: "0 0 10px", lineHeight: 1.5 }}>Describe a specific change and the agent will revise the page content.</p>
+                  <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+                    <textarea
+                      value={refineInput}
+                      onChange={e => setRefineInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) refine(); }}
+                      placeholder='e.g. "Shorten the responsibilities section" or "Add a step about taking photos of the problem"'
+                      rows={2}
+                      style={{ ...iStyle({ resize: "vertical", fontSize: 13, lineHeight: 1.6, flex: "1" }), minHeight: 52 }}
+                    />
+                    <Btn onClick={refine} variant="primary" size="md" disabled={loading || !refineInput.trim()} style={{ flexShrink: 0, alignSelf: "flex-end" }}>
+                      Send
+                    </Btn>
+                  </div>
                 </div>
-                <DraftRenderer draft={selected.draft} />
-
-                {selected.enforcement && <><Divider /><Label>Enforcement check</Label><pre style={{ fontSize: 12, whiteSpace: "pre-wrap", color: "var(--color-text-secondary)", margin: 0, lineHeight: 1.7, fontFamily: "var(--font-mono)" }}>{clean(selected.enforcement)}</pre></>}
-                {selected.integration && <><Divider /><Label>Integration notes</Label><pre style={{ fontSize: 12, whiteSpace: "pre-wrap", color: "var(--color-text-secondary)", margin: 0, lineHeight: 1.7, fontFamily: "var(--font-mono)" }}>{clean(selected.integration)}</pre></>}
               </div>
             )}
 
