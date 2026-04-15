@@ -3,7 +3,23 @@ import { PageDraft, TodoItem, KarlEvaluation } from "./types";
 import { USER_TYPES, PAGE_TYPES, SYSTEM_PROMPT, SUGGESTED_PAGES, TYPE_META } from "./constants";
 import { clean, isPest, parsePage, parseRel, parseDraftSections, getSectionStyle, pagesApi, todosApi, runKarlEvaluation, lsLegacy, driveApi } from "./utils";
 import { DriveFile } from "./types";
-import { Badge, Label, Divider, Btn, Card, Field, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar, SectionIcon, iStyle } from "./components/ui";
+import { Badge, Label, Divider, Btn, Card, Field, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar, SectionIcon, iStyle, ResponsibilitiesTable, ActionStepList, ChecklistRow, PreventionSection, RelatedPagePills } from "./components/ui";
+
+function highlightSpecial(text: string): React.ReactNode {
+  const pattern = /10\s+square\s+feet/i;
+  const match = text.match(pattern);
+  if (!match || match.index === undefined) return text;
+  const idx = match.index;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <span style={{ background: "#FAEEDA", color: "#633806", padding: "1px 6px", borderRadius: 4, fontWeight: 600, fontSize: "0.94em", border: "0.5px solid #854F0B44" }}>
+        {text.slice(idx, idx + match[0].length)}
+      </span>
+      {text.slice(idx + match[0].length)}
+    </>
+  );
+}
 
 function renderLines(lines: string[]) {
   const result: { paras: string[]; bullets: string[] } = { paras: [], bullets: [] };
@@ -20,12 +36,12 @@ function renderLines(lines: string[]) {
 
   return (
     <>
-      {result.paras.map((p, i) => <p key={i} style={{ fontSize: 13, margin: "0 0 6px", lineHeight: 1.7, color: "var(--color-text-primary)" }}>{p}</p>)}
+      {result.paras.map((p, i) => <p key={i} style={{ fontSize: 13, margin: "0 0 6px", lineHeight: 1.7, color: "var(--color-text-primary)" }}>{highlightSpecial(p)}</p>)}
       {result.bullets.length > 0 && <ul style={{ margin: "6px 0 0", padding: 0, listStyle: "none" }}>
         {result.bullets.map((it, i) => (
           <li key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 6, fontSize: 13, lineHeight: 1.6, color: "var(--color-text-primary)" }}>
             <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--color-text-tertiary)", flexShrink: 0, marginTop: 7 }} />
-            <span>{it}</span>
+            <span>{highlightSpecial(it)}</span>
           </li>
         ))}
       </ul>}
@@ -52,9 +68,94 @@ function DraftRenderer({ draft }: { draft: string }) {
             <p style={{ fontSize: 13, margin: 0, color: "var(--color-text-secondary)", lineHeight: 1.65, fontStyle: "italic" }}>{sec.text}</p>
           </div>
         );
+
+        const titleLower = (sec.title || "").toLowerCase();
         const style = getSectionStyle(sec.title);
         const hasContent = sec.lines.some((l: string) => clean(l));
         if (!sec.title && !hasContent) return null;
+
+        const isResponsibilities = titleLower.includes("responsib");
+        const is311 = titleLower.includes("311") || (titleLower.includes("report") && (titleLower.includes("problem") || titleLower.includes("issue")));
+        const isBeforeYouCall = titleLower.includes("before") && titleLower.includes("call");
+        const isChecklist = titleLower.includes("checklist") && !isBeforeYouCall;
+        const isPrevention = /prevent/.test(titleLower);
+        const isRelated = titleLower.includes("related");
+
+        const bullets = sec.lines.filter((l: string) => {
+          const t = l.trim();
+          return t.startsWith("- ") || t.startsWith("• ") || t.startsWith("* ");
+        });
+
+        if (isResponsibilities && style) return (
+          <div key={i} style={{ borderRadius: "var(--border-radius-lg)", border: `0.5px solid ${style.accent}33`, overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 14px", background: style.bg, borderBottom: `0.5px solid ${style.accent}22`, color: style.accent }}>
+              <SectionIcon type={style.icon} />
+              <span style={{ fontSize: 12, fontWeight: 500, letterSpacing: "0.01em" }}>{sec.title}</span>
+            </div>
+            <div style={{ padding: "10px 14px", background: "var(--color-background-primary)" }}>
+              {hasContent ? <ResponsibilitiesTable lines={sec.lines} /> : <p style={{ fontSize: 13, color: "var(--color-text-tertiary)", margin: 0, fontStyle: "italic" }}>—</p>}
+            </div>
+          </div>
+        );
+
+        if (is311 && style) return (
+          <div key={i} style={{ borderRadius: "var(--border-radius-lg)", border: `0.5px solid ${style.accent}33`, overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 14px", background: style.bg, borderBottom: `0.5px solid ${style.accent}22`, color: style.accent }}>
+              <SectionIcon type={style.icon} />
+              <span style={{ fontSize: 12, fontWeight: 500, letterSpacing: "0.01em" }}>{sec.title}</span>
+            </div>
+            <div style={{ padding: "13px 14px", background: "var(--color-background-primary)" }}>
+              {hasContent
+                ? bullets.length > 0
+                  ? <ActionStepList lines={bullets} />
+                  : renderLines(sec.lines)
+                : <p style={{ fontSize: 13, color: "var(--color-text-tertiary)", margin: 0, fontStyle: "italic" }}>—</p>}
+            </div>
+          </div>
+        );
+
+        if (isBeforeYouCall || isChecklist) {
+          const sectionStyle = style || { accent: "#0F6E56", bg: "#E1F5EE", icon: "list" };
+          const items = bullets.map((l: string) => l.replace(/^[-•*]\s*/, "").trim()).filter(Boolean);
+          return (
+            <div key={i} style={{ borderRadius: "var(--border-radius-lg)", border: `0.5px solid ${sectionStyle.accent}33`, overflow: "hidden" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 14px", background: sectionStyle.bg, borderBottom: `0.5px solid ${sectionStyle.accent}22`, color: sectionStyle.accent }}>
+                <SectionIcon type={sectionStyle.icon} />
+                <span style={{ fontSize: 12, fontWeight: 500, letterSpacing: "0.01em" }}>{sec.title}</span>
+              </div>
+              <div style={{ padding: "13px 14px", background: "var(--color-background-primary)" }}>
+                {items.length > 0 ? <ChecklistRow items={items} /> : renderLines(sec.lines)}
+              </div>
+            </div>
+          );
+        }
+
+        if (isPrevention) {
+          const sectionStyle = style || { accent: "#185FA5", bg: "#E6F1FB", icon: "list" };
+          return (
+            <div key={i} style={{ borderRadius: "var(--border-radius-lg)", border: `0.5px solid ${sectionStyle.accent}33`, overflow: "hidden" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 14px", background: sectionStyle.bg, borderBottom: `0.5px solid ${sectionStyle.accent}22`, color: sectionStyle.accent }}>
+                <SectionIcon type={sectionStyle.icon} />
+                <span style={{ fontSize: 12, fontWeight: 500, letterSpacing: "0.01em" }}>{sec.title}</span>
+              </div>
+              <div style={{ padding: "13px 14px", background: "var(--color-background-primary)" }}>
+                {hasContent ? <PreventionSection lines={sec.lines} /> : <p style={{ fontSize: 13, color: "var(--color-text-tertiary)", margin: 0, fontStyle: "italic" }}>—</p>}
+              </div>
+            </div>
+          );
+        }
+
+        if (isRelated && style) return (
+          <div key={i} style={{ borderRadius: "var(--border-radius-lg)", border: `0.5px solid ${style.accent}33`, overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 14px", background: style.bg, borderBottom: `0.5px solid ${style.accent}22`, color: style.accent }}>
+              <SectionIcon type={style.icon} />
+              <span style={{ fontSize: 12, fontWeight: 500, letterSpacing: "0.01em" }}>{sec.title}</span>
+            </div>
+            <div style={{ padding: "13px 14px", background: "var(--color-background-primary)" }}>
+              {bullets.length > 0 ? <RelatedPagePills lines={bullets} /> : renderLines(sec.lines)}
+            </div>
+          </div>
+        );
 
         if (style) return (
           <div key={i} style={{ borderRadius: "var(--border-radius-lg)", border: `0.5px solid ${style.accent}33`, overflow: "hidden" }}>

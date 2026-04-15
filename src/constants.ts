@@ -89,7 +89,11 @@ Plain text only. Required for transaction pages.
 Plain text content.
 
 ## Responsibilities
-Plain text list. Required when tenant is primary or secondary user.
+Landlord:
+- what the landlord must do (one item per line, plain text)
+Tenant:
+- what the tenant must do (one item per line, plain text)
+Required when tenant is primary or secondary user. Always label groups exactly as "Landlord:" and "Tenant:" on their own line.
 
 ## What happens next
 Plain text paragraph.
