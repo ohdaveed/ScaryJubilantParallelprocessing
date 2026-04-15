@@ -210,7 +210,7 @@ app.post("/api/evaluate", async (req, res) => {
   const { pageName, pageType, draft, userType } = req.body;
   if (!draft) return res.status(400).json({ error: "Missing draft" });
 
-  const evalPrompt = `You are an SF.gov content quality evaluator. Evaluate this HHVC page draft against SF.gov and Karl content standards.
+  const evalPrompt = `You are an SF.gov content quality evaluator. Evaluate this HHVC page draft against SF.gov and Karl CMS content standards.
 
 PAGE: ${pageName || "Untitled"}
 TYPE: ${pageType || "Unknown"}
@@ -229,16 +229,30 @@ Evaluate and return ONLY this JSON structure (no other text, no markdown):
   "failed": ["<check that failed>", ...]
 }
 
+VALID KARL CONTENT TYPES (only these are acceptable):
+Transaction, Information, Step by step, Topic, Resource Collection
+
+INVALID CONTENT TYPES (flag as FAILED if any appear):
+Guidance page, Issue page, Enforcement page, Support page, Hub page, any other type not in the valid list above
+
+VALID KARL COMPONENTS (only these are acceptable):
+Title, Description, Button link, Callout, Spotlight, Text, Section, Phone number, Email, Related, Address, Media, Profile, Resource tile, What to know, What to do
+
+INVALID COMPONENTS (flag as FAILED if any appear):
+Action-first title, Primary CTA block, Responsibilities section, What happens next, Signs/examples, When to use this page, FAQ, Checklist, Short summary, What you can do now, or any component not in the valid list above
+
 Check for:
 - Plain language at 5th-6th grade level
-- Action-oriented title in first person
+- Action-oriented title in first person (Title field)
 - Clear primary purpose
-- What happens next section present
+- Description (SEO summary) present and under 150 characters
 - No institutional jargon
-- Correct page type for content (pest = Transaction)
-- 311 reference for Transaction pages
-- Tenant responsibilities if tenants are primary user
-- SEO summary under 150 characters
+- Page type is one of the valid Karl content types; flag as FAILED if a non-existent type is used
+- All components used are from the valid Karl component list; flag as FAILED for any fictional component
+- What to know and What to do sections present for Transaction pages
+- 311 reference for Transaction pages (via Button link, Phone number, or text in What to do)
+- Tenant responsibilities included if tenants are primary or secondary user
+- System Relationships lists "Healthy Housing and Vector Control (Topic)" as the Parent
 - No markdown formatting in content
 
 DIGITAL.GOV PLAIN LANGUAGE CHECKS (check each of these specifically and include the result in passed, warnings, or failed):

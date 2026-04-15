@@ -1,19 +1,25 @@
 import React, { useState } from "react";
-import { TYPE_META, MILESTONE_DOTS } from "../constants";
+import { TYPE_META, LEGACY_PAGE_TYPES, MILESTONE_DOTS } from "../constants";
 import { clean, parseRel } from "../utils";
 import { KarlEvaluation } from "../types";
 
+const LEGACY_STYLE = { fill: "#F7F6F2", stroke: "#B4B2A9", text: "#5F5E5A" };
+
 export const Badge: React.FC<{ type: string; small?: boolean }> = ({ type, small }) => {
   const t = clean(type);
-  const c = TYPE_META[t] || { fill: "#F1EFE8", stroke: "#888", text: "#444" };
+  const isLegacy = LEGACY_PAGE_TYPES.includes(t);
+  const c = isLegacy ? LEGACY_STYLE : (TYPE_META[t] || { fill: "#F1EFE8", stroke: "#888", text: "#444" });
 
   return (
     <span style={{
-      display: "inline-flex", alignItems: "center", fontSize: small ? 10 : 11,
+      display: "inline-flex", alignItems: "center", gap: 4, fontSize: small ? 10 : 11,
       fontWeight: 500, padding: small ? "2px 7px" : "3px 10px", borderRadius: 20,
       background: c.fill, color: c.text, border: `1px solid ${c.stroke}`,
       whiteSpace: "nowrap", lineHeight: 1.4
     }}>
+      {isLegacy && (
+        <span style={{ fontSize: small ? 8 : 9, opacity: 0.7, letterSpacing: 0 }} title="Legacy type — not a real Karl content type">⚠</span>
+      )}
       {t || "—"}
     </span>
   );
