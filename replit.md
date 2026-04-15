@@ -78,7 +78,8 @@ Tables are auto-created by `initDb()` on server start.
 - **Streaming:** Claude responses stream via SSE. Backend forwards raw stream; frontend reads live.
 - **Karl integration:** MCP server URL passed in Anthropic request. Shows "Karl connected" when active.
 - **Karl evaluation:** Separate `POST /api/evaluate` call runs after generation using `claude-haiku-4-20250514`.
-- **Second AI agent:** After initial generation, `POST /api/improve-structure` runs a second Claude Sonnet pass focused on structural improvements (heading hierarchy, section ordering, accessibility). User preferences are injected into both generation and structure-improvement prompts.
+- **Regulatory alignment:** System prompt includes SF Health Code Article 11 compliance, 48-hour emergency response protocol (sewage/bed bugs), DPH vs. DBI jurisdictional clarity with external link guidance, SEO Description strategy ("We inspect..." for hub), H3-separated content structure, competitive deduplication checks, and Wagtail CMS component guidance (Spotlight, Action Link).
+- **Second AI agent:** After initial generation, `POST /api/improve-structure` runs a second Claude Sonnet pass focused on structural improvements (heading hierarchy, section ordering, accessibility, regulatory alignment checks). User preferences are injected into both generation and structure-improvement prompts.
 - **User preferences:** Stored in `user_preferences` table. Can be added manually in the sidebar or auto-learned from successful refine instructions. Preferences influence all future generations and structure improvements.
 - **Storage:** PostgreSQL via `pg` pool. `pagesApi`/`todosApi`/`preferencesApi` in `utils.ts` are typed REST clients. `lsLegacy` handles one-time migration of legacy `hhvc:*` localStorage keys.
 - **Model:** `claude-sonnet-4-20250514` with `anthropic-beta: mcp-client-2025-04-04`

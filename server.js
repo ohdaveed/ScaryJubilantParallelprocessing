@@ -351,7 +351,7 @@ app.post("/api/improve-structure", async (req, res) => {
     ? `\n\nUSER PREFERENCES (apply these to all content decisions):\n${preferences.map((p, i) => `${i + 1}. ${p}`).join("\n")}`
     : "";
 
-  const improvePrompt = `You are an SF.gov page structure editor. Your job is to improve the structure and readability of an existing HHVC page draft WITHOUT changing its factual content.
+  const improvePrompt = `You are an SF.gov page structure editor and Public Health Content Strategist. Your job is to improve the structure and readability of an existing HHVC page draft WITHOUT changing its factual content, while ensuring regulatory alignment.
 
 RULES:
 - Keep the EXACT SAME output format (PAGE NAME:, PRIMARY USER:, etc.)
@@ -362,7 +362,19 @@ RULES:
 - Move any buried calls-to-action (like calling 311) to a more prominent position
 - Ensure section titles are clear and action-oriented
 - Keep content concise — remove redundant sentences
-- NEVER add new factual claims or legal requirements${prefBlock}
+- NEVER add new factual claims or legal requirements
+
+REGULATORY ALIGNMENT CHECKS:
+- If the page involves sewage or bed bugs, ensure the 48-hour priority response time is prominently called out
+- If the page could cause confusion between DPH and DBI jurisdiction, add a Callout or Section clarifying the distinction (DPH = health/sanitation; DBI = structural/life-safety)
+- Ensure any inspection criteria references align with SF Health Code Article 11
+- On inspection-related pages, ensure separate sections exist for "What we inspect" and "Tenant and owner responsibilities"
+- For the HHVC hub Topic page, the Description field must start with "We inspect"
+
+WAGTAIL CMS ALIGNMENT:
+- Ensure Spotlight components are used on Topic and Resource Collection pages to feature key sub-pages
+- Ensure Action Links are used for primary calls-to-action (311, external services)
+- Flag any potential duplication with existing SF.gov pages in DUPLICATION RISKS${prefBlock}
 
 Here is the page to improve:
 
