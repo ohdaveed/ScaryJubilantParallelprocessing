@@ -80,17 +80,34 @@ const SfGovFooter: React.FC = () => (
   </div>
 );
 
+function parseInlineLinks(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  const linkRe = /\[([^\]]+)\]\(([^)]+)\)/g;
+  let m;
+  while ((m = linkRe.exec(text)) !== null) {
+    if (m.index > lastIndex) parts.push(text.slice(lastIndex, m.index));
+    parts.push(
+      <span key={m.index} style={{ color: SF.blue, textDecoration: "underline", textUnderlineOffset: 2, cursor: "default" }}>{m[1]}</span>
+    );
+    lastIndex = m.index + m[0].length;
+  }
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+  return parts.length <= 1 ? text : <>{parts}</>;
+}
+
 function renderSfGovLines(lines: string[]): React.ReactNode {
   const elements: React.ReactNode[] = [];
   let currentList: string[] = [];
   let listType: "ul" | "ol" | null = null;
+  let tableRows: string[][] = [];
 
   const flushList = () => {
     if (currentList.length > 0 && listType) {
       const Tag = listType;
       elements.push(
         <Tag key={`list-${elements.length}`} style={{ margin: "8px 0 8px 20px", padding: 0, fontFamily: SF.font, fontSize: 16, lineHeight: 1.7, color: SF.slate4 }}>
-          {currentList.map((item, j) => <li key={j} style={{ marginBottom: 4 }}>{item}</li>)}
+          {currentList.map((item, j) => <li key={j} style={{ marginBottom: 4 }}>{parseInlineLinks(item)}</li>)}
         </Tag>
       );
       currentList = [];
@@ -98,9 +115,69 @@ function renderSfGovLines(lines: string[]): React.ReactNode {
     }
   };
 
+  const flushTable = () => {
+    if (tableRows.length > 0) {
+      const headerRow = tableRows[0];
+      const bodyRows = tableRows.slice(1);
+      elements.push(
+        <div key={`table-${elements.length}`} style={{ margin: "12px 0", borderRadius: 4, border: `1px solid ${SF.lightBorder}`, overflow: "hidden" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: SF.font, fontSize: 14 }}>
+            <thead>
+              <tr style={{ background: SF.bg }}>
+                {headerRow.map((cell, ci) => (
+                  <th key={ci} style={{ padding: "10px 14px", textAlign: "left", fontWeight: 600, color: SF.slate4, borderBottom: `2px solid ${SF.lightBorder}`, fontSize: 13, letterSpacing: "0.02em" }}>{cell}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {bodyRows.map((row, ri) => (
+                <tr key={ri} style={{ background: ri % 2 === 1 ? "#FAFAF7" : SF.white }}>
+                  {row.map((cell, ci) => (
+                    <td key={ci} style={{ padding: "10px 14px", color: SF.slate4, borderBottom: `1px solid ${SF.lightBorder}`, lineHeight: 1.5 }}>{parseInlineLinks(cell)}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      tableRows = [];
+    }
+  };
+
   lines.forEach((line, i) => {
     const trimmed = line.trim();
-    if (!trimmed) { flushList(); return; }
+    if (!trimmed) { flushList(); flushTable(); return; }
+
+    if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+      if (/^\|[\s-:|]+\|$/.test(trimmed)) return;
+      flushList();
+      const cells = trimmed.split("|").slice(1, -1).map(c => c.trim());
+      tableRows.push(cells);
+      return;
+    } else {
+      flushTable();
+    }
+
+    const checkMatch = trimmed.match(/^[-•*]\s+\[([ xX])\]\s+(.*)/);
+    if (checkMatch) {
+      flushList();
+      const checked = checkMatch[1].toLowerCase() === "x";
+      elements.push(
+        <div key={`check-${i}`} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 12px", borderRadius: 4, background: SF.bg, marginBottom: 4 }}>
+          <div style={{
+            width: 18, height: 18, borderRadius: 3, flexShrink: 0, marginTop: 2,
+            border: checked ? "none" : `2px solid ${SF.border}`,
+            background: checked ? SF.blue : SF.white,
+            display: "flex", alignItems: "center", justifyContent: "center"
+          }}>
+            {checked && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M4 12l5 5 11-11" /></svg>}
+          </div>
+          <span style={{ fontFamily: SF.font, fontSize: 15, lineHeight: 1.5, color: SF.slate4 }}>{parseInlineLinks(checkMatch[2])}</span>
+        </div>
+      );
+      return;
+    }
 
     const bulletMatch = trimmed.match(/^[-•*]\s+(.*)/);
     const numMatch = trimmed.match(/^\d+[.)]\s+(.*)/);
@@ -145,12 +222,13 @@ function renderSfGovLines(lines: string[]): React.ReactNode {
         }
       } else {
         elements.push(
-          <p key={`p-${i}`} style={{ fontFamily: SF.font, fontSize: 16, lineHeight: 1.7, color: SF.slate4, margin: "0 0 12px" }}>{trimmed}</p>
+          <p key={`p-${i}`} style={{ fontFamily: SF.font, fontSize: 16, lineHeight: 1.7, color: SF.slate4, margin: "0 0 12px" }}>{parseInlineLinks(trimmed)}</p>
         );
       }
     }
   });
   flushList();
+  flushTable();
   return <>{elements}</>;
 }
 
