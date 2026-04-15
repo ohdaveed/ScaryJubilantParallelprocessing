@@ -1001,10 +1001,11 @@ export default function App() {
 
       {tab === "builder" && (
         <div style={{ display: "grid", gridTemplateColumns: sidebarOpen ? "300px 1fr" : "40px 1fr", gap: sidebarOpen ? 16 : 8, alignItems: "start", transition: "grid-template-columns 0.25s ease, gap 0.25s ease" }}>
-          <div style={{ position: "relative", overflow: "hidden", transition: "width 0.25s ease" }}>
+          <div style={{ position: "relative", overflow: "hidden" }}>
             <button
               onClick={() => setSidebarOpen(o => !o)}
               title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+              aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
               style={{
                 position: sidebarOpen ? "absolute" : "relative",
                 top: sidebarOpen ? 8 : 0,
