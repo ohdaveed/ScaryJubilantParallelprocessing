@@ -71,10 +71,15 @@ export const parseRel = (rel: string): RelMap => {
   };
 };
 
-export const parseDraftSections = (draft: string) => {
+type DraftSection =
+  | { type: "title"; title: string; lines: string[] }
+  | { type: "section"; title: string; lines: string[] }
+  | { type: "summary"; title: string; text: string; lines: string[] };
+
+export const parseDraftSections = (draft: string): DraftSection[] => {
   const lines = draft.split("\n");
-  const sections: any[] = [];
-  let current: any = null;
+  const sections: DraftSection[] = [];
+  let current: DraftSection | null = null;
 
   for (const line of lines) {
     const l = clean(line);

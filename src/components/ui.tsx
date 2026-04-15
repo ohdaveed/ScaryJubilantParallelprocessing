@@ -143,7 +143,7 @@ export const RelPanel: React.FC<{ rel: string }> = ({ rel }) => {
 };
 
 export const KarlStatus: React.FC<{ status: string }> = ({ status }) => {
-  const states: any = {
+  const states: Record<string, { dot: string; label: string; bg: string }> = {
     idle:       { dot: "#B4B2A9", label: "Karl not connected", bg: "var(--color-background-secondary)" },
     connecting: { dot: "#BA7517", label: "Connecting to Karl…", bg: "#FAEEDA" },
     active:     { dot: "#1D9E75", label: "Karl connected", bg: "#E1F5EE" },
@@ -159,7 +159,7 @@ export const KarlStatus: React.FC<{ status: string }> = ({ status }) => {
 };
 
 export const SectionIcon: React.FC<{ type: string }> = ({ type }) => {
-  const icons: any = {
+  const icons: Record<string, React.ReactNode> = {
     arrow: <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />,
     phone: <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.63A2 2 0 012 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" stroke="currentColor" strokeWidth="2" fill="none" />,
     list: <><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none" /><rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" strokeWidth="2" fill="none" /><path d="M9 12h6M9 16h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></>,

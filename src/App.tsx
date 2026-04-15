@@ -123,12 +123,14 @@ function SystemMap({ pages, onSelect }: { pages: PageDraft[]; onSelect: (id: str
 
   const topic = pages.filter(p => clean(p.pageType) === "Topic page");
   const others = pages.filter(p => clean(p.pageType) !== "Topic page");
-  const nodes: any[] = [];
+  type MapNode = { id: string; name: string; type: string; x: number; y: number; tier: number };
+  type MapEdge = [string, string];
+  const nodes: MapNode[] = [];
 
   topic.forEach((p, i) => { const a = (2 * Math.PI * i / Math.max(topic.length, 1)) - Math.PI / 2; nodes.push({ id: p.id, name: clean(p.name) || "Untitled", type: clean(p.pageType), x: W / 2 + 70 * Math.cos(a), y: H / 2 + 50 * Math.sin(a), tier: 0 }); });
   others.forEach((p, i) => { const a = (2 * Math.PI * i / Math.max(others.length, 1)) - Math.PI / 2; nodes.push({ id: p.id, name: clean(p.name) || "Untitled", type: clean(p.pageType), x: W / 2 + 185 * Math.cos(a), y: H / 2 + 165 * Math.sin(a), tier: 1 }); });
 
-  const edges: any[] = [], orphans = new Set(pages.map(p => p.id));
+  const edges: MapEdge[] = [], orphans = new Set(pages.map(p => p.id));
   pages.forEach(p => {
     const rel = parseRel(p.relationships || "");
     const txt = [rel.parent, rel.siblings, rel.children].join(" ").toLowerCase();
@@ -448,7 +450,7 @@ export default function App() {
                         style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 10px", background: isSel ? "var(--color-background-secondary)" : "transparent", border: isSel ? "0.5px solid var(--color-border-secondary)" : "0.5px solid transparent", borderRadius: "var(--border-radius-md)", cursor: "pointer", textAlign: "left", width: "100%", transition: "background 0.1s", outline: "none" }}
                         onMouseEnter={e => { if (!isSel) e.currentTarget.style.background = "var(--color-background-secondary)"; }}
                         onMouseLeave={e => { if (!isSel) e.currentTarget.style.background = "transparent"; }}>
-                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: (c as any).dot, flexShrink: 0 }} />
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: c.dot, flexShrink: 0 }} />
                         <span style={{ fontSize: 12, fontWeight: isSel ? 500 : 400, color: "var(--color-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{clean(p.name) || "Untitled"}</span>
                         {!p.karlConnected && <span title="Generated without Karl docs" style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#FAEEDA", color: "#854F0B", flexShrink: 0 }}>no Karl</span>}
                       </button>
@@ -570,7 +572,7 @@ export default function App() {
               return (
                 <Card key={p.id} onClick={() => { setSelected(p); setShowSuccess(false); setTab("builder"); }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 9 }}>
-                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: (c as any).dot, flexShrink: 0 }} />
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: c.dot, flexShrink: 0 }} />
                     <Badge type={clean(p.pageType)} small />
                     {!p.karlConnected && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#FAEEDA", color: "#854F0B", marginLeft: "auto" }}>no Karl</span>}
                   </div>
