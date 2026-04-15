@@ -1,4 +1,4 @@
-import { SECTION_STYLES, PEST_KW } from "./constants";
+import { PEST_KW } from "./constants";
 import { RelMap } from "./types";
 
 export const isPest = (t: string): boolean => {
@@ -17,13 +17,6 @@ export const clean = (s?: string): string => {
     .trim();
 };
 
-export const getSectionStyle = (title: string) => {
-  const t = title.toLowerCase();
-  for (const [key, style] of Object.entries(SECTION_STYLES)) {
-    if (t.includes(key)) return style;
-  }
-  return null;
-};
 
 export const parsePage = (raw: string) => {
   const stripped = raw.replace(/\*\*/g, "").replace(/\*/g, "").replace(/_{2}/g, "").replace(/`/g, "");

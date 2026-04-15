@@ -1,188 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { PageDraft, TodoItem, KarlEvaluation, PlannedPage, UserPreference } from "./types";
 import { USER_TYPES, PAGE_TYPES, SYSTEM_PROMPT, SUGGESTED_PAGES, TYPE_META, SITEMAP_SKELETON } from "./constants";
-import { clean, isPest, parsePage, parseRel, parseDraftSections, getSectionStyle, pagesApi, todosApi, plannedPagesApi, preferencesApi, improveStructure, runKarlEvaluation, lsLegacy, driveApi, skeletonToPageDraft } from "./utils";
+import { clean, isPest, parsePage, parseRel, pagesApi, todosApi, plannedPagesApi, preferencesApi, improveStructure, runKarlEvaluation, lsLegacy, driveApi, skeletonToPageDraft } from "./utils";
 import { DriveFile } from "./types";
-import { Badge, Label, Divider, Btn, Card, Field, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar, SectionIcon, iStyle, ResponsibilitiesTable, ActionStepList, ChecklistRow, PreventionSection, RelatedPagePills } from "./components/ui";
+import { Badge, Label, Divider, Btn, Card, Field, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar, iStyle } from "./components/ui";
+import { SfGovPagePreview } from "./components/SfGovPreview";
 
-function highlightSpecial(text: string): React.ReactNode {
-  const pattern = /10\s+square\s+feet/i;
-  const match = text.match(pattern);
-  if (!match || match.index === undefined) return text;
-  const idx = match.index;
-  return (
-    <>
-      {text.slice(0, idx)}
-      <span style={{ background: "#FAEEDA", color: "#633806", padding: "1px 6px", borderRadius: 4, fontWeight: 600, fontSize: "0.94em", border: "0.5px solid #854F0B44" }}>
-        {text.slice(idx, idx + match[0].length)}
-      </span>
-      {text.slice(idx + match[0].length)}
-    </>
-  );
-}
 
-function renderLines(lines: string[]) {
-  const result: { paras: string[]; bullets: string[] } = { paras: [], bullets: [] };
-  lines.forEach((line, i) => {
-    const orig = lines[i];
-    const c = clean(line);
-    if (!c) return;
-    if (orig.startsWith("- ") || orig.startsWith("• ") || orig.startsWith("* ")) {
-      result.bullets.push(c.replace(/^[-•*]\s*/, ""));
-    } else {
-      result.paras.push(c);
-    }
-  });
-
-  return (
-    <>
-      {result.paras.map((p, i) => <p key={i} style={{ fontSize: 13, margin: "0 0 6px", lineHeight: 1.7, color: "var(--color-text-primary)" }}>{highlightSpecial(p)}</p>)}
-      {result.bullets.length > 0 && <ul style={{ margin: "6px 0 0", padding: 0, listStyle: "none" }}>
-        {result.bullets.map((it, i) => (
-          <li key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 6, fontSize: 13, lineHeight: 1.6, color: "var(--color-text-primary)" }}>
-            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--color-text-tertiary)", flexShrink: 0, marginTop: 7 }} />
-            <span>{highlightSpecial(it)}</span>
-          </li>
-        ))}
-      </ul>}
-    </>
-  );
-}
-
-function DraftRenderer({ draft }: { draft: string }) {
-  if (!draft) return <p style={{ color: "var(--color-text-tertiary)", fontSize: 14 }}>No draft content.</p>;
-  const sections = parseDraftSections(draft);
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {sections.map((sec, i) => {
-        if (sec.type === "title") return (
-          <div key={i} style={{ marginBottom: 4 }}>
-            <h2 style={{ fontSize: 24, fontWeight: 500, margin: "0 0 6px", letterSpacing: "-0.4px", lineHeight: 1.2, color: "var(--color-text-primary)" }}>{sec.title}</h2>
-            {sec.lines.filter((l: string) => clean(l)).map((l: string, j: number) => <p key={j} style={{ fontSize: 14, margin: "0 0 4px", color: "var(--color-text-secondary)", lineHeight: 1.6 }}>{clean(l)}</p>)}
-          </div>
-        );
-        if (sec.type === "summary") return (
-          <div key={i} style={{ padding: "12px 16px", background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-lg)", borderLeft: "3px solid var(--color-border-secondary)" }}>
-            <Label style={{ margin: "0 0 4px" }}>SEO summary</Label>
-            <p style={{ fontSize: 13, margin: 0, color: "var(--color-text-secondary)", lineHeight: 1.65, fontStyle: "italic" }}>{sec.text}</p>
-          </div>
-        );
-
-        const titleLower = (sec.title || "").toLowerCase();
-        const style = getSectionStyle(sec.title);
-        const hasContent = sec.lines.some((l: string) => clean(l));
-        if (!sec.title && !hasContent) return null;
-
-        const isResponsibilities = titleLower.includes("responsib");
-        const is311 = titleLower.includes("311") || (titleLower.includes("report") && (titleLower.includes("problem") || titleLower.includes("issue")));
-        const isBeforeYouCall = titleLower.includes("before") && titleLower.includes("call");
-        const isChecklist = titleLower.includes("checklist") && !isBeforeYouCall;
-        const isPrevention = /prevent/.test(titleLower);
-        const isRelated = titleLower.includes("related");
-
-        const bullets = sec.lines.filter((l: string) => {
-          const t = l.trim();
-          return t.startsWith("- ") || t.startsWith("• ") || t.startsWith("* ");
-        });
-
-        if (isResponsibilities && style) return (
-          <div key={i} style={{ borderRadius: "var(--border-radius-lg)", border: `0.5px solid ${style.accent}33`, overflow: "hidden" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 14px", background: style.bg, borderBottom: `0.5px solid ${style.accent}22`, color: style.accent }}>
-              <SectionIcon type={style.icon} />
-              <span style={{ fontSize: 12, fontWeight: 500, letterSpacing: "0.01em" }}>{sec.title}</span>
-            </div>
-            <div style={{ padding: "10px 14px", background: "var(--color-background-primary)" }}>
-              {hasContent ? <ResponsibilitiesTable lines={sec.lines} /> : <p style={{ fontSize: 13, color: "var(--color-text-tertiary)", margin: 0, fontStyle: "italic" }}>—</p>}
-            </div>
-          </div>
-        );
-
-        if (is311 && style) return (
-          <div key={i} style={{ borderRadius: "var(--border-radius-lg)", border: `0.5px solid ${style.accent}33`, overflow: "hidden" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 14px", background: style.bg, borderBottom: `0.5px solid ${style.accent}22`, color: style.accent }}>
-              <SectionIcon type={style.icon} />
-              <span style={{ fontSize: 12, fontWeight: 500, letterSpacing: "0.01em" }}>{sec.title}</span>
-            </div>
-            <div style={{ padding: "13px 14px", background: "var(--color-background-primary)" }}>
-              {hasContent
-                ? bullets.length > 0
-                  ? <ActionStepList lines={bullets} />
-                  : renderLines(sec.lines)
-                : <p style={{ fontSize: 13, color: "var(--color-text-tertiary)", margin: 0, fontStyle: "italic" }}>—</p>}
-            </div>
-          </div>
-        );
-
-        if (isBeforeYouCall || isChecklist) {
-          const sectionStyle = style || { accent: "#0F6E56", bg: "#E1F5EE", icon: "list" };
-          const items = bullets.map((l: string) => l.replace(/^[-•*]\s*/, "").trim()).filter(Boolean);
-          return (
-            <div key={i} style={{ borderRadius: "var(--border-radius-lg)", border: `0.5px solid ${sectionStyle.accent}33`, overflow: "hidden" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 14px", background: sectionStyle.bg, borderBottom: `0.5px solid ${sectionStyle.accent}22`, color: sectionStyle.accent }}>
-                <SectionIcon type={sectionStyle.icon} />
-                <span style={{ fontSize: 12, fontWeight: 500, letterSpacing: "0.01em" }}>{sec.title}</span>
-              </div>
-              <div style={{ padding: "13px 14px", background: "var(--color-background-primary)" }}>
-                {items.length > 0 ? <ChecklistRow items={items} /> : renderLines(sec.lines)}
-              </div>
-            </div>
-          );
-        }
-
-        if (isPrevention) {
-          const sectionStyle = style || { accent: "#185FA5", bg: "#E6F1FB", icon: "list" };
-          return (
-            <div key={i} style={{ borderRadius: "var(--border-radius-lg)", border: `0.5px solid ${sectionStyle.accent}33`, overflow: "hidden" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 14px", background: sectionStyle.bg, borderBottom: `0.5px solid ${sectionStyle.accent}22`, color: sectionStyle.accent }}>
-                <SectionIcon type={sectionStyle.icon} />
-                <span style={{ fontSize: 12, fontWeight: 500, letterSpacing: "0.01em" }}>{sec.title}</span>
-              </div>
-              <div style={{ padding: "13px 14px", background: "var(--color-background-primary)" }}>
-                {hasContent ? <PreventionSection lines={sec.lines} /> : <p style={{ fontSize: 13, color: "var(--color-text-tertiary)", margin: 0, fontStyle: "italic" }}>—</p>}
-              </div>
-            </div>
-          );
-        }
-
-        if (isRelated && style) return (
-          <div key={i} style={{ borderRadius: "var(--border-radius-lg)", border: `0.5px solid ${style.accent}33`, overflow: "hidden" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 14px", background: style.bg, borderBottom: `0.5px solid ${style.accent}22`, color: style.accent }}>
-              <SectionIcon type={style.icon} />
-              <span style={{ fontSize: 12, fontWeight: 500, letterSpacing: "0.01em" }}>{sec.title}</span>
-            </div>
-            <div style={{ padding: "13px 14px", background: "var(--color-background-primary)" }}>
-              {bullets.length > 0 ? <RelatedPagePills lines={bullets} /> : renderLines(sec.lines)}
-            </div>
-          </div>
-        );
-
-        if (style) return (
-          <div key={i} style={{ borderRadius: "var(--border-radius-lg)", border: `0.5px solid ${style.accent}33`, overflow: "hidden" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 14px", background: style.bg, borderBottom: `0.5px solid ${style.accent}22`, color: style.accent }}>
-              <SectionIcon type={style.icon} />
-              <span style={{ fontSize: 12, fontWeight: 500, letterSpacing: "0.01em" }}>{sec.title}</span>
-            </div>
-            <div style={{ padding: "13px 14px", background: "var(--color-background-primary)" }}>
-              {hasContent ? renderLines(sec.lines) : <p style={{ fontSize: 13, color: "var(--color-text-tertiary)", margin: 0, fontStyle: "italic" }}>—</p>}
-            </div>
-          </div>
-        );
-
-        return (
-          <div key={i} style={{ borderRadius: "var(--border-radius-lg)", border: "0.5px solid var(--color-border-tertiary)", overflow: "hidden" }}>
-            {sec.title && <div style={{ padding: "8px 14px", background: "var(--color-background-secondary)", borderBottom: "0.5px solid var(--color-border-tertiary)" }}>
-              <span style={{ fontSize: 12, fontWeight: 500, color: "var(--color-text-secondary)" }}>{sec.title}</span>
-            </div>}
-            <div style={{ padding: "13px 14px", background: "var(--color-background-primary)" }}>
-              {hasContent ? renderLines(sec.lines) : <p style={{ fontSize: 13, color: "var(--color-text-tertiary)", margin: 0, fontStyle: "italic" }}>—</p>}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 function StreamRenderer({ text }: { text: string }) {
   return (
@@ -1328,14 +1152,12 @@ export default function App() {
                 {selected.karlEvaluation && <KarlEvalPanel evaluation={selected.karlEvaluation} />}
 
                 {/* SF.gov page preview */}
-                <div style={{ border: "0.5px solid var(--color-border-secondary)", borderRadius: "var(--border-radius-lg)", overflow: "hidden", marginBottom: 14 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px", background: "var(--color-background-secondary)", borderBottom: "0.5px solid var(--color-border-tertiary)" }}>
-                    <span style={{ fontSize: 10, fontWeight: 500, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.09em" }}>Page draft</span>
+                <div style={{ border: "1px solid #D1D5DB", borderRadius: 8, overflow: "hidden", marginBottom: 14, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 14px", background: "#F7F6F2", borderBottom: "1px solid #E5E4DF" }}>
+                    <span style={{ fontSize: 10, fontWeight: 500, color: "#8C8B87", textTransform: "uppercase", letterSpacing: "0.09em" }}>SF.gov preview</span>
                     <Btn onClick={() => handleDownload(selected.draft, (clean(selected.name) || "page").toLowerCase().replace(/\s+/g, "-") + "-draft.txt")} variant="ghost" size="sm">Export</Btn>
                   </div>
-                  <div style={{ padding: "20px 22px", background: "var(--color-background-primary)" }}>
-                    <DraftRenderer draft={selected.draft} />
-                  </div>
+                  <SfGovPagePreview draft={selected.draft} pageType={selected.pageType} pageTitle={clean(selected.name)} />
                 </div>
 
                 {/* Enforcement & integration notes */}

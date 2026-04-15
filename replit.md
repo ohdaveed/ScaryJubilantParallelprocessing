@@ -21,9 +21,10 @@ src/
   index.css         — CSS custom properties / design tokens + keyframe animations
   components/
     ui.tsx          — Reusable UI components (Badge, Btn, Card, KarlEvalPanel, etc.)
+    SfGovPreview.tsx — SF.gov-branded page preview (header, footer, section rendering)
 server.js           — Express server: Anthropic proxy + PostgreSQL CRUD API
 vite.config.ts      — Vite config: port 5000, proxy /api/* → :3001
-index.html          — HTML entry point
+index.html          — HTML entry point (Rubik + Roboto Mono fonts)
 scripts/
   post-merge.sh     — Post-merge setup: npm install
 ```
@@ -109,6 +110,7 @@ On first load with empty planned_pages table, the app auto-seeds 13 planned page
 - **Skeleton drafts:** `SITEMAP_SKELETON` in constants.ts defines 13 SkeletonTemplate entries. `skeletonToPageDraft()` in utils.ts converts them to PageDraft objects with `skeleton: true`. Auto-seeded on first load.
 - **Second AI agent:** After initial generation, `POST /api/improve-structure` runs a second Claude Sonnet pass focused on structural improvements (heading hierarchy, section ordering, accessibility, regulatory alignment, 3-hub organizational check, vocabulary enforcement). User preferences are injected into both generation and structure-improvement prompts.
 - **User preferences:** Stored in `user_preferences` table. Can be added manually in the sidebar or auto-learned from successful refine instructions. Preferences influence all future generations and structure improvements.
+- **SF.gov preview branding:** Page previews render inside `SfGovPagePreview` component with SF.gov header (logo, nav, search), footer (city seal, link columns), Rubik font family, SF design tokens (slate4 `#002B48`, action blue `#495ED4`, white bg), ~800px max-width content area, and sf.gov-style section headings with arrow-style related links.
 - **Storage:** PostgreSQL via `pg` pool. `pagesApi`/`todosApi`/`preferencesApi` in `utils.ts` are typed REST clients. `lsLegacy` handles one-time migration of legacy `hhvc:*` localStorage keys.
 - **Model:** `claude-sonnet-4-20250514` with `anthropic-beta: mcp-client-2025-04-04`
 
