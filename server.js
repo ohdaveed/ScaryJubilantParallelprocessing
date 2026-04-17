@@ -525,6 +525,60 @@ app.delete("/api/pages/:id", async (req, res) => {
   }
 });
 
+app.post("/api/pages/import", async (req, res) => {
+  try {
+    const importData = require("./src/data/hhvc-pages-import.json");
+
+    // Get existing page names (case-insensitive dedup)
+    const existing = await pool.query("SELECT data->>'name' AS name FROM pages");
+    const existingNames = new Set(existing.rows.map(r => (r.name || "").toLowerCase().trim()));
+
+    const { randomUUID } = await import("crypto");
+    let inserted = 0;
+    let skipped = 0;
+
+    for (const page of importData) {
+      const pageName = (page.name || "").toLowerCase().trim();
+      if (existingNames.has(pageName)) {
+        skipped++;
+        continue;
+      }
+      const id = randomUUID();
+      const now = new Date().toISOString();
+      const fullPage = { ...page, id, createdAt: now };
+      await pool.query(
+        "INSERT INTO pages (id, data, created_at) VALUES ($1, $2, $3)",
+        [id, JSON.stringify(fullPage), now]
+      );
+      existingNames.add(pageName); // prevent within-batch duplicates
+      inserted++;
+    }
+
+    res.json({ inserted, skipped });
+  } catch (err) {
+    console.error("POST /api/pages/import error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch("/api/pages/:id/review", async (req, res) => {
+  const { status } = req.body;
+  if (!["pending", "approved", "rejected"].includes(status)) {
+    return res.status(400).json({ error: "Invalid status. Must be pending, approved, or rejected." });
+  }
+  try {
+    const result = await pool.query(
+      `UPDATE pages SET data = data || $1::jsonb WHERE id = $2 RETURNING data`,
+      [JSON.stringify({ reviewStatus: status }), req.params.id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: "Page not found" });
+    res.json(result.rows[0].data);
+  } catch (err) {
+    console.error("PATCH /api/pages/:id/review error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get("/api/todos", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM todos ORDER BY created_at ASC");
