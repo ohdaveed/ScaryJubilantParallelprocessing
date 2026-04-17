@@ -88,6 +88,7 @@ export interface PageDraft {
   karlEvaluation?: KarlEvaluation;
   skeleton?: boolean;
   imported?: boolean;
+  version?: string;
   reviewStatus?: 'pending' | 'approved' | 'rejected';
   qualityGate?: {
     status: "pass" | "review_required";
