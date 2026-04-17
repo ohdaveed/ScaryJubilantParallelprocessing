@@ -168,10 +168,13 @@ ${notesBlock}`;
 export const parseStructuredPage = (raw: string): ParseStructuredResult => {
   const jsonCandidate = extractJsonObjectText(raw);
   if (!jsonCandidate) {
+    const hasJsonAttempt = raw.indexOf("{") >= 0;
     return {
       rawText: raw,
       parsed: null,
-      parseError: { code: "missing_json_object", message: "No JSON object found in model response." }
+      parseError: hasJsonAttempt
+        ? { code: "invalid_json", message: "Malformed JSON object found in model response." }
+        : { code: "missing_json_object", message: "No JSON object found in model response." }
     };
   }
 
@@ -256,11 +259,15 @@ export const pagesApi = {
     const data = await res.json();
     return data.pages || [];
   },
-  save: async (id: string, page: import("./types").PageDraft): Promise<void> => {
+  save: async (id: string, page: import("./types").PageDraft, version?: { notes: string; trigger: 'generate' | 'refine' | 'restore' }): Promise<void> => {
     const res = await fetch(`${API_BASE}/pages`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, data: page })
+      body: JSON.stringify({
+        id,
+        data: page,
+        ...(version ? { versionNotes: version.notes, versionTrigger: version.trigger } : {})
+      })
     });
     if (!res.ok) throw new Error(`Failed to save page: ${res.status}`);
   },
@@ -431,6 +438,30 @@ export const preferencesApi = {
   delete: async (id: number): Promise<void> => {
     const res = await fetch(`${API_BASE}/preferences/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error(`Failed to delete preference: ${res.status}`);
+  }
+};
+
+export const versionsApi = {
+  list: async (pageId: string, opts: { limit?: number; includeData?: boolean } = {}): Promise<import("./types").PageVersion[]> => {
+    const params = new URLSearchParams();
+    if (opts.limit !== undefined) params.set("limit", String(opts.limit));
+    if (opts.includeData) params.set("includeData", "true");
+    const qs = params.toString() ? `?${params}` : "";
+    const res = await fetch(`${API_BASE}/pages/${encodeURIComponent(pageId)}/versions${qs}`);
+    if (!res.ok) throw new Error(`Failed to load versions: ${res.status}`);
+    const data = await res.json();
+    return data.versions || [];
+  },
+  get: async (pageId: string, versionId: number): Promise<import("./types").PageVersion> => {
+    const res = await fetch(`${API_BASE}/pages/${encodeURIComponent(pageId)}/versions/${versionId}`);
+    if (!res.ok) throw new Error(`Failed to load version: ${res.status}`);
+    return res.json();
+  },
+  restore: async (pageId: string, versionId: number): Promise<import("./types").PageDraft> => {
+    const res = await fetch(`${API_BASE}/pages/${encodeURIComponent(pageId)}/restore/${versionId}`, { method: "POST" });
+    if (!res.ok) throw new Error(`Failed to restore version: ${res.status}`);
+    const body = await res.json();
+    return body.data;
   }
 };
 
