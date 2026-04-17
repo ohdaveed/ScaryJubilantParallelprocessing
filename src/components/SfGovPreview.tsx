@@ -232,7 +232,8 @@ function renderSfGovLines(lines: string[]): React.ReactNode {
   return <>{elements}</>;
 }
 
-export const SfGovPagePreview: React.FC<{ draft: string; pageType?: string; pageTitle?: string }> = ({ draft, pageType, pageTitle }) => {
+export const SfGovPagePreview = React.forwardRef<HTMLDivElement, { draft: string; pageType?: string; pageTitle?: string }>(
+  ({ draft, pageType, pageTitle }, ref) => {
   if (!draft) return <p style={{ color: SF.slate2, fontSize: 14, fontFamily: SF.font }}>No draft content.</p>;
   const sections = parseDraftSections(draft);
 
@@ -241,7 +242,7 @@ export const SfGovPagePreview: React.FC<{ draft: string; pageType?: string; page
   const typeColor = typeMeta ? typeMeta.stroke : SF.blue;
 
   return (
-    <div style={{ background: SF.white, fontFamily: SF.font }}>
+    <div ref={ref} style={{ background: SF.white, fontFamily: SF.font }}>
       <SfGovHeader />
 
       <div style={{ maxWidth: 800, margin: "0 auto", padding: "32px 24px 48px" }}>
@@ -366,4 +367,6 @@ export const SfGovPagePreview: React.FC<{ draft: string; pageType?: string; page
       <SfGovFooter />
     </div>
   );
-};
+}
+);
+SfGovPagePreview.displayName = "SfGovPagePreview";
