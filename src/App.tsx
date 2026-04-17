@@ -5,6 +5,7 @@ import { clean, isPest, parsePage, parseRel, parseStructuredPage, pagesApi, todo
 import { DriveFile } from "./types";
 import { Badge, Label, Divider, Btn, Card, Field, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar, iStyle } from "./components/ui";
 import { SfGovPagePreview } from "./components/SfGovPreview";
+import { toPng } from "html-to-image";
 import IdealSiteMap from "./components/IdealSiteMap";
 
 
@@ -435,6 +436,7 @@ export default function App() {
   const [importResult, setImportResult] = useState<{ inserted: number; skipped: number } | null>(null);
   const streamRef = useRef("");
   const lastInput = useRef<{ topic: string; userType: string; notes: string }>({ topic: "", userType: "", notes: "" });
+  const screenshotRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const loadAndMigrate = async () => {
@@ -897,6 +899,22 @@ export default function App() {
   const handleCopy = (text: string) => { navigator.clipboard.writeText(text).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); };
   const handleDownload = (text: string, name: string) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "text/plain" })); a.download = name; a.click(); };
 
+  const handleExportScreenshot = async (pageName: string) => {
+    if (!screenshotRef.current) return;
+    await document.fonts.ready;
+    const filename = (clean(pageName) || "page").toLowerCase().replace(/\s+/g, "-") + ".png";
+    try {
+      const dataUrl = await toPng(screenshotRef.current, { backgroundColor: "#ffffff" });
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = filename;
+      a.click();
+    } catch (err) {
+      console.error("Screenshot export failed:", err);
+      handleDownload(selected?.draft ?? "", filename.replace(".png", "-draft.txt"));
+    }
+  };
+
   const addPlannedPage = async (name: string, pageType: string, userType: string, parentId: number | null) => {
     try {
       const created = await plannedPagesApi.create(name, pageType, userType, parentId);
@@ -1284,9 +1302,9 @@ export default function App() {
                 <div style={{ border: "1px solid #D1D5DB", borderRadius: 8, overflow: "hidden", marginBottom: 14, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 14px", background: "#F7F6F2", borderBottom: "1px solid #E5E4DF" }}>
                     <span style={{ fontSize: 10, fontWeight: 500, color: "#8C8B87", textTransform: "uppercase", letterSpacing: "0.09em" }}>SF.gov preview</span>
-                    <Btn onClick={() => handleDownload(selected.draft, (clean(selected.name) || "page").toLowerCase().replace(/\s+/g, "-") + "-draft.txt")} variant="ghost" size="sm">Export</Btn>
+                    <Btn onClick={() => handleExportScreenshot(selected.name)} variant="ghost" size="sm">Download preview</Btn>
                   </div>
-                  <SfGovPagePreview draft={selected.draft} pageType={selected.pageType} pageTitle={clean(selected.name)} />
+                  <SfGovPagePreview ref={screenshotRef} draft={selected.draft} pageType={selected.pageType} pageTitle={clean(selected.name)} />
                 </div>
 
                 {/* Enforcement & integration notes */}
