@@ -1,6 +1,8 @@
 import { PEST_KW } from "./constants";
 import { ParseStructuredResult, ParsedPageFields, RelMap, StructuredPageOutput } from "./types";
 
+const suggestionKey = (value?: string): string => clean(value).toLowerCase();
+
 export const isPest = (t: string): boolean => {
   return PEST_KW.some(k => t.toLowerCase().includes(k));
 };
@@ -218,6 +220,45 @@ export const parseRel = (rel: string): RelMap => {
     entry: get("Entry Points"),
     next: get("Next Steps")
   };
+};
+
+export const filterEligibleSuggestedPages = (
+  suggestedPages: Array<{ topic: string; userType: string; pageType: string }>,
+  pages: Array<{ name: string }>,
+  todos: Array<{ topic: string }>
+) => {
+  const createdNames = new Set(pages.map((page) => suggestionKey(page.name)).filter(Boolean));
+  const queuedTopics = new Set(todos.map((todo) => suggestionKey(todo.topic)).filter(Boolean));
+
+  return suggestedPages.filter((suggestion) => {
+    const key = suggestionKey(suggestion.topic);
+    return key && !createdNames.has(key) && !queuedTopics.has(key);
+  });
+};
+
+export const sampleSuggestedPages = (
+  suggestedPages: Array<{ topic: string; userType: string; pageType: string }>,
+  count = 5,
+  previousTopics: string[] = [],
+  randomFn: () => number = Math.random
+) => {
+  if (!Array.isArray(suggestedPages) || suggestedPages.length === 0 || count <= 0) return [];
+
+  if (suggestedPages.length <= count) return [...suggestedPages];
+
+  const previous = new Set(previousTopics.map((topic) => suggestionKey(topic)).filter(Boolean));
+  const unseen = suggestedPages.filter((suggestion) => !previous.has(suggestionKey(suggestion.topic)));
+  const pool = unseen.length >= count ? unseen : [...suggestedPages];
+  const next = [...pool];
+  const picked: Array<{ topic: string; userType: string; pageType: string }> = [];
+
+  while (picked.length < count && next.length > 0) {
+    const index = Math.floor(randomFn() * next.length);
+    picked.push(next[index]);
+    next.splice(index, 1);
+  }
+
+  return picked;
 };
 
 type DraftSection =

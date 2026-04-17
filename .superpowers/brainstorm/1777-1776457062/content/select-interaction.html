@@ -1,0 +1,92 @@
+<h2>How should mass-select work in the Library?</h2>
+<p class="subtitle">Three approaches for selecting and deleting multiple pages</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1a1a2e;padding:16px;font-family:monospace;font-size:12px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <div style="background:#2a2a4a;border-radius:4px;padding:4px 10px;color:#aaa;font-size:11px;">Search pages...</div>
+        <div style="margin-left:auto;background:#e53e3e;color:white;border-radius:4px;padding:4px 10px;font-size:11px;">🗑 Delete 2 selected</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <div style="background:#2a2a4a;border-radius:6px;padding:8px;border:2px solid #e53e3e;position:relative;">
+          <div style="position:absolute;top:6px;left:6px;width:14px;height:14px;background:#e53e3e;border-radius:3px;display:flex;align-items:center;justify-content:center;color:white;font-size:9px;">✓</div>
+          <div style="color:#888;font-size:9px;margin-top:12px;">Homepage</div>
+          <div style="color:#555;font-size:8px;">SF.gov • Apr 12</div>
+        </div>
+        <div style="background:#2a2a4a;border-radius:6px;padding:8px;position:relative;">
+          <div style="position:absolute;top:6px;left:6px;width:14px;height:14px;border:1px solid #555;border-radius:3px;background:transparent;"></div>
+          <div style="color:#888;font-size:9px;margin-top:12px;">Benefits</div>
+          <div style="color:#555;font-size:8px;">SF.gov • Apr 10</div>
+        </div>
+        <div style="background:#2a2a4a;border-radius:6px;padding:8px;border:2px solid #e53e3e;position:relative;">
+          <div style="position:absolute;top:6px;left:6px;width:14px;height:14px;background:#e53e3e;border-radius:3px;display:flex;align-items:center;justify-content:center;color:white;font-size:9px;">✓</div>
+          <div style="color:#888;font-size:9px;margin-top:12px;">Contact</div>
+          <div style="color:#555;font-size:8px;">SF.gov • Apr 8</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Hover to reveal checkboxes</h3>
+      <p>Checkboxes appear on hover. Delete button in toolbar shows only when items are selected. Clean default state.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1a1a2e;padding:16px;font-family:monospace;font-size:12px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <div style="background:#2a2a4a;border-radius:4px;padding:4px 10px;color:#aaa;font-size:11px;">Search pages...</div>
+        <div style="margin-left:auto;background:#4a3aff;color:white;border-radius:4px;padding:4px 10px;font-size:11px;">✓ Select</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <div style="background:#2a2a4a;border-radius:6px;padding:8px;">
+          <div style="color:#888;font-size:9px;">Homepage</div>
+          <div style="color:#555;font-size:8px;">SF.gov • Apr 12</div>
+        </div>
+        <div style="background:#2a2a4a;border-radius:6px;padding:8px;">
+          <div style="color:#888;font-size:9px;">Benefits</div>
+          <div style="color:#555;font-size:8px;">SF.gov • Apr 10</div>
+        </div>
+        <div style="background:#2a2a4a;border-radius:6px;padding:8px;">
+          <div style="color:#888;font-size:9px;">Contact</div>
+          <div style="color:#555;font-size:8px;">SF.gov • Apr 8</div>
+        </div>
+      </div>
+      <div style="color:#555;font-size:9px;margin-top:8px;text-align:center;">← Click "Select" to enter selection mode</div>
+    </div>
+    <div class="card-body">
+      <h3>B — Explicit "Select" mode toggle</h3>
+      <p>A "Select" button in the toolbar switches to selection mode. Cards become selectable. Toolbar transforms to show select-all + delete actions.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1a1a2e;padding:16px;font-family:monospace;font-size:12px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <div style="background:#2a2a4a;border-radius:4px;padding:4px 10px;color:#aaa;font-size:11px;">Search pages...</div>
+        <div style="margin-left:auto;color:#555;font-size:11px;">Select all</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <div style="background:#2a2a4a;border-radius:6px;padding:8px;border:2px solid #e53e3e;position:relative;">
+          <div style="position:absolute;top:6px;left:6px;width:14px;height:14px;background:#e53e3e;border-radius:3px;display:flex;align-items:center;justify-content:center;color:white;font-size:9px;">✓</div>
+          <div style="color:#888;font-size:9px;margin-top:12px;">Homepage</div>
+          <div style="color:#555;font-size:8px;">SF.gov • Apr 12</div>
+        </div>
+        <div style="background:#2a2a4a;border-radius:6px;padding:8px;position:relative;">
+          <div style="position:absolute;top:6px;left:6px;width:14px;height:14px;border:1px solid #555;border-radius:3px;"></div>
+          <div style="color:#888;font-size:9px;margin-top:12px;">Benefits</div>
+          <div style="color:#555;font-size:8px;">SF.gov • Apr 10</div>
+        </div>
+        <div style="background:#2a2a4a;border-radius:6px;padding:8px;position:relative;">
+          <div style="position:absolute;top:6px;left:6px;width:14px;height:14px;border:1px solid #555;border-radius:3px;"></div>
+          <div style="color:#888;font-size:9px;margin-top:12px;">Contact</div>
+          <div style="color:#555;font-size:8px;">SF.gov • Apr 8</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Always-visible checkboxes</h3>
+      <p>Checkboxes permanently visible on every card. "Select all" link in toolbar. Delete button appears when anything is checked.</p>
+    </div>
+  </div>
+</div>

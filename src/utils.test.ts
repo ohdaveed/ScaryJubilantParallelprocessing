@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildGenerationUserPrompt, PROMPT_CONTRACT_VERSION } from "./constants";
-import { evaluateQualityGate, parseStructuredPage, structuredToRawPage } from "./utils";
-import type { StructuredPageOutput } from "./types";
+import { evaluateQualityGate, filterEligibleSuggestedPages, formatVersionOrMonth, parseStructuredPage, sampleSuggestedPages, structuredToRawPage } from "./utils";
+import type { PageDraft, StructuredPageOutput } from "./types";
 import goldenPages from "./fixtures/golden-pages.json";
 
 const validStructured: StructuredPageOutput = {
@@ -97,6 +97,81 @@ describe("quality gate", () => {
   });
 });
 
+describe("formatVersionOrMonth", () => {
+  it("returns version if present on page", () => {
+    const page: PageDraft = {
+      id: "test-id",
+      name: "Test Page",
+      userType: "Resident",
+      userGoal: "Learn something",
+      purpose: "Inform",
+      pageType: "Information",
+      components: "Title, Body",
+      relationships: "None",
+      duplication: "None",
+      enforcement: "N/A",
+      draft: "Draft content",
+      integration: "None",
+      valid: true,
+      raw: "Raw content",
+      createdAt: "2025-01-15T10:00:00Z",
+      karlConnected: false,
+      version: "v1.2"
+    };
+
+    const result = formatVersionOrMonth(page);
+    expect(result).toBe("v1.2");
+  });
+
+  it("formats month and year from createdAt when version is absent", () => {
+    const page: PageDraft = {
+      id: "test-id",
+      name: "Test Page",
+      userType: "Resident",
+      userGoal: "Learn something",
+      purpose: "Inform",
+      pageType: "Information",
+      components: "Title, Body",
+      relationships: "None",
+      duplication: "None",
+      enforcement: "N/A",
+      draft: "Draft content",
+      integration: "None",
+      valid: true,
+      raw: "Raw content",
+      createdAt: "2026-04-15T10:00:00Z",
+      karlConnected: false
+    };
+
+    const result = formatVersionOrMonth(page);
+    expect(result).toBe("April 2026");
+  });
+
+  it("formats month and year for january", () => {
+    const page: PageDraft = {
+      id: "test-id",
+      name: "Test Page",
+      userType: "Resident",
+      userGoal: "Learn something",
+      purpose: "Inform",
+      pageType: "Information",
+      components: "Title, Body",
+      relationships: "None",
+      duplication: "None",
+      enforcement: "N/A",
+      draft: "Draft content",
+      integration: "None",
+      valid: true,
+      raw: "Raw content",
+      createdAt: "2025-01-20T10:00:00Z",
+      karlConnected: false
+    };
+
+    const result = formatVersionOrMonth(page);
+    expect(result).toBe("January 2025");
+  });
+});
+
 describe("golden fixtures", () => {
   it("parses and materializes representative HHVC fixtures", () => {
     type Fixture = {
@@ -121,5 +196,48 @@ describe("golden fixtures", () => {
       expect(materialized).toContain("PAGE DRAFT");
       expect(materialized).toContain("INTEGRATION NOTES:");
     }
+  });
+});
+
+describe("suggested pages", () => {
+  it("filters out already-created pages and queued todos", () => {
+    const suggested = [
+      { topic: "Help with pests and bugs", userType: "Resident / tenant", pageType: "Information" },
+      { topic: "Contact HHVC", userType: "General public", pageType: "Information" },
+      { topic: "Report a dead bird", userType: "General public", pageType: "Transaction" }
+    ];
+    const pages = [{ name: "**Help with pests and bugs**" }];
+    const todos = [{ topic: "contact hhvc" }];
+
+    const eligible = filterEligibleSuggestedPages(suggested, pages, todos);
+
+    expect(eligible).toEqual([
+      { topic: "Report a dead bird", userType: "General public", pageType: "Transaction" }
+    ]);
+  });
+
+  it("samples a different random subset when alternatives are available", () => {
+    const suggested = [
+      { topic: "One", userType: "u", pageType: "Information" },
+      { topic: "Two", userType: "u", pageType: "Information" },
+      { topic: "Three", userType: "u", pageType: "Information" },
+      { topic: "Four", userType: "u", pageType: "Information" },
+      { topic: "Five", userType: "u", pageType: "Information" },
+      { topic: "Six", userType: "u", pageType: "Information" }
+    ];
+
+    let randomCalls = 0;
+    const randomFn = () => {
+      randomCalls += 1;
+      return 0.999;
+    };
+
+    const sampled = sampleSuggestedPages(suggested, 5, ["One", "Two", "Three", "Four", "Five"], randomFn);
+    const topics = sampled.map((entry) => entry.topic);
+
+    expect(topics.some((topic) => !["One", "Two", "Three", "Four", "Five"].includes(topic))).toBe(true);
+    expect(sampled).toHaveLength(5);
+    expect(new Set(topics).size).toBe(5);
+    expect(randomCalls).toBeGreaterThan(0);
   });
 });

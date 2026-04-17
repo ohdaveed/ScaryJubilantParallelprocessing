@@ -9,14 +9,18 @@
     "relationships": "Parent: Healthy Housing and Vector Control (Topic)\nSiblings: I need to report mold in my home, I need to report bedbugs in my home, I need to report cockroaches in my home\nChildren: none\nEntry Points: Healthy Housing and Vector Control (Topic)\nNext Steps: Track 311 case",
     "duplication": "Overlaps with I need to report rats in my home (page 22). This page focuses on building-level complaints; page 22 focuses on unit-level complaints.",
     "enforcement": "What can be verified: Written notice to landlord required before calling 311. 72-hour wait period. Inspector access required.\nWhat is unclear: Exact fine amounts for landlord non-compliance.",
-    "draft": "# I need to report rats in my building\n\nDescription: File a complaint about rats through SF 311. The city will inspect and require your landlord to fix the problem.\n\n## What to know before you start\n\nBefore calling 311, tell your landlord about the problem in writing. Wait 72 hours for them to respond. If they do not fix the problem, then contact 311.\n\nCost: Free\n\nThings to know:\n- You must give written notice to your landlord first\n- The inspector will need access to your unit\n- Rats are a serious health hazard that landlords must fix\n- The city can fine landlords who do not fix rat problems\n\n## What to do\n\nSection heading: Call 311 to file a complaint\nSection body: Call 311 or go to sf.gov/311 to report rats in your building.\n\n311 will ask you:\n- Your name and contact information\n- Your address\n- Details about where you see rats\n- When you notified your landlord\n- If you can give the inspector access to your unit\n\n311 creates a case number and sends your complaint to our inspection team.\n\nSection heading: What 311 does with your complaint\nSection body: SF 311 forwards your complaint to the Department of Public Health. An inspector will contact you within 5 business days to schedule an inspection.\n\nThe inspector will visit your building to look for signs of rats and check if your landlord is following housing laws.\n\nSection heading: Signs of rats to report\nSection body: Tell 311 if you see any of these signs:\n- Rat droppings (small, dark pellets)\n- Dead rats\n- Rat holes or gnaw marks\n- Rats running around your unit or building\n- Food containers chewed open\n- Strange smells or sounds in walls\n\nSection heading: What happens next\nSection body: After you call 311, an inspector will contact you to schedule a visit. If the inspector finds violations, your landlord gets a notice to fix the problems. You will get updates through 311. Keep your case number to track progress.\n\nPhone number: 311\n\n## Related\n- I need to report cockroaches in my home\n- I need to report bedbugs in my home\n- I need to report mold in my home",
+    "draft": "# I need to report rats in my building\n\nDescription: File a complaint about rats through SF 311. The city will inspect and require your landlord to fix the problem.\n\n## What to know before you start\n\nBefore calling 311, tell your landlord about the problem in writing. Wait 72 hours for them to respond. If they do not fix the problem, then contact 311.\n\nCost: Free\n\nThings to know:\n- You must give written notice to your landlord first\n- The inspector will need access to your unit\n- Rats are a serious health hazard that landlords must fix\n- The city can fine landlords who do not fix rat problems\n\n## What to do\n\nSection heading: Call 311 to file a complaint\nSection body: Call 311 or go to sf.gov/311 to report rats in your building.\n\n311 will ask you:\n- Your name and contact information\n- Your address\n- Details about where you see rats\n- When you notified your landlord\n- If you can give the inspector access to your unit\n\nAll complaints start with 311. 311 takes your complaint and your details. If the case fits HHVC rules, 311 sends it to HHVC.\n\nSection heading: What 311 does with your complaint\nSection body: SF 311 forwards your complaint to the Department of Public Health. An inspector will contact you within 5 business days to schedule an inspection.\n\nThe inspector will visit your building to look for signs of rats and check if your landlord is following housing laws.\n\nSection heading: Signs of rats to report\nSection body: Tell 311 if you see any of these signs:\n- Rat droppings (small, dark pellets)\n- Dead rats\n- Rat holes or gnaw marks\n- Rats running around your unit or building\n- Food containers chewed open\n- Strange smells or sounds in walls\n\nSection heading: What happens next\nSection body: After you call 311, an inspector will contact you to schedule a visit. If the inspector finds violations, your landlord gets a notice to fix the problems. You will get updates through 311. Keep your case number to track progress.\n\nPhone number: 311\n\n## Related\n- I need to report cockroaches in my home\n- I need to report bedbugs in my home\n- I need to report mold in my home",
     "integration": "Links to 311 online reporting. Part of tenant complaint workflow.",
     "valid": true,
     "karlConnected": false,
     "skeleton": false,
     "imported": true,
     "reviewStatus": "pending",
-    "inputs": { "topic": "I need to report rats in my building", "userType": "Resident / tenant", "notes": "Imported from HHVC normalized content" }
+    "inputs": {
+      "topic": "I need to report rats in my building",
+      "userType": "Resident / tenant",
+      "notes": "Imported from HHVC normalized content"
+    }
   },
   {
     "name": "I need to fix mold in my rental",
@@ -35,7 +39,11 @@
     "skeleton": false,
     "imported": true,
     "reviewStatus": "pending",
-    "inputs": { "topic": "I need to fix mold in my rental", "userType": "Resident / tenant", "notes": "Imported from HHVC normalized content" }
+    "inputs": {
+      "topic": "I need to fix mold in my rental",
+      "userType": "Resident / tenant",
+      "notes": "Imported from HHVC normalized content"
+    }
   },
   {
     "name": "I need to report mold in my home",
@@ -47,14 +55,18 @@
     "relationships": "Parent: Healthy Housing and Vector Control (Topic)\nSiblings: I need to fix mold in my rental, I need help with mold and water\nChildren: none\nEntry Points: Healthy Housing and Vector Control (Topic)\nNext Steps: 311 inspection",
     "duplication": "Near-duplicate of page 18 (same title, slightly different content). Both are included.",
     "enforcement": "What can be verified: 10 sq ft threshold on walls/ceilings. Written notice to landlord required first. 72-hour wait.\nWhat is unclear: None.",
-    "draft": "# I need to report mold in my home\n\nDescription: Report mold problems in your rental unit and learn what your landlord must do to fix them.\n\n## What to know before you start\n\nCost: Free\n\nThings to know: Write to your landlord first. Wait 72 hours before calling the City. We check your unit for mold and can order your landlord to fix it. We look at mold that covers 10 square feet or more.\n\n## What to do\n\nSection heading: Find out what causes the mold\nSection body: Look for water leaks. Check pipes, windows, and the roof. Look for wet spots on walls. If you see leaks, your landlord must fix them. If the mold comes from humidity in your unit, you need to control moisture. Open windows and use fans.\n\nSection heading: Write to your landlord\nSection body: Write a letter about the mold. Tell your landlord the date you found it. Tell them where the mold is. Ask them to fix the mold and any leaks. Keep a copy of your letter. Wait 72 hours for them to answer.\n\nSection heading: Call the City\nSection body: Call 311 if your landlord does not fix the mold in 72 hours. Tell 311 you want to report mold in your rental. Give them your address. Tell them about the mold problem.\n\nAction link: Report mold through SF311 [https://sf.gov/report-request-or-complaint]\n\nPhone number: 311\n\nSection heading: What happens next\nSection body: A housing inspector will visit your unit. You must be home for the visit or let your landlord give access. The inspector will look for mold, leaks, and air flow problems. If they find problems, your landlord gets a notice to fix them.\n\nCallout: We check mold that covers 10 square feet or more on walls or ceilings. You must let the City inspector into your unit and let your landlord in to make repairs. Your responsibilities include controlling humidity in your unit by opening windows and using fans, keeping your unit clean, writing to your landlord first and waiting 72 hours before calling the City.\n\n## Related\n- Housing code violations\n- Tenant rights and resources\n- Healthy Housing and Vector Control",
+    "draft": "# I need to report mold in my home\n\nDescription: Report mold problems in your rental unit and learn what your landlord must do to fix them.\n\n## What to know before you start\n\nCost: Free\n\nThings to know: Write to your landlord first. Wait 72 hours before calling the City. We check your unit for mold and can order your landlord to fix it. We look at mold that covers 10 square feet or more.\n\n## What to do\n\nSection heading: Find out what causes the mold\nSection body: Look for water leaks. Check pipes, windows, and the roof. Look for wet spots on walls. If you see leaks, your landlord must fix them. If the mold comes from humidity in your unit, you need to control moisture. Open windows and use fans.\n\nSection heading: Write to your landlord\nSection body: Write a letter about the mold. Tell your landlord the date you found it. Tell them where the mold is. Ask them to fix the mold and any leaks. Keep a copy of your letter. Wait 72 hours for them to answer.\n\nSection heading: Call the City\nSection body: Call 311 if your landlord does not fix the mold in 72 hours. Tell 311 you want to report mold in your rental. Give them your address. Tell them about the mold problem. All complaints start with 311. 311 takes your complaint and your details. If the case fits HHVC rules, 311 sends it to HHVC.\n\nAction link: Report mold through SF311 [https://sf.gov/report-request-or-complaint]\n\nPhone number: 311\n\nSection heading: What happens next\nSection body: A housing inspector will visit your unit. You must be home for the visit or let your landlord give access. The inspector will look for mold, leaks, and air flow problems. If they find problems, your landlord gets a notice to fix them.\n\nCallout: We check mold that covers 10 square feet or more on walls or ceilings. You must let the City inspector into your unit and let your landlord in to make repairs. Your responsibilities include controlling humidity in your unit by opening windows and using fans, keeping your unit clean, writing to your landlord first and waiting 72 hours before calling the City.\n\n## Related\n- Housing code violations\n- Tenant rights and resources\n- Healthy Housing and Vector Control",
     "integration": "Links to sf.gov/report-request-or-complaint. Part of tenant mold reporting workflow.",
     "valid": true,
     "karlConnected": false,
     "skeleton": false,
     "imported": true,
     "reviewStatus": "pending",
-    "inputs": { "topic": "I need to report mold in my home", "userType": "Resident / tenant", "notes": "Imported from HHVC normalized content" }
+    "inputs": {
+      "topic": "I need to report mold in my home",
+      "userType": "Resident / tenant",
+      "notes": "Imported from HHVC normalized content"
+    }
   },
   {
     "name": "I need to report bedbugs in my home",
@@ -66,14 +78,18 @@
     "relationships": "Parent: Healthy Housing and Vector Control (Topic)\nSiblings: I need to report cockroaches in my home, I need to report rats in my home, I need to report bed bugs\nChildren: none\nEntry Points: Healthy Housing and Vector Control (Topic)\nNext Steps: 311 inspection within 48 hours",
     "duplication": "Overlaps with I need to report bed bugs (page 20). Similar content, different framing.",
     "enforcement": "What can be verified: Written notice to landlord required first. 72-hour wait. Inspector access required.\nWhat is unclear: None.",
-    "draft": "# I need to report bedbugs in my home\n\nDescription: Report bedbug problems in your San Francisco home through 311 and learn your responsibilities as a tenant.\n\n## What to know before you start\n\nSection heading: When to report bedbugs\nSection body: You should report bedbugs to the city if your landlord has not fixed the problem within 72 hours of your written notice. Bedbugs are small, brown insects that feed on blood and leave red, itchy bites. You might see dark spots on your mattress, sheets, or furniture. You might also notice a sweet, musty smell.\n\nSection heading: What happens after you report\nSection body: The city will create a case number for your report. An inspector will contact you within 5 business days to schedule an inspection. You must provide access to your unit during normal business hours. The inspector will check for bedbugs and write a report. If bedbugs are found, the city will order your landlord to fix the problem.\n\nCallout: You must write to your landlord first and wait 72 hours before reporting to the city. Keep a copy of your written notice.\n\n## What to do\n\nSection heading: Before you report\nSection body: Write a letter or email to your landlord describing the bedbug problem. Include the date you first noticed bedbugs. Keep a copy for your records. Wait 72 hours after sending your notice before contacting 311.\n\nSection heading: Report to 311\nSection body: Call 311 or use the SF311 app to report bedbugs. You can also submit a report online at sf.gov/311. Tell them you need to report bedbugs in your rental unit. Give them your address and explain what you have seen or experienced. 311 will give you a case number. Write down this number.\n\nButton link: Report online to 311 [sf.gov/311]\n\nPhone number: 311\n\nSection heading: What you need to do\nSection body: Clean and organize your unit before the inspection. Remove clutter from floors and surfaces. Wash and dry all bedding and clothes on high heat if possible. Vacuum carpets and furniture. You must be available during normal business hours to let the inspector into your unit.\n\nCallout: Tenant responsibilities: You are responsible for controlling humidity inside your unit, keeping your unit clean, writing to your landlord first and waiting 72 hours before contacting the city, and providing access for inspection and repairs.\n\n## Related\n- I need to report cockroaches in my home\n- I need to report rats in my home\n- I need help with pests, mold, or trash",
+    "draft": "# I need to report bedbugs in my home\n\nDescription: Report bedbug problems in your San Francisco home through 311 and learn your responsibilities as a tenant.\n\n## What to know before you start\n\nSection heading: When to report bedbugs\nSection body: You should report bedbugs to the city if your landlord has not fixed the problem within 72 hours of your written notice. Bedbugs are small, brown insects that feed on blood and leave red, itchy bites. You might see dark spots on your mattress, sheets, or furniture. You might also notice a sweet, musty smell.\n\nSection heading: What happens after you report\nSection body: The city will create a case number for your report. An inspector will contact you within 5 business days to schedule an inspection. You must provide access to your unit during normal business hours. The inspector will check for bedbugs and write a report. If bedbugs are found, the city will order your landlord to fix the problem.\n\nCallout: You must write to your landlord first and wait 72 hours before reporting to the city. Keep a copy of your written notice.\n\n## What to do\n\nSection heading: Before you report\nSection body: Write a letter or email to your landlord describing the bedbug problem. Include the date you first noticed bedbugs. Keep a copy for your records. Wait 72 hours after sending your notice before contacting 311.\n\nSection heading: Report to 311\nSection body: Call 311 or use the SF311 app to report bedbugs. You can also submit a report online at sf.gov/311. Tell them you need to report bedbugs in your rental unit. Give them your address and explain what you have seen or experienced. All complaints start with 311. 311 gives you a case number. If the case fits HHVC rules, 311 sends it to HHVC. Write down your case number.\n\nButton link: Report online to 311 [sf.gov/311]\n\nPhone number: 311\n\nSection heading: What you need to do\nSection body: Clean and organize your unit before the inspection. Remove clutter from floors and surfaces. Wash and dry all bedding and clothes on high heat if possible. Vacuum carpets and furniture. You must be available during normal business hours to let the inspector into your unit.\n\nCallout: Tenant responsibilities: You are responsible for controlling humidity inside your unit, keeping your unit clean, writing to your landlord first and waiting 72 hours before contacting the city, and providing access for inspection and repairs.\n\n## Related\n- I need to report cockroaches in my home\n- I need to report rats in my home\n- I need help with pests, mold, or trash",
     "integration": "Links to sf.gov/311. Part of tenant pest complaint workflow.",
     "valid": true,
     "karlConnected": false,
     "skeleton": false,
     "imported": true,
     "reviewStatus": "pending",
-    "inputs": { "topic": "I need to report bedbugs in my home", "userType": "Resident / tenant", "notes": "Imported from HHVC normalized content" }
+    "inputs": {
+      "topic": "I need to report bedbugs in my home",
+      "userType": "Resident / tenant",
+      "notes": "Imported from HHVC normalized content"
+    }
   },
   {
     "name": "I need help with housing health and pest problems",
@@ -82,17 +98,21 @@
     "purpose": "Hub page for HHVC tenant services — pest complaints, housing inspections, and health hazards",
     "pageType": "Topic",
     "components": "Description, Text, Phone number, Email, Address, Related",
-    "relationships": "Parent: San Francisco Department of Public Health\nSiblings: none\nChildren: I need help with pests mold or trash, I need to report rats in my building, I need to report mold in my home, I need to report bedbugs in my home\nEntry Points: sf.gov/healthy-housing\nNext Steps: File a complaint through 311",
+    "relationships": "Parent: Healthy Housing and Vector Control (Topic)\nSiblings: none\nChildren: I need help with pests mold or trash, I need to report rats in my building, I need to report mold in my home, I need to report bedbugs in my home\nEntry Points: sf.gov/healthy-housing\nNext Steps: File a complaint through 311",
     "duplication": "Top-level hub. No duplication risk.",
-    "enforcement": "What can be verified: 311 is the primary intake point. Response within 4 days for most complaints. 48 hours for bed bugs and sewage.\nWhat is unclear: None.",
-    "draft": "# I need help with housing health and pest problems\n\nDescription: Report pests, request inspections, and get housing health help from San Francisco's Healthy Housing and Vector Control team.\n\n## Overview\n\nText: You have the right to safe, healthy housing in San Francisco. The Healthy Housing and Vector Control team helps with pest problems, housing conditions, and health hazards in homes and apartments.\n\nWe handle complaints about cockroaches, rodents, bed bugs, and other pests. We also inspect housing conditions that affect your health and safety. This includes residential hotels and SROs.\n\nMost services start with a call to 311. Our team will follow up within 4 days. For bed bugs and sewage problems, we will respond within 48 hours.\n\n## Resources\n- Tenant rights and responsibilities\n- Landlord responsibilities\n- Housing health laws and regulations\n- Pest prevention tips\n\n## Contact us\n\nPhone number: (415) 252-3800\n\nEmail: HHVC@sfdph.org\n\nAddress: San Francisco Department of Public Health, Healthy Housing and Vector Control, 1380 Howard Street 2nd Floor, San Francisco CA 94103\n\nText: Office hours: Monday through Friday, 8:00 AM to 5:00 PM. For emergencies outside business hours, call 311.\n\n## Related\n- San Francisco Department of Public Health\n- Housing rights and resources\n- Building and construction services",
+    "enforcement": "What can be verified: 311 is the primary intake point. Response within 5 business days after report is received from 311 for most complaints. 48 hours for bed bugs and sewage.\nWhat is unclear: None.",
+    "draft": "# I need help with housing health and pest problems\n\nDescription: Report pests, request inspections, and get housing health help from San Francisco's Healthy Housing and Vector Control team.\n\n## Overview\n\nText: You have the right to safe, healthy housing in San Francisco. The Healthy Housing and Vector Control team helps with pest problems, housing conditions, and health hazards in homes and apartments.\n\nWe handle complaints about cockroaches, rodents, bed bugs, and other pests. We also inspect housing conditions that affect your health and safety. This includes residential hotels and SROs.\n\nMost services start with a call to 311. Our team will follow up within 5 business days after report is received from 311. For bed bugs and sewage problems, we will respond within 48 hours.\n\n## Resources\n- Tenant rights and responsibilities\n- Landlord responsibilities\n- Housing health laws and regulations\n- Pest prevention tips\n\n## Contact us\n\nPhone number: (415) 252-3800\n\nEmail: HHVC@sfdph.org\n\nAddress: San Francisco Department of Public Health, Healthy Housing and Vector Control, 1380 Howard Street 2nd Floor, San Francisco CA 94103\n\nText: Office hours: Monday through Friday, 8:00 AM to 5:00 PM. For emergencies outside business hours, call 311.\n\n## Related\n- San Francisco Department of Public Health\n- Housing rights and resources\n- Building and construction services",
     "integration": "Top-level hub. Links to child pages and external resources.",
     "valid": true,
     "karlConnected": false,
     "skeleton": false,
     "imported": true,
     "reviewStatus": "pending",
-    "inputs": { "topic": "I need help with housing health and pest problems", "userType": "Resident / tenant", "notes": "Imported from HHVC normalized content" }
+    "inputs": {
+      "topic": "I need help with housing health and pest problems",
+      "userType": "Resident / tenant",
+      "notes": "Imported from HHVC normalized content"
+    }
   },
   {
     "name": "I need help with pests, mold, or trash",
@@ -101,17 +121,21 @@
     "purpose": "Entry point for tenant complaints about pests, mold, and trash — explains what HHVC inspects and how to start a complaint",
     "pageType": "Information",
     "components": "Description, What to do, Button link, Callout, Section, Phone number, Related",
-    "relationships": "Parent: I need help with housing health and pest problems (Topic)\nSiblings: none\nChildren: I need help with pests and bugs, I need help with mold and water, I need help with trash and messes, I need help with plants and weeds\nEntry Points: Healthy Housing and Vector Control (Topic)\nNext Steps: File inspection request",
+    "relationships": "Parent: Healthy Housing and Vector Control (Topic)\nSiblings: none\nChildren: I need help with pests and bugs, I need help with mold and water, I need help with trash and messes, I need help with plants and weeds\nEntry Points: Healthy Housing and Vector Control (Topic)\nNext Steps: File inspection request",
     "duplication": "No duplication risk — this is the primary tenant hub.",
     "enforcement": "What can be verified: City inspects health problems landlords must fix. No cost to tenant.\nWhat is unclear: None.",
-    "draft": "# I need help with pests, mold, or trash\n\nDescription: If your landlord won't fix a health problem, we can help.\n\n## What to do\n\nButton link: Start a report [Link to HHVC inspection request form]\n\nCallout: Write to your landlord first and wait 72 hours before contacting the city. Your landlord must fix health problems.\n\nSection heading: What we inspect\nSection body: We inspect rental homes for health problems that your landlord must fix. This includes rats, roaches, bed bugs, cockroaches, mold, leaks, sewage backups, broken plumbing, poor ventilation, and trash buildup. We check if your home meets San Francisco housing health standards.\n\nSection heading: What happens during an inspection\nSection body: Fill out our inspection request form to tell us about the health problem in your home. An inspector will visit your building within a few days to check the problem.\n\nOur inspector will look at the problem areas you reported. Leave any evidence of pests or damage in place so the inspector can document it. Do not clean up pest droppings or throw away damaged items before the inspection. The inspector will take notes and measurements to create an official report.\n\nIf we find violations, your landlord will get a notice to fix them. You do not pay anything for this service.\n\nSection heading: Your responsibilities\nSection body: You must control humidity inside your unit, keep your unit clean, store food properly, and give the inspector access to your home. You also must write to your landlord about the problem before contacting us.\n\n## Contact us\n\nPhone number: 311\n\n## Related\n- I need help with pests and bugs\n- I need help with mold and water\n- I need help with trash and messes\n- I want to contact HHVC",
+    "draft": "# I need help with pests, mold, or trash\n\nDescription: If your landlord won't fix a health problem, we can help.\n\n## What to do\n\nButton link: Start a report [Link to HHVC inspection request form]\n\nCallout: Write to your landlord first and wait 72 hours before contacting the city. Your landlord must fix health problems.\n\nSection heading: What we inspect\nSection body: We inspect rental homes for health problems that your landlord must fix. This includes rats, roaches, bed bugs, cockroaches, mold, leaks, sewage backups, broken plumbing, poor ventilation, and trash buildup. We check if your home meets San Francisco housing health standards.\n\nSection heading: What happens during an inspection\nSection body: Fill out our inspection request form to tell us about the health problem in your home. An inspector will visit your building within 5 business days after report is received from 311 to check the problem.\n\nOur inspector will look at the problem areas you reported. Leave any evidence of pests or damage in place so the inspector can document it. Do not clean up pest droppings or throw away damaged items before the inspection. The inspector will take notes and measurements to create an official report.\n\nIf we find violations, your landlord will get a notice to fix them. You do not pay anything for this service.\n\nSection heading: Your responsibilities\nSection body: You must control humidity inside your unit, keep your unit clean, store food properly, and give the inspector access to your home. You also must write to your landlord about the problem before contacting us.\n\n## Contact us\n\nPhone number: 311\n\n## Related\n- I need help with pests and bugs\n- I need help with mold and water\n- I need help with trash and messes\n- I want to contact HHVC",
     "integration": "Hub page linking to child information pages. Primary CTA is inspection request form.",
     "valid": true,
     "karlConnected": false,
     "skeleton": false,
     "imported": true,
     "reviewStatus": "pending",
-    "inputs": { "topic": "I need help with pests, mold, or trash", "userType": "Resident / tenant", "notes": "Imported from HHVC normalized content" }
+    "inputs": {
+      "topic": "I need help with pests, mold, or trash",
+      "userType": "Resident / tenant",
+      "notes": "Imported from HHVC normalized content"
+    }
   },
   {
     "name": "I need help with mold and water",
@@ -120,17 +144,21 @@
     "purpose": "Guide tenants through reporting mold and water problems and explain prevention steps",
     "pageType": "Information",
     "components": "Description, What to do, Section heading, Section body, Action link, Callout, Phone number, Related",
-    "relationships": "Parent: I need help with pests, mold, or trash (Information)\nSiblings: I need help with pests and bugs, I need help with trash and messes\nChildren: none\nEntry Points: I need help with pests, mold, or trash\nNext Steps: Call 311",
+    "relationships": "Parent: Healthy Housing and Vector Control (Topic)\nSiblings: I need help with pests and bugs, I need help with trash and messes\nChildren: none\nEntry Points: I need help with pests, mold, or trash\nNext Steps: Call 311",
     "duplication": "Overlaps with I need to fix mold in my rental and I need to report mold in my home. This page is the information companion; the others are transaction pages.",
     "enforcement": "What can be verified: 10 sq ft threshold on walls/ceilings. Landlord must fix all leaks. Tenant controls humidity.\nWhat is unclear: None.",
-    "draft": "# I need help with mold and water\n\nDescription: Easy steps to follow if you have leaks or damp walls in your home.\n\n## What to do\n\nSection heading: Call 311 if your landlord won't fix leaks or mold\nSection body: You must write to your landlord first about any leak or mold problem. Keep a copy of your letter. If your landlord does not fix the problem within 72 hours, call 311 to report it.\n\nAction link: Call 311\n\nSection heading: Signs that need your landlord's attention\nSection body:\n- Any water leak from pipes, water heater, roof, windows, or doors\n- Dark spots or patches on walls or ceiling\n- Water stains or peeling paint\n- Damp areas that won't dry\n- Musty smells\n- Mold covering 10 square feet or more on walls and ceilings\n\nSection heading: What happens when you call 311\nSection body: An inspector will visit your home within a few days. The inspector will look at the mold and water damage. If we find violations, your landlord will get a notice to fix the problem. Leave any mold or water damage visible so our inspector can see it and measure it.\n\nCallout: We can only help with mold on walls and ceilings that covers 10 square feet or more. We cannot help with mold on your personal belongings like furniture, clothing, or household items.\n\nSection heading: What your landlord must fix\nSection body: Your landlord must fix all leaks. This includes dripping pipes, water heater leaks, roof leaks, and leaks around windows or doors. Your landlord must also clean mold that covers 10 square feet or more on walls and ceilings.\n\nSection heading: What you control\nSection body: You control humidity inside your unit. This means managing moisture from cooking, showering, and everyday living. You also keep your unit clean and wipe up condensation on windows.\n\nCallout: You must write to your landlord first about leaks and wait 72 hours before contacting the city. You must also give your landlord access to make repairs and control humidity in your unit.\n\nSection heading: Daily steps to control moisture\nSection body:\n- Open windows for 5 to 15 minutes every day\n- Run exhaust fans when cooking or showering and for 15 minutes after\n- Use a fan to keep air moving in your home\n- Keep furniture 6 inches away from outside walls\n- Wipe up water on windows and sills right away\n- Cover pots and pans when cooking\n- Keep humidity below 55 percent if you have a device to measure it\n\nSection heading: How to clean small amounts of mold\nSection body: Use soap and water to clean small mold spots. Do not use bleach. Wash moldy clothes in warm water and dry them completely. If you have an air purifier with a HEPA filter, it can help capture mold spores in the air.\n\n## Contact us\n\nPhone number: 311\n\n## Related\n- I need help with pests, mold, or trash\n- I need help with pests and bugs",
+    "draft": "# I need help with mold and water\n\nDescription: Easy steps to follow if you have leaks or damp walls in your home.\n\n## What to do\n\nSection heading: Call 311 if your landlord won't fix leaks or mold\nSection body: You must write to your landlord first about any leak or mold problem. Keep a copy of your letter. If your landlord does not fix the problem within 72 hours, call 311 to report it.\n\nAction link: Call 311\n\nSection heading: Signs that need your landlord's attention\nSection body:\n- Any water leak from pipes, water heater, roof, windows, or doors\n- Dark spots or patches on walls or ceiling\n- Water stains or peeling paint\n- Damp areas that won't dry\n- Musty smells\n- Mold covering 10 square feet or more on walls and ceilings\n\nSection heading: What happens when you call 311\nSection body: An inspector will visit your home within 5 business days after report is received from 311. The inspector will look at the mold and water damage. If we find violations, your landlord will get a notice to fix the problem. Leave any mold or water damage visible so our inspector can see it and measure it.\n\nCallout: We can only help with mold on walls and ceilings that covers 10 square feet or more. We cannot help with mold on your personal belongings like furniture, clothing, or household items.\n\nSection heading: What your landlord must fix\nSection body: Your landlord must fix all leaks. This includes dripping pipes, water heater leaks, roof leaks, and leaks around windows or doors. Your landlord must also clean mold that covers 10 square feet or more on walls and ceilings.\n\nSection heading: What you control\nSection body: You control humidity inside your unit. This means managing moisture from cooking, showering, and everyday living. You also keep your unit clean and wipe up condensation on windows.\n\nCallout: You must write to your landlord first about leaks and wait 72 hours before contacting the city. You must also give your landlord access to make repairs and control humidity in your unit.\n\nSection heading: Daily steps to control moisture\nSection body:\n- Open windows for 5 to 15 minutes every day\n- Run exhaust fans when cooking or showering and for 15 minutes after\n- Use a fan to keep air moving in your home\n- Keep furniture 6 inches away from outside walls\n- Wipe up water on windows and sills right away\n- Cover pots and pans when cooking\n- Keep humidity below 55 percent if you have a device to measure it\n\nSection heading: How to clean small amounts of mold\nSection body: Use soap and water to clean small mold spots. Do not use bleach. Wash moldy clothes in warm water and dry them completely. If you have an air purifier with a HEPA filter, it can help capture mold spores in the air.\n\n## Contact us\n\nPhone number: 311\n\n## Related\n- I need help with pests, mold, or trash\n- I need help with pests and bugs",
     "integration": "Child of tenant hub. Links to 311.",
     "valid": true,
     "karlConnected": false,
     "skeleton": false,
     "imported": true,
     "reviewStatus": "pending",
-    "inputs": { "topic": "I need help with mold and water", "userType": "Resident / tenant", "notes": "Imported from HHVC normalized content" }
+    "inputs": {
+      "topic": "I need help with mold and water",
+      "userType": "Resident / tenant",
+      "notes": "Imported from HHVC normalized content"
+    }
   },
   {
     "name": "I need help with trash and messes",
@@ -139,7 +167,7 @@
     "purpose": "Guide tenants on reporting trash and sewage problems to the city",
     "pageType": "Information",
     "components": "Description, What to do, Section heading, Section body, Action link, Callout, Phone number, Related",
-    "relationships": "Parent: I need help with pests, mold, or trash (Information)\nSiblings: I need help with pests and bugs, I need help with mold and water\nChildren: none\nEntry Points: I need help with pests, mold, or trash\nNext Steps: Call 311",
+    "relationships": "Parent: Healthy Housing and Vector Control (Topic)\nSiblings: I need help with pests and bugs, I need help with mold and water\nChildren: none\nEntry Points: I need help with pests, mold, or trash\nNext Steps: Call 311",
     "duplication": "No significant duplication.",
     "enforcement": "What can be verified: Sewage reports receive 48-hour response. Landlord must provide trash service.\nWhat is unclear: None.",
     "draft": "# I need help with trash and messes\n\nDescription: Easy steps to follow if you have garbage, sewage, or waste problems.\n\n## What to do\n\nSection heading: Call 311 right away for urgent problems\nSection body: Call 311 immediately if you have:\n- Raw sewage in your unit\n- Blocked drains causing flooding\n- Garbage that attracts pests\n- Waste problems that smell bad or make you sick\n\nWe will send an inspector to check your home within 48 hours for sewage problems.\n\nAction link: Call 311\n\nCallout: Sewage reports receive a response within 48 hours.\n\nSection heading: For other trash problems, try this first\nSection body: Many trash problems can be solved between you and your landlord:\n1. Write to your landlord about the problem\n2. Keep a copy of your letter\n3. Wait 72 hours for your landlord to respond\n4. If nothing improves, call 311\n\nSection heading: Trash and waste problems we handle\nSection body: We help with health and safety problems caused by trash and waste in your home or building:\n- Sewage backups in your unit or building\n- Blocked drains that cause health problems\n- Garbage piling up because your landlord won't provide trash service\n- Waste that attracts pests like rats or roaches\n- Broken plumbing that affects your health\n\nCallout: We handle health problems from trash and waste. For broken pipes or plumbing repairs, contact the Department of Building Inspection (DBI).\n\nSection heading: What you need to do\nSection body: You are responsible for:\n- Keeping your own unit clean\n- Taking your trash to the building's garbage area\n- Not blocking drains with grease or large items\n- Writing to your landlord about problems first\n\nSection heading: What your landlord must do\nSection body: Your landlord is responsible for:\n- Providing trash service for the building\n- Fixing sewage problems within 48 hours\n- Keeping shared areas like hallways and basements clean\n- Making sure plumbing works properly\n- Removing pest-attracting waste from the property\n\n## Contact us\n\nPhone number: 311\n\n## Related\n- I need help with pests, mold, or trash\n- I need help with mold and water",
@@ -149,7 +177,11 @@
     "skeleton": false,
     "imported": true,
     "reviewStatus": "pending",
-    "inputs": { "topic": "I need help with trash and messes", "userType": "Resident / tenant", "notes": "Imported from HHVC normalized content" }
+    "inputs": {
+      "topic": "I need help with trash and messes",
+      "userType": "Resident / tenant",
+      "notes": "Imported from HHVC normalized content"
+    }
   },
   {
     "name": "I need help with plants and weeds",
@@ -158,17 +190,21 @@
     "purpose": "Guide tenants through reporting vegetation problems to the city after notifying their landlord",
     "pageType": "Information",
     "components": "Description, What to do, Action link, Phone number, Callout, Related",
-    "relationships": "Parent: I need help with pests, mold, or trash (Information)\nSiblings: I need help with pests and bugs, I need help with mold and water, I need help with trash and messes\nChildren: none\nEntry Points: I need help with pests, mold, or trash\nNext Steps: Call 311",
+    "relationships": "Parent: Healthy Housing and Vector Control (Topic)\nSiblings: I need help with pests and bugs, I need help with mold and water, I need help with trash and messes\nChildren: none\nEntry Points: I need help with pests, mold, or trash\nNext Steps: Call 311",
     "duplication": "No significant duplication.",
-    "enforcement": "What can be verified: Inspector visits within 10 business days. Property owner responsible for yard maintenance.\nWhat is unclear: None.",
-    "draft": "# I need help with plants and weeds\n\nDescription: Report overgrown plants and weeds that create pest problems or block access to your building.\n\n## What to do\n\nSection heading: Before you call 311\nSection body: Try these steps first to solve the problem on your own:\n- Talk to your landlord or property manager about trimming overgrown plants\n- Write a letter to your property owner if talking does not work\n- Wait 72 hours after writing to your landlord before contacting the city\n\nSection heading: Report the problem\nSection body: Call 311 to report overgrown vegetation at your building. Have this information ready when you call:\n- Your address and the problem location\n- When you contacted your landlord about the problem\n- Whether the vegetation is blocking access or attracting pests\n\nAction link: Report plants and weeds online [Link to 311 online reporting system]\n\nPhone number: 311\n\nSection heading: What happens next\nSection body: After you report the problem:\n- An inspector will visit the property within 10 business days\n- The inspector will check if the vegetation violates health and safety rules\n- If there is a violation, the property owner gets a notice to fix the problem\n- You will get a letter with the inspection results\n\nSection heading: What we inspect for\nSection body: We check for vegetation problems that affect health and safety:\n- Tall weeds or grass that hide rats and other pests\n- Overgrown bushes that block building entrances or fire exits\n- Dead plants that create fire hazards\n- Vegetation that prevents access for inspections or repairs\n- Plants growing too close to buildings and causing moisture problems\n\nCallout: We do not handle tree removal, sidewalk weeds, or plants on city property. Contact the Department of Public Works at 311 for those issues. The property owner is responsible for maintaining their yard and landscaping. Tenants should notify their landlord first before contacting the city.\n\n## Related\n- I need help with pests, mold, or trash\n- I need help with pests and bugs\n- I need help with trash and messes",
+    "enforcement": "What can be verified: Inspector visits within 5 business days after report is received from 311. Property owner responsible for yard maintenance.\nWhat is unclear: None.",
+    "draft": "# I need help with plants and weeds\n\nDescription: Report overgrown plants and weeds that create pest problems or block access to your building.\n\n## What to do\n\nSection heading: Before you call 311\nSection body: Try these steps first to solve the problem on your own:\n- Talk to your landlord or property manager about trimming overgrown plants\n- Write a letter to your property owner if talking does not work\n- Wait 72 hours after writing to your landlord before contacting the city\n\nSection heading: Report the problem\nSection body: Call 311 to report overgrown vegetation at your building. Have this information ready when you call:\n- Your address and the problem location\n- When you contacted your landlord about the problem\n- Whether the vegetation is blocking access or attracting pests\n\nAction link: Report plants and weeds online [Link to 311 online reporting system]\n\nPhone number: 311\n\nSection heading: What happens next\nSection body: After you report the problem:\n- An inspector will visit the property within 5 business days after report is received from 311\n- The inspector will check if the vegetation violates health and safety rules\n- If there is a violation, the property owner gets a notice to fix the problem\n- You will get a letter with the inspection results\n\nSection heading: What we inspect for\nSection body: We check for vegetation problems that affect health and safety:\n- Tall weeds or grass that hide rats and other pests\n- Overgrown bushes that block building entrances or fire exits\n- Dead plants that create fire hazards\n- Vegetation that prevents access for inspections or repairs\n- Plants growing too close to buildings and causing moisture problems\n\nCallout: We do not handle tree removal, sidewalk weeds, or plants on city property. Contact the Department of Public Works at 311 for those issues. The property owner is responsible for maintaining their yard and landscaping. Tenants should notify their landlord first before contacting the city.\n\n## Related\n- I need help with pests, mold, or trash\n- I need help with pests and bugs\n- I need help with trash and messes",
     "integration": "Child of tenant hub. Links to 311.",
     "valid": true,
     "karlConnected": false,
     "skeleton": false,
     "imported": true,
     "reviewStatus": "pending",
-    "inputs": { "topic": "I need help with plants and weeds", "userType": "Resident / tenant", "notes": "Imported from HHVC normalized content" }
+    "inputs": {
+      "topic": "I need help with plants and weeds",
+      "userType": "Resident / tenant",
+      "notes": "Imported from HHVC normalized content"
+    }
   },
   {
     "name": "I need to pay my annual building fee",
@@ -187,7 +223,11 @@
     "skeleton": false,
     "imported": true,
     "reviewStatus": "pending",
-    "inputs": { "topic": "I need to pay my annual building fee", "userType": "Building owner", "notes": "Imported from HHVC normalized content" }
+    "inputs": {
+      "topic": "I need to pay my annual building fee",
+      "userType": "Building owner",
+      "notes": "Imported from HHVC normalized content"
+    }
   },
   {
     "name": "How much is my fee?",
@@ -196,7 +236,7 @@
     "purpose": "Provide building owners with fee amounts, payment deadlines, and late fee information",
     "pageType": "Information",
     "components": "Description, What to know, Section heading, Section body, Phone number, Related",
-    "relationships": "Parent: I need to pay my annual building fee (Transaction)\nSiblings: My rules as a building owner\nChildren: none\nEntry Points: I need to pay my annual building fee\nNext Steps: Pay the fee",
+    "relationships": "Parent: Healthy Housing and Vector Control (Topic)\nSiblings: My rules as a building owner\nChildren: none\nEntry Points: I need to pay my annual building fee\nNext Steps: Pay the fee",
     "duplication": "Child of pay-fee page. No duplication risk.",
     "enforcement": "What can be verified: Fee amounts vary by unit count. Late fees apply after deadline.\nWhat is unclear: Exact fee schedule (content to be populated by HHVC).",
     "draft": "# How much is my fee?\n\nDescription: See the costs and deadlines for building owners.\n\n## What to know before you start\n\nSection heading: Fee amounts\nSection body: [Content to be confirmed with HHVC — fee schedule by unit count]\n\nSection heading: Payment deadlines\nSection body: [Content to be confirmed with HHVC — deadline dates and billing cycle]\n\nSection heading: Late fees\nSection body: [Content to be confirmed with HHVC — late fee amounts and grace periods]\n\n## What to do\n\nPhone number: 311\n\n## Related\n- I need to pay my annual building fee\n- My rules as a building owner",
@@ -206,7 +246,11 @@
     "skeleton": false,
     "imported": true,
     "reviewStatus": "pending",
-    "inputs": { "topic": "How much is my fee?", "userType": "Building owner", "notes": "Imported from HHVC normalized content" }
+    "inputs": {
+      "topic": "How much is my fee?",
+      "userType": "Building owner",
+      "notes": "Imported from HHVC normalized content"
+    }
   },
   {
     "name": "I need to fix a violation after an inspection",
@@ -225,7 +269,11 @@
     "skeleton": false,
     "imported": true,
     "reviewStatus": "pending",
-    "inputs": { "topic": "I need to fix a violation after an inspection", "userType": "Building owner", "notes": "Imported from HHVC normalized content" }
+    "inputs": {
+      "topic": "I need to fix a violation after an inspection",
+      "userType": "Building owner",
+      "notes": "Imported from HHVC normalized content"
+    }
   },
   {
     "name": "My rules as a building owner",
@@ -244,7 +292,11 @@
     "skeleton": false,
     "imported": true,
     "reviewStatus": "pending",
-    "inputs": { "topic": "My rules as a building owner", "userType": "Building owner", "notes": "Imported from HHVC normalized content" }
+    "inputs": {
+      "topic": "My rules as a building owner",
+      "userType": "Building owner",
+      "notes": "Imported from HHVC normalized content"
+    }
   },
   {
     "name": "I want to learn how to stop mosquitoes",
@@ -263,26 +315,11 @@
     "skeleton": false,
     "imported": true,
     "reviewStatus": "pending",
-    "inputs": { "topic": "I want to learn how to stop mosquitoes", "userType": "General public", "notes": "Imported from HHVC normalized content" }
-  },
-  {
-    "name": "I found a dead bird (stub)",
-    "userType": "General public",
-    "userGoal": "Report a dead bird so the city can check if it is sick",
-    "purpose": "Stub page — content to be generated. Directs users to 311 to report dead birds for West Nile Virus testing.",
-    "pageType": "Transaction",
-    "components": "Description, What to know, What to do, Button link, Phone number, Related",
-    "relationships": "Parent: Healthy Housing and Vector Control (Topic)\nSiblings: I want to learn how to stop mosquitoes\nChildren: none\nEntry Points: Healthy Housing and Vector Control (Topic)\nNext Steps: 311 report",
-    "duplication": "Near-duplicate of page 21 (I found a dead bird). Page 21 has full content; this is the stub version.",
-    "enforcement": "What can be verified: City tests crows, jays, ravens, hawks for West Nile Virus.\nWhat is unclear: Content to be generated.",
-    "draft": "# I found a dead bird (stub)\n\nDescription: Tell us if you find a dead bird so we can check if it is sick.\n\n## What to know before you start\n\nSection heading: Why to report dead birds\nSection body: [Content to be generated]\n\nSection heading: How to report\nSection body: [Content to be generated]\n\n## What to do\n\nButton link: Report bird location\n\nPhone number: 311\n\n## Related\n- I want to learn how to stop mosquitoes\n- I want to contact HHVC",
-    "integration": "Stub — full content in page 21 (I found a dead bird).",
-    "valid": true,
-    "karlConnected": false,
-    "skeleton": true,
-    "imported": true,
-    "reviewStatus": "pending",
-    "inputs": { "topic": "I found a dead bird stub", "userType": "General public", "notes": "Imported from HHVC normalized content — stub, needs full content" }
+    "inputs": {
+      "topic": "I want to learn how to stop mosquitoes",
+      "userType": "General public",
+      "notes": "Imported from HHVC normalized content"
+    }
   },
   {
     "name": "I want to contact HHVC",
@@ -301,7 +338,11 @@
     "skeleton": false,
     "imported": true,
     "reviewStatus": "pending",
-    "inputs": { "topic": "I want to contact HHVC", "userType": "General public", "notes": "Imported from HHVC normalized content" }
+    "inputs": {
+      "topic": "I want to contact HHVC",
+      "userType": "General public",
+      "notes": "Imported from HHVC normalized content"
+    }
   },
   {
     "name": "I need to contact HHVC about housing, pests, or mosquitoes",
@@ -320,64 +361,11 @@
     "skeleton": false,
     "imported": true,
     "reviewStatus": "pending",
-    "inputs": { "topic": "I need to contact HHVC about housing pests or mosquitoes", "userType": "General public", "notes": "Imported from HHVC normalized content" }
-  },
-  {
-    "name": "I need to report mold in my home (v2)",
-    "userType": "Resident / tenant",
-    "userGoal": "Get help from the city if my landlord won't clean mold on walls or ceilings in my home",
-    "purpose": "Help tenants report mold to the city and understand what happens after reporting",
-    "pageType": "Transaction",
-    "components": "Description, What to do, Section heading, Section body, Action link, Phone number, Callout, Related",
-    "relationships": "Parent: Healthy Housing and Vector Control (Topic)\nSiblings: I need to fix mold in my rental, I need help with mold and water\nChildren: none\nEntry Points: Healthy Housing and Vector Control (Topic)\nNext Steps: 311 inspection within 7 to 10 days",
-    "duplication": "Near-duplicate of page 3 (same title). This version has slightly different structure and detail. Both are included.",
-    "enforcement": "What can be verified: 10 sq ft threshold. Inspector visits in 7-10 days. Mold-resistant paint required after cleaning.\nWhat is unclear: None.",
-    "draft": "# I need to report mold in my home (v2)\n\nDescription: Get help from the city if your landlord won't clean mold on walls or ceilings in your home.\n\n## What to do\n\nSection heading: Check if we can help\nSection body: We can help when mold is growing on walls or ceilings and the affected area is at least 10 square feet. This is about the size of 10 sheets of paper. We cannot help with mold on your personal belongings like clothes, furniture, or household items.\n\nSection heading: Contact your landlord first\nSection body: Write to your landlord about the mold problem. Give them 72 hours to respond before contacting the city. Keep a copy of your written notice for your records.\n\nSection heading: Report to the city\nSection body: Call 311 or use the SF311 app to make a report. Tell them you want to report mold in your rental unit. Give them your address and describe where you see the mold. Keep your case number for tracking.\n\nAction link: Report mold through SF311 app [Link to SF311 app]\n\nPhone number: 311\n\nCallout: Mold grows from excess moisture. If you see water leaks from pipes, windows, or the roof, this is always your landlord's responsibility to fix.\n\nSection heading: What happens after you report\nSection body: An inspector will visit your home within 7 to 10 days. You must give the inspector access to your unit for the inspection. If we find a health code violation, your landlord must clean the mold and paint the area with mold-resistant paint.\n\nSection heading: Your responsibilities while waiting\nSection body: Keep controlling humidity in your unit by using exhaust fans, opening windows daily for 15 minutes, and running fans to move air around.\n\nCallout: The Department of Public Health (DPH) handles health concerns like mold. The Department of Building Inspection (DBI) handles structural and plumbing issues that might cause leaks.\n\n## Related\n- I need help with mold and water\n- I need help with pests and bugs\n- I want to contact HHVC",
-    "integration": "Links to SF311 app. Part of tenant mold reporting workflow.",
-    "valid": true,
-    "karlConnected": false,
-    "skeleton": false,
-    "imported": true,
-    "reviewStatus": "pending",
-    "inputs": { "topic": "I need to report mold in my home v2", "userType": "Resident / tenant", "notes": "Imported from HHVC normalized content" }
-  },
-  {
-    "name": "I need to fix a violation after an inspection (v2)",
-    "userType": "Building owner",
-    "userGoal": "Fix violations from a housing inspection and schedule a re-inspection",
-    "purpose": "Guide building owners through fixing violations and scheduling a follow-up inspection",
-    "pageType": "Step by step",
-    "components": "Description, Callout, Section heading, Section body, Button link, Phone number, Related",
-    "relationships": "Parent: Healthy Housing and Vector Control (Topic)\nSiblings: My rules as a building owner, I need to pay my annual building fee\nChildren: none\nEntry Points: Violation notice\nNext Steps: Re-inspection",
-    "duplication": "Near-duplicate of page 12 (same title). This version has more detail on common violations. Both are included.",
-    "enforcement": "What can be verified: Must fix by deadline on notice. May result in Director's Hearing and City Attorney referral. Extensions possible.\nWhat is unclear: None.",
-    "draft": "# I need to fix a violation after an inspection (v2)\n\nDescription: Steps to take after you get a violation notice from a housing inspection. Fix the problem and schedule a re-inspection.\n\nCallout: You must fix all violations by the deadline shown on your notice. Contact the inspector with questions about required actions or documentation. Failure to address the violation may result in a Director's Hearing and referral to the City Attorney for civil charges.\n\nSection heading: Call 311 to schedule your re-inspection\nSection body: After you complete all repairs, call 311 to schedule a follow-up inspection. The inspector will verify that you fixed each violation. You must allow access to your building for this inspection.\n\nButton link: Call 311 to schedule re-inspection [tel:311]\nPhone number: 311\n\nSection heading: Steps to fix your violations\nSection body: Follow these steps in order:\n- Read your violation notice carefully\n- Fix each problem listed on the notice\n- Call 311 to schedule a re-inspection once repairs are complete\n- Allow the inspector to check your building again\n- Pay any fees if required\n\nSection heading: Common violations and how to fix them\nSection body: Most HHVC violations involve:\n- Bug problems: seal entry points, fix moisture issues, improve cleaning\n- Mold: fix leaks, improve air flow, clean affected areas\n- Sewage: repair plumbing, clean dirty areas\n- Trash: provide adequate garbage collection, clean common areas\n\nCallout: Some violations require permits or licensed contractors. Check with DBI if your repairs involve plumbing, electrical, or structural work.\n\nSection heading: If you need more time\nSection body: Contact HHVC before your deadline if you cannot complete repairs on time. Explain what is taking longer and when you expect to finish. HHVC may grant an extension for complex repairs.\n\nSection heading: Not sure who to contact?\nSection body: HHVC handles health and cleaning violations like pests, mold, sewage, and trash. The Department of Building Inspection (DBI) handles structural, electrical, and life-safety building code violations. Check your violation notice to see which department issued it.\n\n## Related\n- I need to pay my annual building fee\n- My rules as a building owner\n- I want to contact HHVC",
-    "integration": "Links to 311 re-inspection scheduling. Part of building owner violation response workflow.",
-    "valid": true,
-    "karlConnected": false,
-    "skeleton": false,
-    "imported": true,
-    "reviewStatus": "pending",
-    "inputs": { "topic": "I need to fix a violation after an inspection v2", "userType": "Building owner", "notes": "Imported from HHVC normalized content" }
-  },
-  {
-    "name": "I need to report bed bugs",
-    "userType": "Resident / tenant",
-    "userGoal": "Get help if I have bed bugs in my home and my landlord won't fix the problem",
-    "purpose": "Help tenants report bed bugs to the city through 311 and understand the inspection process",
-    "pageType": "Transaction",
-    "components": "Description, What to do, Callout, Section heading, Section body, Button link, Phone number, Related",
-    "relationships": "Parent: Healthy Housing and Vector Control (Topic)\nSiblings: I need to report cockroaches in my home, I need to report rats in my home, I need to report bedbugs in my home\nChildren: none\nEntry Points: Healthy Housing and Vector Control (Topic)\nNext Steps: 311 inspection within 48 hours",
-    "duplication": "Near-duplicate of page 4 (I need to report bedbugs in my home). Different framing — this page is more streamlined.",
-    "enforcement": "What can be verified: 48-hour response for bed bug reports. Landlord must hire pest control.\nWhat is unclear: None.",
-    "draft": "# I need to report bed bugs\n\nDescription: Get help if you have bed bugs in your home and your landlord won't fix the problem.\n\n## What to do\n\nCallout: Bed bug reports receive a response within 48 hours.\n\nSection heading: Step 1: Write to your landlord first\nSection body: Write to your landlord about the bed bugs. Include the date and describe what you see. Keep a copy of your letter. Wait 72 hours for your landlord to respond.\n\nSection heading: Step 2: Report to 311\nSection body: Call 311 or go online to report bed bugs. You will need your address and details about the problem. Tell them you already notified your landlord in writing.\n\nButton link: Report bed bugs online [311.sf.gov]\n\nPhone number: 311\n\nSection heading: What happens during an inspection\nSection body: We will contact you within 48 hours of your report. Our inspector will visit your home to check for bed bugs in your bedroom, living room, and furniture. If we find bed bugs, we will send a notice to your landlord. Your landlord must hire a pest control company to treat your home.\n\nSection heading: What you need to know about bed bugs\nSection body: Bed bugs are small brown insects that bite people while they sleep. They hide in mattresses, furniture, and cracks in walls. You may see small blood spots on sheets or dark spots on your mattress. Bed bugs can spread between apartments in the same building.\n\nCallout: Tenant responsibilities\n- Write to your landlord first and wait 72 hours before contacting the city\n- Keep your unit clean\n- Control humidity inside your unit\n\n## Related\n- I need to report cockroaches in my home\n- I need to report rats in my home\n- I need help with pests, mold, or trash",
-    "integration": "Links to 311.sf.gov online reporting. Part of tenant pest complaint workflow.",
-    "valid": true,
-    "karlConnected": false,
-    "skeleton": false,
-    "imported": true,
-    "reviewStatus": "pending",
-    "inputs": { "topic": "I need to report bed bugs", "userType": "Resident / tenant", "notes": "Imported from HHVC normalized content" }
+    "inputs": {
+      "topic": "I need to contact HHVC about housing pests or mosquitoes",
+      "userType": "General public",
+      "notes": "Imported from HHVC normalized content"
+    }
   },
   {
     "name": "I found a dead bird",
@@ -396,7 +384,11 @@
     "skeleton": false,
     "imported": true,
     "reviewStatus": "pending",
-    "inputs": { "topic": "I found a dead bird", "userType": "General public", "notes": "Imported from HHVC normalized content" }
+    "inputs": {
+      "topic": "I found a dead bird",
+      "userType": "General public",
+      "notes": "Imported from HHVC normalized content"
+    }
   },
   {
     "name": "I need to report rats in my home",
@@ -408,33 +400,18 @@
     "relationships": "Parent: Healthy Housing and Vector Control (Topic)\nSiblings: I need to report rats in my building, I need to report cockroaches in my home\nChildren: none\nEntry Points: Healthy Housing and Vector Control (Topic)\nNext Steps: Inspector contacts within 5 business days",
     "duplication": "Overlaps with I need to report rats in my building (page 1). This page focuses on unit-level rat complaints; page 1 covers building-level.",
     "enforcement": "What can be verified: Written notice to landlord required. 72-hour wait. Inspector documents health code violations. 30-day repair timeline.\nWhat is unclear: None.",
-    "draft": "# I need to report rats in my home\n\nDescription: Report rats when your landlord won't get rid of them. We inspect and make landlords fix rat problems in rental homes.\n\n## What to know before you start\n\nSection heading: Before you call 311\nSection body: You must try to resolve the problem with your landlord first. Write to your landlord about the rats and keep a copy. Give your landlord 72 hours to respond or start fixing the problem. Leave evidence like rat droppings undisturbed for our inspector to document. Keep records of all communication with your landlord.\n\nSection heading: What we look for during rat inspections\nSection body: We can help when you have rats in your home. Our inspectors look for rat droppings, gnaw marks on food or furniture, nesting materials like shredded paper, holes where rats get in, and dead rats. We also check if your landlord is doing enough to keep rats out.\n\nCallout: You are responsible for keeping your home clean, storing food in sealed containers, and giving access for inspections and repairs.\n\n## What to do\n\nSection heading: Start your report\nSection body: Call 311 or report online. Tell them you have rats that your landlord won't fix. Give them your address and describe what you see.\n\nAction link: Report rats online through 311 [sf.gov/311-customer-service-center]\n\nPhone number: 311\n\nSection heading: After you report\nSection body: An inspector will contact you within 5 business days to schedule a visit. You must be available to let the inspector into your home. The inspector will also contact your landlord.\n\nSection heading: During the inspection\nSection body: The inspector will document any health code violations and give your landlord a written notice to get rid of the rats. Most repairs must be completed within 30 days.\n\nCallout: Not sure who to contact? We handle health problems like rats. The Department of Building Inspection handles structural problems like broken walls or doors where rats might get in.\n\n## Related\n- I need help with pests and bugs\n- I need help with mold and water\n- I want to contact HHVC",
+    "draft": "# I need to report rats in my home\n\nDescription: Report rats when your landlord won't get rid of them. We inspect and make landlords fix rat problems in rental homes.\n\n## What to know before you start\n\nSection heading: Before you call 311\nSection body: You must try to resolve the problem with your landlord first. Write to your landlord about the rats and keep a copy. Give your landlord 72 hours to respond or start fixing the problem. Leave evidence like rat droppings undisturbed for our inspector to document. Keep records of all communication with your landlord.\n\nSection heading: What we look for during rat inspections\nSection body: We can help when you have rats in your home. Our inspectors look for rat droppings, gnaw marks on food or furniture, nesting materials like shredded paper, holes where rats get in, and dead rats. We also check if your landlord is doing enough to keep rats out.\n\nCallout: You are responsible for keeping your home clean, storing food in sealed containers, and giving access for inspections and repairs.\n\n## What to do\n\nSection heading: Start your report\nSection body: Call 311 or report online. Tell them you have rats that your landlord won't fix. Give them your address and describe what you see. All complaints start with 311. 311 takes your complaint and your details. If the case fits HHVC rules, 311 sends it to HHVC.\n\nAction link: Report rats online through 311 [sf.gov/311-customer-service-center]\n\nPhone number: 311\n\nSection heading: After you report\nSection body: An inspector will contact you within 5 business days to schedule a visit. You must be available to let the inspector into your home. The inspector will also contact your landlord.\n\nSection heading: During the inspection\nSection body: The inspector will document any health code violations and give your landlord a written notice to get rid of the rats. Most repairs must be completed within 30 days.\n\nCallout: Not sure who to contact? We handle health problems like rats. The Department of Building Inspection handles structural problems like broken walls or doors where rats might get in.\n\n## Related\n- I need help with pests and bugs\n- I need help with mold and water\n- I want to contact HHVC",
     "integration": "Links to sf.gov/311-customer-service-center. Part of tenant pest complaint workflow.",
     "valid": true,
     "karlConnected": false,
     "skeleton": false,
     "imported": true,
     "reviewStatus": "pending",
-    "inputs": { "topic": "I need to report rats in my home", "userType": "Resident / tenant", "notes": "Imported from HHVC normalized content" }
-  },
-  {
-    "name": "My rules as a building owner (v2)",
-    "userType": "Building owner",
-    "userGoal": "Learn the legal requirements for owning a building with 3 or more rental units in San Francisco",
-    "purpose": "Comprehensive reference for building owner legal obligations — health, safety, pest, plumbing, heating, and trash requirements",
-    "pageType": "Information",
-    "components": "Description, Information section, Callout, Action link, Section heading, Section body, Related",
-    "relationships": "Parent: Healthy Housing and Vector Control (Topic)\nSiblings: I need to pay my annual building fee, I need to fix a violation after an inspection\nChildren: none\nEntry Points: Healthy Housing and Vector Control (Topic)\nNext Steps: Pay annual fee, register building",
-    "duplication": "Near-duplicate of page 13 (My rules as a building owner). This version is more comprehensive. Both are included.",
-    "enforcement": "What can be verified: 3+ unit buildings must comply. 72-hour response to tenant complaints. Sewage is emergency priority.\nWhat is unclear: None.",
-    "draft": "# My rules as a building owner (v2)\n\nDescription: Legal requirements you must follow if you own a building with 3 or more rental units in San Francisco.\n\n## Information section\n\nCallout: You are required to pay an annual building fee to cover inspection and enforcement costs.\n\nAction link: Pay your building fee online [Link to fee payment page]\n\nSection heading: Do these rules apply to your building?\nSection body: These rules apply to buildings with 3 or more rental units. This includes apartment buildings, converted houses with multiple units, and mixed-use buildings with residential units. Single-family homes and duplexes have different requirements.\n\nSection heading: Your basic responsibilities\nSection body: You must keep your building free from health hazards that can make tenants sick. This includes bugs, mold, sewage problems, and trash buildup.\n\nSection heading: Emergency response requirements\nSection body: When tenants write to you about health problems, you have 72 hours to start fixing the issue. Keep records of all tenant complaints and your response. If you do not respond, tenants can contact the city for help.\n\nCallout: Sewage problems receive priority response within 48 hours from the city.\n\nSection heading: Bug control requirements\nSection body: You must prevent and control rats, roaches, bed bugs, and other bugs in common areas and individual units. This means sealing holes, removing food sources, and hiring professional pest control when needed. If tenants report bugs, you have 72 hours to begin addressing the problem.\n\nSection heading: Plumbing and sewage systems\nSection body: All plumbing must work properly. You must fix leaks, clogs, and sewage backups immediately. Tenants need hot water, working toilets, and proper drainage. Any sewage backup is an emergency that requires immediate action.\n\nSection heading: Heating requirements\nSection body: You must provide adequate heat to all rental units. Each unit needs a safe, working heating system that can maintain comfortable temperatures during cold weather.\n\nSection heading: Mold and water damage prevention\nSection body: You must fix leaks and water problems that cause mold growth. This includes roof leaks, pipe leaks, and poor ventilation. You must provide working exhaust fans in bathrooms and kitchens to control humidity.\n\nSection heading: Trash removal\nSection body: You must provide adequate garbage collection for all tenants. This means enough trash bins, regular pickup schedules, and clean storage areas. You cannot let trash pile up in common areas or attract bugs.\n\nSection heading: Common area maintenance\nSection body: You must keep hallways, stairs, basements, and yards clean and safe. This includes removing clutter, fixing lighting, and preventing bug breeding areas like standing water or overgrown vegetation.\n\nSection heading: City inspection process\nSection body: City inspectors can visit your building if tenants report health problems. They will check for all the requirements listed above. If they find violations, you will receive a notice explaining what you must fix and when.\n\nCallout: DPH handles health and sanitation issues. DBI handles structural and life-safety building code issues. Contact the right department for your specific problem.\n\n## Related\n- I need to pay my annual building fee\n- I need to fix a violation after an inspection\n- How much is my fee",
-    "integration": "Links to fee payment page. Part of building owner compliance hub.",
-    "valid": true,
-    "karlConnected": false,
-    "skeleton": false,
-    "imported": true,
-    "reviewStatus": "pending",
-    "inputs": { "topic": "My rules as a building owner v2", "userType": "Building owner", "notes": "Imported from HHVC normalized content" }
+    "inputs": {
+      "topic": "I need to report rats in my home",
+      "userType": "Resident / tenant",
+      "notes": "Imported from HHVC normalized content"
+    }
   },
   {
     "name": "I need to report flies in my home",
@@ -443,17 +420,21 @@
     "purpose": "Help tenants report fly infestations caused by landlord-responsibility issues through 311",
     "pageType": "Transaction",
     "components": "Description, What to do, Callout, Section heading, Section body, Button link, Action link, Phone number, Related",
-    "relationships": "Parent: Healthy Housing and Vector Control (Topic)\nSiblings: I need to report cockroaches in my home, I need to report rats in my home\nChildren: none\nEntry Points: Healthy Housing and Vector Control (Topic)\nNext Steps: Inspector visits within 2 weeks",
+    "relationships": "Parent: Healthy Housing and Vector Control (Topic)\nSiblings: I need to report cockroaches in my home, I need to report rats in my home\nChildren: none\nEntry Points: Healthy Housing and Vector Control (Topic)\nNext Steps: Inspector visits within 5 business days after report is received from 311",
     "duplication": "No significant duplication.",
-    "enforcement": "What can be verified: City inspects when flies caused by broken plumbing, garbage, or structural issues. Inspector visits within 2 weeks.\nWhat is unclear: None.",
-    "draft": "# I need to report flies in my home\n\nDescription: Get city help when flies in your home won't go away and your landlord won't fix the problem.\n\n## What to do\n\nCallout: You must notify your landlord in writing about the fly problem and wait 72 hours before contacting the city.\n\nSection heading: Before you call the city\nSection body: You write to your landlord about the fly problem. You keep a copy of your letter or email. You wait 72 hours after sending it. You leave evidence of the flies for the inspector to see during the visit.\n\nSection heading: Report the problem\nSection body: You call 311 or file a report online. You tell them you have flies in your home and your landlord will not fix the cause. You give your address and contact information. You mention if you see flies near garbage, drains, or broken pipes.\n\nButton link: File a report online [sf.gov/report-request-non-emergency-services]\n\nAction link: Call 311 now [tel:311]\n\nPhone number: 311\n\nSection heading: During the inspection\nSection body: You give the inspector access to your home. You show them where you see the most flies. You point out any broken plumbing, garbage problems, or openings where flies might enter. The inspector will look for health code violations your landlord must fix.\n\nSection heading: When we can help\nSection body: We inspect for health violations when flies are caused by broken plumbing, garbage problems, or structural issues your landlord should fix. We cannot help with flies from normal household activities or cleanliness issues.\n\nSection heading: What happens next\nSection body: An inspector will visit within 2 weeks to check for health code violations. If we find violations, your landlord must fix them or face fines. You do not pay for this service.\n\nCallout — Your responsibilities:\n- Controlling humidity inside your unit\n- Keeping your unit clean\n- Writing to your landlord first and waiting 72 hours before contacting the city\n\nSection heading: Not sure who to contact?\nSection body: The Department of Public Health handles health and sanitation concerns like flies from broken pipes or garbage. The Department of Building Inspection handles structural repairs like broken windows or doors.\n\n## Related\n- I need help with pests and bugs\n- I need help with pests, mold, or trash",
+    "enforcement": "What can be verified: City inspects when flies caused by broken plumbing, garbage, or structural issues. Inspector visits within 5 business days after report is received from 311.\nWhat is unclear: None.",
+    "draft": "# I need to report flies in my home\n\nDescription: Get city help when flies in your home won't go away and your landlord won't fix the problem.\n\n## What to do\n\nCallout: You must notify your landlord in writing about the fly problem and wait 72 hours before contacting the city.\n\nSection heading: Before you call the city\nSection body: You write to your landlord about the fly problem. You keep a copy of your letter or email. You wait 72 hours after sending it. You leave evidence of the flies for the inspector to see during the visit.\n\nSection heading: Report the problem\nSection body: You call 311 or file a report online. You tell them you have flies in your home and your landlord will not fix the cause. You give your address and contact information. You mention if you see flies near garbage, drains, or broken pipes. All complaints start with 311. 311 takes your complaint and your details. If the case fits HHVC rules, 311 sends it to HHVC.\n\nButton link: File a report online [sf.gov/report-request-non-emergency-services]\n\nAction link: Call 311 now [tel:311]\n\nPhone number: 311\n\nSection heading: During the inspection\nSection body: You give the inspector access to your home. You show them where you see the most flies. You point out any broken plumbing, garbage problems, or openings where flies might enter. The inspector will look for health code violations your landlord must fix.\n\nSection heading: When we can help\nSection body: We inspect for health violations when flies are caused by broken plumbing, garbage problems, or structural issues your landlord should fix. We cannot help with flies from normal household activities or cleanliness issues.\n\nSection heading: What happens next\nSection body: An inspector will visit within 5 business days after report is received from 311 to check for health code violations. If we find violations, your landlord must fix them or face fines. You do not pay for this service.\n\nCallout — Your responsibilities:\n- Controlling humidity inside your unit\n- Keeping your unit clean\n- Writing to your landlord first and waiting 72 hours before contacting the city\n\nSection heading: Not sure who to contact?\nSection body: The Department of Public Health handles health and sanitation concerns like flies from broken pipes or garbage. The Department of Building Inspection handles structural repairs like broken windows or doors.\n\n## Related\n- I need help with pests and bugs\n- I need help with pests, mold, or trash",
     "integration": "Links to sf.gov online reporting. Part of tenant pest complaint workflow.",
     "valid": true,
     "karlConnected": false,
     "skeleton": false,
     "imported": true,
     "reviewStatus": "pending",
-    "inputs": { "topic": "I need to report flies in my home", "userType": "Resident / tenant", "notes": "Imported from HHVC normalized content" }
+    "inputs": {
+      "topic": "I need to report flies in my home",
+      "userType": "Resident / tenant",
+      "notes": "Imported from HHVC normalized content"
+    }
   },
   {
     "name": "I need to report cockroaches in my home",
@@ -462,16 +443,20 @@
     "purpose": "Help tenants report cockroaches through 311 and understand what to expect from the inspection",
     "pageType": "Transaction",
     "components": "Description, What to do, Section heading, Section body, Action link, Phone number, What to know, Callout, Related",
-    "relationships": "Parent: Healthy Housing and Vector Control (Topic)\nSiblings: I need to report rats in my home, I need to report flies in my home, I need to report bed bugs\nChildren: none\nEntry Points: Healthy Housing and Vector Control (Topic)\nNext Steps: City inspects within 2 weeks",
+    "relationships": "Parent: Healthy Housing and Vector Control (Topic)\nSiblings: I need to report rats in my home, I need to report flies in my home, I need to report bed bugs\nChildren: none\nEntry Points: Healthy Housing and Vector Control (Topic)\nNext Steps: City inspects within 5 business days after report is received from 311",
     "duplication": "No significant duplication.",
-    "enforcement": "What can be verified: Written notice to landlord required. 72-hour wait. City inspects within 2 weeks. Landlord must eliminate cockroaches and remove conditions.\nWhat is unclear: None.",
-    "draft": "# I need to report cockroaches in my home\n\nDescription: Get city help to eliminate cockroaches when your landlord won't fix the problem. Report through 311.\n\n## What to do\n\nSection heading: Call 311 to report\nSection body: Call 311 and say you want to report cockroaches in your home. Give them your address and explain that you already contacted your landlord in writing. They will create a case number for you and schedule an inspection.\n\nAction link: Call 311 now [Phone: 311]\n\nPhone number: 311\n\nSection heading: Before you call 311\nSection body: You need to write to your landlord about the cockroaches first. You should keep a copy of what you wrote and wait 72 hours after writing to your landlord. If they do not respond or fix the problem, then you can call 311.\n\nSection heading: Leave evidence for the inspector\nSection body: You should not clean up all signs of cockroaches before the inspection. You need to leave some droppings, egg cases, or dead cockroaches so the inspector can document the problem. You should clean up food and water sources but leave evidence of the pests.\n\n## What to know before you start\n\nSection heading: When to contact the city\nSection body: You can contact 311 if you told your landlord about cockroaches in writing and waited 72 hours but they still have not fixed the problem. You can also contact the city right away if cockroaches are in common areas like hallways or laundry rooms.\n\nSection heading: What happens after you report\nSection body: The city will inspect your building within 2 weeks. If they find cockroaches or conditions that attract them, they will order your landlord to fix the problem. Your landlord must eliminate the cockroaches and remove the conditions that let them survive.\n\nSection heading: What to expect during inspection\nSection body: The inspector will look for cockroaches and the conditions that let them survive. This includes checking for food sources, water leaks, cracks where they hide, and trash storage. You must give the inspector access to your unit and common areas.\n\nCallout: You do not pay any fees to report cockroaches or get an inspection.\n\nCallout: Your responsibilities: Control humidity in your unit, keep your unit clean, store food properly, write to your landlord first and wait 72 hours, give access for inspection and repairs.\n\n## Related\n- I need help with pests and bugs\n- I need help with pests, mold, or trash\n- I want to contact HHVC",
+    "enforcement": "What can be verified: Written notice to landlord required. 72-hour wait. City inspects within 5 business days after report is received from 311. Landlord must eliminate cockroaches and remove conditions.\nWhat is unclear: None.",
+    "draft": "# I need to report cockroaches in my home\n\nDescription: Get city help to eliminate cockroaches when your landlord won't fix the problem. Report through 311.\n\n## What to do\n\nSection heading: Call 311 to report\nSection body: Call 311 and say you want to report cockroaches in your home. Give them your address and explain that you already contacted your landlord in writing. All complaints start with 311. 311 gives you a case number. If the case fits HHVC rules, 311 sends it to HHVC for review and inspection scheduling.\n\nAction link: Call 311 now [Phone: 311]\n\nPhone number: 311\n\nSection heading: Before you call 311\nSection body: You need to write to your landlord about the cockroaches first. You should keep a copy of what you wrote and wait 72 hours after writing to your landlord. If they do not respond or fix the problem, then you can call 311.\n\nSection heading: Leave evidence for the inspector\nSection body: You should not clean up all signs of cockroaches before the inspection. You need to leave some droppings, egg cases, or dead cockroaches so the inspector can document the problem. You should clean up food and water sources but leave evidence of the pests.\n\n## What to know before you start\n\nSection heading: When to contact the city\nSection body: You can contact 311 if you told your landlord about cockroaches in writing and waited 72 hours but they still have not fixed the problem. You can also contact the city right away if cockroaches are in common areas like hallways or laundry rooms.\n\nSection heading: What happens after you report\nSection body: The city will inspect your building within 5 business days after report is received from 311. If they find cockroaches or conditions that attract them, they will order your landlord to fix the problem. Your landlord must eliminate the cockroaches and remove the conditions that let them survive.\n\nSection heading: What to expect during inspection\nSection body: The inspector will look for cockroaches and the conditions that let them survive. This includes checking for food sources, water leaks, cracks where they hide, and trash storage. You must give the inspector access to your unit and common areas.\n\nCallout: You do not pay any fees to report cockroaches or get an inspection.\n\nCallout: Your responsibilities: Control humidity in your unit, keep your unit clean, store food properly, write to your landlord first and wait 72 hours, give access for inspection and repairs.\n\n## Related\n- I need help with pests and bugs\n- I need help with pests, mold, or trash\n- I want to contact HHVC",
     "integration": "Links to 311. Part of tenant pest complaint workflow.",
     "valid": true,
     "karlConnected": false,
     "skeleton": false,
     "imported": true,
     "reviewStatus": "pending",
-    "inputs": { "topic": "I need to report cockroaches in my home", "userType": "Resident / tenant", "notes": "Imported from HHVC normalized content" }
+    "inputs": {
+      "topic": "I need to report cockroaches in my home",
+      "userType": "Resident / tenant",
+      "notes": "Imported from HHVC normalized content"
+    }
   }
 ]

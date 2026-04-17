@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { PageDraft, TodoItem, KarlEvaluation, PlannedPage, UserPreference, PageVersion } from "./types";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { PageDraft, TodoItem, KarlEvaluation, PlannedPage, UserPreference, PageVersion, SuggestedPage } from "./types";
 import { USER_TYPES, PAGE_TYPES, SYSTEM_PROMPT, SUGGESTED_PAGES, TYPE_META, SITEMAP_SKELETON, STRUCTURED_OUTPUT_RULES, buildGenerationUserPrompt, buildRefineUserPrompt } from "./constants";
-import { clean, isPest, parsePage, parseRel, parseStructuredPage, pagesApi, todosApi, plannedPagesApi, preferencesApi, improveStructure, runKarlEvaluation, evaluateQualityGate, lsLegacy, driveApi, skeletonToPageDraft, versionsApi } from "./utils";
+import { clean, isPest, parsePage, parseRel, parseStructuredPage, pagesApi, todosApi, plannedPagesApi, preferencesApi, improveStructure, runKarlEvaluation, evaluateQualityGate, lsLegacy, driveApi, skeletonToPageDraft, versionsApi, filterEligibleSuggestedPages, sampleSuggestedPages } from "./utils";
 import { DriveFile } from "./types";
 import { Badge, Label, Divider, Btn, Card, Field, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar, iStyle } from "./components/ui";
 import { SfGovPagePreview } from "./components/SfGovPreview";
@@ -269,6 +269,7 @@ function TodoPanel({ pages, onGenerate }: { pages: PageDraft[]; onGenerate: (top
   const [newUT, setNewUT] = useState(USER_TYPES[0]);
   const [adding, setAdding] = useState(false);
   const [loadingTodos, setLoadingTodos] = useState(true);
+  const [visibleSuggested, setVisibleSuggested] = useState<SuggestedPage[]>([]);
 
   useEffect(() => {
     todosApi.list()
@@ -277,9 +278,26 @@ function TodoPanel({ pages, onGenerate }: { pages: PageDraft[]; onGenerate: (top
       .finally(() => setLoadingTodos(false));
   }, []);
 
-  const builtNames = new Set(pages.map(p => (clean(p.name) || "").toLowerCase()));
-  const suggested = SUGGESTED_PAGES.filter(s => !builtNames.has(s.topic.toLowerCase()) && !todos.some(t => t.topic.toLowerCase() === s.topic.toLowerCase()));
+  const suggested = useMemo(
+    () => filterEligibleSuggestedPages(SUGGESTED_PAGES, pages, todos),
+    [pages, todos]
+  );
 
+  const suggestedKey = useMemo(
+    () => suggested.map((entry) => entry.topic).join("|"),
+    [suggested]
+  );
+
+  useEffect(() => {
+    setVisibleSuggested((previous) => {
+      const nextSample = sampleSuggestedPages(suggested, 5, previous.map((entry) => entry.topic));
+      const hasSameTopics =
+        previous.length === nextSample.length &&
+        previous.every((entry, index) => entry.topic === nextSample[index]?.topic);
+
+      return hasSameTopics ? previous : nextSample;
+    });
+  }, [suggested, suggestedKey]);
   const addTodo = async () => {
     if (!newTopic.trim()) return;
     try {
@@ -304,6 +322,12 @@ function TodoPanel({ pages, onGenerate }: { pages: PageDraft[]; onGenerate: (top
       const created = await todosApi.create(s.topic, s.userType);
       setTodos(prev => [...prev, created]);
     } catch {}
+  };
+
+  const refreshSuggestions = () => {
+    setVisibleSuggested((previous) =>
+      sampleSuggestedPages(suggested, 5, previous.map((entry) => entry.topic))
+    );
   };
 
   const pending = todos.filter(t => !t.done), done = todos.filter(t => t.done);
@@ -364,15 +388,18 @@ function TodoPanel({ pages, onGenerate }: { pages: PageDraft[]; onGenerate: (top
           style={{ width: "100%", padding: "8px 0", fontSize: 12, border: "0.5px dashed var(--color-border-secondary)", borderRadius: "var(--border-radius-md)", background: "transparent", color: "var(--color-text-secondary)", cursor: "pointer", marginTop: 4, transition: "border-color 0.15s,color 0.15s" }}
           onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--color-border-primary)"; e.currentTarget.style.color = "var(--color-text-primary)"; }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--color-border-secondary)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}>
-          + Add page
+            <Btn onClick={refreshSuggestions} variant="ghost" size="sm" disabled={suggested.length === 0}>Refresh choices</Btn>
         </button>
       )}
 
       {suggested.length > 0 && (
         <>
           <Divider m="14px 0 10px" />
-          <Label>Suggested</Label>
-          {suggested.slice(0, 5).map((s, i) => {
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <Label style={{ margin: 0 }}>Suggested</Label>
+            <Btn onClick={refreshSuggestions} variant="ghost" size="sm" disabled={suggested.length <= 1}>Refresh choices</Btn>
+          </div>
+          {visibleSuggested.map((s, i) => {
             const c = TYPE_META[s.pageType] || { fill: "#F1EFE8", text: "#444", stroke: "#888" };
             return (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, padding: "6px 8px", borderRadius: "var(--border-radius-md)" }}>

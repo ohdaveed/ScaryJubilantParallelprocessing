@@ -51,7 +51,7 @@ interface BtnProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   fullWidth?: boolean;
 }
 
-export const Btn: React.FC<BtnProps> = ({ children, variant = "ghost", size = "sm", fullWidth, style = {}, ...props }) => {
+export const Btn: React.FC<BtnProps> = ({ children, variant = "ghost", size = "sm", fullWidth, style = {}, type = "button", ...props }) => {
   const base: React.CSSProperties = {
     fontFamily: "var(--font-sans)", cursor: props.disabled ? "not-allowed" : "pointer",
     borderRadius: "var(--border-radius-md)", fontWeight: size === "lg" ? 500 : 400,
@@ -74,7 +74,7 @@ export const Btn: React.FC<BtnProps> = ({ children, variant = "ghost", size = "s
 
   return (
     <button
-      type={props.type ?? "button"}
+      type={type}
       style={{ ...base, ...sizes[size], ...variants[variant], ...(props.disabled ? { opacity: 0.4 } : {}) }}
       onMouseEnter={e => { if (!props.disabled) { e.currentTarget.style.opacity = "0.72"; e.currentTarget.style.transform = "translateY(-1px)"; } }}
       onMouseLeave={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; }}
