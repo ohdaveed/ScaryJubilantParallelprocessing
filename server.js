@@ -549,7 +549,7 @@ app.post("/api/pages/import", async (req, res) => {
       }
       const id = randomUUID();
       const now = new Date().toISOString();
-      const fullPage = { ...page, id, createdAt: now };
+      const fullPage = { ...page, id, createdAt: now, raw: page.raw || page.draft || "" };
       await pool.query(
         "INSERT INTO pages (id, data, created_at) VALUES ($1, $2, $3)",
         [id, JSON.stringify(fullPage), now]

@@ -1501,8 +1501,12 @@ export default function App() {
                         onChange={async e => {
                           e.stopPropagation();
                           const newStatus = e.target.value as 'pending' | 'approved' | 'rejected';
-                          await pagesApi.updateReview(p.id, newStatus);
-                          setPages(prev => prev.map(x => x.id === p.id ? { ...x, reviewStatus: newStatus } : x));
+                          try {
+                            await pagesApi.updateReview(p.id, newStatus);
+                            setPages(prev => prev.map(x => x.id === p.id ? { ...x, reviewStatus: newStatus } : x));
+                          } catch {
+                            // server error — dropdown will revert on next render
+                          }
                         }}
                         style={{
                           fontSize: 10,
