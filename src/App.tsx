@@ -470,6 +470,8 @@ export default function App() {
   const [mapMode, setMapMode] = useState<"plan" | "view">("plan");
   const [pendingPlannedId, setPendingPlannedId] = useState<number | null>(null);
   const [pendingPageType, setPendingPageType] = useState<string>("");
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ inserted: number; skipped: number } | null>(null);
   const streamRef = useRef("");
   const lastInput = useRef<{ topic: string; userType: string; notes: string }>({ topic: "", userType: "", notes: "" });
 
@@ -916,6 +918,23 @@ export default function App() {
         )}
       </button>
     );
+  };
+
+  const handleImport = async () => {
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const result = await pagesApi.import();
+      setImportResult(result);
+      // Refresh page list
+      const updated = await pagesApi.list();
+      setPages(updated);
+    } catch (err) {
+      console.error("Import error:", err);
+      setImportResult({ inserted: -1, skipped: 0 });
+    } finally {
+      setImporting(false);
+    }
   };
 
   return (
@@ -1400,6 +1419,28 @@ export default function App() {
             <Btn onClick={() => setSortNewest(s => !s)} variant="ghost" size="sm">{sortNewest ? "Newest first" : "Oldest first"}</Btn>
             {pages.length > 0 && <Btn onClick={() => handleDownload(pages.map(p => p.raw).join("\n\n---\n\n"), "hhvc-pages-export.txt")} variant="ghost" size="sm">Export all</Btn>}
             {pages.some(p => p.skeleton) && <Btn onClick={() => handleDownload(pages.filter(p => p.skeleton).map(p => p.raw).join("\n\n---\n\n"), "hhvc-skeletons-export.txt")} variant="ghost" size="sm">Download skeletons</Btn>}
+            <Btn
+              onClick={handleImport}
+              variant="ghost"
+              size="sm"
+              disabled={importing}
+            >
+              {importing ? "Importing…" : "Import HHVC Pages"}
+            </Btn>
+            {importResult && (
+              <span style={{
+                fontSize: 11,
+                padding: "3px 10px",
+                borderRadius: 20,
+                background: importResult.inserted >= 0 ? "#E1F5EE" : "#FCEBEB",
+                color: importResult.inserted >= 0 ? "#0F6E56" : "#A32D2D",
+                border: importResult.inserted >= 0 ? "0.5px solid #0F6E5630" : "0.5px solid #A32D2D30"
+              }}>
+                {importResult.inserted >= 0
+                  ? `${importResult.inserted} imported · ${importResult.skipped} skipped`
+                  : "Import failed"}
+              </span>
+            )}
           </div>
           {seeding && (
             <div style={{ textAlign: "center", padding: "24px 0 12px", color: "#6B21A8" }}>
