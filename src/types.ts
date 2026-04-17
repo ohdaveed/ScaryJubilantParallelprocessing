@@ -171,3 +171,13 @@ export interface PlannedPage {
   builtPageId: string | null;
   createdAt: string;
 }
+
+export interface PageVersion {
+  id: number;
+  pageId: string;
+  versionNumber: number;
+  data?: PageDraft;
+  notes: string | null;
+  trigger: 'generate' | 'refine' | 'restore';
+  createdAt: string;
+}
