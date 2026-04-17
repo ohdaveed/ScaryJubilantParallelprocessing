@@ -114,6 +114,19 @@ export const pagesApi = {
   delete: async (id: string): Promise<void> => {
     const res = await fetch(`${API_BASE}/pages/${encodeURIComponent(id)}`, { method: "DELETE" });
     if (!res.ok) throw new Error(`Failed to delete page: ${res.status}`);
+  },
+  import: async (): Promise<{ inserted: number; skipped: number }> => {
+    const res = await fetch(`${API_BASE}/pages/import`, { method: "POST" });
+    if (!res.ok) throw new Error(`Import failed: ${res.status}`);
+    return res.json();
+  },
+  updateReview: async (id: string, status: 'pending' | 'approved' | 'rejected'): Promise<void> => {
+    const res = await fetch(`${API_BASE}/pages/${encodeURIComponent(id)}/review`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status })
+    });
+    if (!res.ok) throw new Error(`Failed to update review status: ${res.status}`);
   }
 };
 
