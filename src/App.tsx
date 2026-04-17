@@ -546,10 +546,15 @@ export default function App() {
       .then(files => setDriveFiles(files))
       .catch(err => setDriveError(err.message || "Could not load Drive files"))
       .finally(() => setDriveLoading(false));
-    preferencesApi.list()
+  }, []);
+
+  useEffect(() => {
+    setPreferences([]);
+    if (!selected) return;
+    preferencesApi.list(selected.id)
       .then(prefs => setPreferences(prefs))
       .catch(() => {});
-  }, []);
+  }, [selected?.id]);
 
   const toggleDriveFile = async (file: DriveFile) => {
     const id = file.id;
@@ -883,7 +888,7 @@ export default function App() {
       setPages(prev => prev.map(p => p.id === selected.id ? updated : p));
       setSelected(updated);
 
-      preferencesApi.create(instruction, "refine")
+      preferencesApi.create(instruction, "refine", selected.id)
         .then(pref => setPreferences(prev => [pref, ...prev]))
         .catch(() => {});
     } catch (err) {
@@ -1162,10 +1167,11 @@ export default function App() {
               )}
             </Card>
 
+            {selected && (
             <Card style={{ padding: "14px 16px", marginBottom: 12 }}>
               <Label style={{ marginBottom: 8 }}>Preferences</Label>
               <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", margin: "0 0 8px", lineHeight: 1.5 }}>
-                The agent remembers these when generating and improving pages.
+                Remembered for this page. Refine to teach the agent.
               </p>
               {preferences.map(p => (
                 <div key={p.id} style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: 5, padding: "5px 8px", background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-md)", border: "0.5px solid var(--color-border-tertiary)" }}>
@@ -1179,7 +1185,7 @@ export default function App() {
                 </div>
               ))}
               {preferences.length === 0 && (
-                <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", margin: "0 0 6px", fontStyle: "italic" }}>No preferences yet. Add one below or refine a page to teach the agent.</p>
+                <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", margin: "0 0 6px", fontStyle: "italic" }}>No preferences yet. Add one below or refine this page to teach the agent.</p>
               )}
               <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
                 <input
@@ -1189,7 +1195,7 @@ export default function App() {
                   onChange={e => setNewPref(e.target.value)}
                   onKeyDown={async e => {
                     if (e.key === "Enter" && newPref.trim()) {
-                      const pref = await preferencesApi.create(newPref.trim(), "manual");
+                      const pref = await preferencesApi.create(newPref.trim(), "manual", selected?.id);
                       setPreferences(prev => [pref, ...prev]);
                       setNewPref("");
                     }
@@ -1200,13 +1206,14 @@ export default function App() {
                   disabled={!newPref.trim()}
                   onClick={async () => {
                     if (!newPref.trim()) return;
-                    const pref = await preferencesApi.create(newPref.trim(), "manual");
+                    const pref = await preferencesApi.create(newPref.trim(), "manual", selected?.id);
                     setPreferences(prev => [pref, ...prev]);
                     setNewPref("");
                   }}
                 >Add</Btn>
               </div>
             </Card>
+            )}
 
             {pages.length > 0 && (
               <Card style={{ padding: "14px 16px" }}>

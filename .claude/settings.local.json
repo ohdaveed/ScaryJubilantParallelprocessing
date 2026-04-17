@@ -15,7 +15,11 @@
       "Read(//c/Program Files/**)",
       "Read(//c/Program Files \\(x86\\)/**)",
       "Bash(docker --version)",
-      "Bash(curl -s http://localhost:5000/api/pages)"
+      "Bash(curl -s http://localhost:5000/api/pages)",
+      "Bash(curl -s -X POST http://localhost:3001/api/pages/import)",
+      "Bash(npm test *)",
+      "Bash(curl -sv -X POST http://localhost:3001/api/pages/import)",
+      "Bash(curl -sv -X POST http://localhost:5000/api/pages/import)"
     ]
   }
 }

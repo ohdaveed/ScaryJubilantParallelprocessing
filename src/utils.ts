@@ -412,17 +412,18 @@ export const plannedPagesApi = {
 };
 
 export const preferencesApi = {
-  list: async (): Promise<import("./types").UserPreference[]> => {
-    const res = await fetch(`${API_BASE}/preferences`);
+  list: async (pageId?: string | null): Promise<import("./types").UserPreference[]> => {
+    const url = pageId ? `${API_BASE}/preferences?page_id=${encodeURIComponent(pageId)}` : `${API_BASE}/preferences`;
+    const res = await fetch(url);
     if (!res.ok) throw new Error(`Failed to load preferences: ${res.status}`);
     const data = await res.json();
     return data.preferences || [];
   },
-  create: async (preference: string, source: string = "manual"): Promise<import("./types").UserPreference> => {
+  create: async (preference: string, source: string = "manual", pageId?: string | null): Promise<import("./types").UserPreference> => {
     const res = await fetch(`${API_BASE}/preferences`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ preference, source })
+      body: JSON.stringify({ preference, source, page_id: pageId || null })
     });
     if (!res.ok) throw new Error(`Failed to create preference: ${res.status}`);
     return res.json();

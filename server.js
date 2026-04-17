@@ -71,8 +71,12 @@ async function initDb() {
         id SERIAL PRIMARY KEY,
         preference TEXT NOT NULL,
         source TEXT DEFAULT 'manual',
+        page_id TEXT,
         created_at TIMESTAMP DEFAULT NOW()
       )
+    `);
+    await pool.query(`
+      ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS page_id TEXT
     `);
     console.log("Database tables ready");
   } catch (err) {
@@ -556,24 +560,27 @@ Return the COMPLETE improved page in exactly the same format. Change structure a
 });
 
 app.get("/api/preferences", async (req, res) => {
+  const { page_id } = req.query;
   try {
-    const result = await pool.query("SELECT * FROM user_preferences ORDER BY created_at DESC");
-    res.json({ preferences: result.rows.map(r => ({ id: r.id, preference: r.preference, source: r.source, createdAt: r.created_at })) });
+    const result = page_id
+      ? await pool.query("SELECT * FROM user_preferences WHERE page_id = $1 ORDER BY created_at DESC", [page_id])
+      : await pool.query("SELECT * FROM user_preferences WHERE page_id IS NULL ORDER BY created_at DESC");
+    res.json({ preferences: result.rows.map(r => ({ id: r.id, preference: r.preference, source: r.source, pageId: r.page_id, createdAt: r.created_at })) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 app.post("/api/preferences", async (req, res) => {
-  const { preference, source } = req.body;
+  const { preference, source, page_id } = req.body;
   if (!preference) return res.status(400).json({ error: "Missing preference" });
   try {
     const result = await pool.query(
-      "INSERT INTO user_preferences (preference, source) VALUES ($1, $2) RETURNING *",
-      [preference.slice(0, 500), source || "manual"]
+      "INSERT INTO user_preferences (preference, source, page_id) VALUES ($1, $2, $3) RETURNING *",
+      [preference.slice(0, 500), source || "manual", page_id || null]
     );
     const r = result.rows[0];
-    res.json({ id: r.id, preference: r.preference, source: r.source, createdAt: r.created_at });
+    res.json({ id: r.id, preference: r.preference, source: r.source, pageId: r.page_id, createdAt: r.created_at });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

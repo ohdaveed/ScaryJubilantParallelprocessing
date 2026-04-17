@@ -158,6 +158,7 @@ export interface UserPreference {
   id: number;
   preference: string;
   source: string;
+  pageId?: string | null;
   createdAt: string;
 }
 
