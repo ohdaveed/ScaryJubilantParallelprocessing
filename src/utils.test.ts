@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildGenerationUserPrompt, PROMPT_CONTRACT_VERSION } from "./constants";
-import { evaluateQualityGate, filterEligibleSuggestedPages, formatVersionOrMonth, parseStructuredPage, sampleSuggestedPages, structuredToRawPage } from "./utils";
+import { evaluateQualityGate, filterEligibleSuggestedPages, parseStructuredPage, sampleSuggestedPages, structuredToRawPage } from "./utils";
 import type { PageDraft, StructuredPageOutput } from "./types";
 import goldenPages from "./fixtures/golden-pages.json";
 
@@ -94,81 +94,6 @@ describe("quality gate", () => {
       confidence: "high"
     });
     expect(result.status).toBe("pass");
-  });
-});
-
-describe("formatVersionOrMonth", () => {
-  it("returns version if present on page", () => {
-    const page: PageDraft = {
-      id: "test-id",
-      name: "Test Page",
-      userType: "Resident",
-      userGoal: "Learn something",
-      purpose: "Inform",
-      pageType: "Information",
-      components: "Title, Body",
-      relationships: "None",
-      duplication: "None",
-      enforcement: "N/A",
-      draft: "Draft content",
-      integration: "None",
-      valid: true,
-      raw: "Raw content",
-      createdAt: "2025-01-15T10:00:00Z",
-      karlConnected: false,
-      version: "v1.2"
-    };
-
-    const result = formatVersionOrMonth(page);
-    expect(result).toBe("v1.2");
-  });
-
-  it("formats month and year from createdAt when version is absent", () => {
-    const page: PageDraft = {
-      id: "test-id",
-      name: "Test Page",
-      userType: "Resident",
-      userGoal: "Learn something",
-      purpose: "Inform",
-      pageType: "Information",
-      components: "Title, Body",
-      relationships: "None",
-      duplication: "None",
-      enforcement: "N/A",
-      draft: "Draft content",
-      integration: "None",
-      valid: true,
-      raw: "Raw content",
-      createdAt: "2026-04-15T10:00:00Z",
-      karlConnected: false
-    };
-
-    const result = formatVersionOrMonth(page);
-    expect(result).toBe("April 2026");
-  });
-
-  it("formats month and year for january", () => {
-    const page: PageDraft = {
-      id: "test-id",
-      name: "Test Page",
-      userType: "Resident",
-      userGoal: "Learn something",
-      purpose: "Inform",
-      pageType: "Information",
-      components: "Title, Body",
-      relationships: "None",
-      duplication: "None",
-      enforcement: "N/A",
-      draft: "Draft content",
-      integration: "None",
-      valid: true,
-      raw: "Raw content",
-      createdAt: "2025-01-20T10:00:00Z",
-      karlConnected: false
-    };
-
-    const result = formatVersionOrMonth(page);
-    expect(result).toBe("January 2025");
   });
 });
 

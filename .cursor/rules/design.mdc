@@ -1,7 +1,0 @@
----
-description: Use this rule when asked to do any frontend or UI design
-globs: 
-alwaysApply: false
----
-Canonical source for this rule set is CLAUDE.md.
-When frontend or UI design guidance is needed, follow CLAUDE.md to avoid duplicated rule drift.

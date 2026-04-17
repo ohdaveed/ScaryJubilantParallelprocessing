@@ -1,8 +1,48 @@
-node_modules
+node_modules/
+dist/
 .env
+.env.*
 credentials.json
 token.json
 *-service-account*.json
+hhvc-drive-sa..json
+
+# IDEs and Editors
+.vscode/
+.claude/
+.cursor/
+*.code-workspace
+
+# AI Tools and Environments
+.replit
+replit.nix
+replit.md
+.windsurfrules
+CLAUDE.md
+AGENTS.md
+conversation.md
+.superdesign/
+.superpowers/
+
+# Local state and databases
+.local/
+lock.json
+skills-lock.json
+hhvc-local-db.json
+
+# Cache and temporary files
+.deno/
+.config/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Assets
+attached_assets/
 
 # YoYo AI version control directory
 .yoyo/
