@@ -3,3 +3,6 @@ node_modules
 credentials.json
 token.json
 *-service-account*.json
+
+# YoYo AI version control directory
+.yoyo/
