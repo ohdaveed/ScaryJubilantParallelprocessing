@@ -1,5 +1,5 @@
 import { PEST_KW } from "./constants";
-import { RelMap } from "./types";
+import { ParseStructuredResult, ParsedPageFields, RelMap, StructuredPageOutput } from "./types";
 
 export const isPest = (t: string): boolean => {
   return PEST_KW.some(k => t.toLowerCase().includes(k));
@@ -18,7 +18,7 @@ export const clean = (s?: string): string => {
 };
 
 
-export const parsePage = (raw: string) => {
+export const parsePage = (raw: string): ParsedPageFields => {
   const stripped = raw.replace(/\*\*/g, "").replace(/\*/g, "").replace(/_{2}/g, "").replace(/`/g, "");
 
   const get = (startMarker: string, endMarker: string) => {
@@ -47,6 +47,159 @@ export const parsePage = (raw: string) => {
     integration: get("INTEGRATION NOTES:", "ZZZEND"),
     valid: !!(name && pageType && draft)
   };
+};
+
+const safeArray = (value: unknown): string[] =>
+  Array.isArray(value) ? value.map(v => clean(String(v))).filter(Boolean) : [];
+
+const looksLikeObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const validateStructuredShape = (value: unknown): value is StructuredPageOutput => {
+  if (!looksLikeObject(value) || !looksLikeObject(value.page)) return false;
+  const page = value.page as Record<string, unknown>;
+  const rel = page.systemRelationships;
+  const enforce = page.enforcementCheck;
+  return (
+    typeof page.name === "string" &&
+    typeof page.primaryUser === "string" &&
+    typeof page.userGoal === "string" &&
+    typeof page.primaryPurpose === "string" &&
+    typeof page.pageType === "string" &&
+    Array.isArray(page.recommendedComponents) &&
+    looksLikeObject(rel) &&
+    typeof (rel as Record<string, unknown>).parent === "string" &&
+    typeof (rel as Record<string, unknown>).siblings === "string" &&
+    typeof (rel as Record<string, unknown>).children === "string" &&
+    typeof (rel as Record<string, unknown>).entryPoints === "string" &&
+    typeof (rel as Record<string, unknown>).nextSteps === "string" &&
+    Array.isArray(page.duplicationRisks) &&
+    looksLikeObject(enforce) &&
+    Array.isArray((enforce as Record<string, unknown>).verifiable) &&
+    Array.isArray((enforce as Record<string, unknown>).unclearOrNotEnforceable) &&
+    typeof page.pageDraft === "string" &&
+    Array.isArray(page.integrationNotes)
+  );
+};
+
+const extractJsonObjectText = (raw: string): string | null => {
+  const start = raw.indexOf("{");
+  if (start < 0) return null;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < raw.length; i += 1) {
+    const ch = raw[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === "\"") inString = false;
+      continue;
+    }
+    if (ch === "\"") {
+      inString = true;
+      continue;
+    }
+    if (ch === "{") depth += 1;
+    if (ch === "}") {
+      depth -= 1;
+      if (depth === 0) return raw.slice(start, i + 1);
+    }
+  }
+  return null;
+};
+
+export const structuredToRawPage = (structured: StructuredPageOutput): string => {
+  const page = structured.page;
+  const components = safeArray(page.recommendedComponents);
+  const dupes = safeArray(page.duplicationRisks);
+  const verifiable = safeArray(page.enforcementCheck?.verifiable);
+  const unclear = safeArray(page.enforcementCheck?.unclearOrNotEnforceable);
+  const notes = safeArray(page.integrationNotes);
+
+  const componentBlock = components.length ? components.map(c => `- ${c}`).join("\n") : "- Section";
+  const dupesBlock = dupes.length ? dupes.map(d => `- ${d}`).join("\n") : "- None identified";
+  const verifiableBlock = verifiable.length ? verifiable.map(v => `- ${v}`).join("\n") : "- None provided";
+  const unclearBlock = unclear.length ? unclear.map(v => `- ${v}`).join("\n") : "- None provided";
+  const notesBlock = notes.length ? notes.map(n => `- ${n}`).join("\n") : "- None provided";
+
+  return `PAGE NAME:
+${clean(page.name)}
+
+PRIMARY USER:
+${clean(page.primaryUser)}
+
+USER GOAL:
+${clean(page.userGoal)}
+
+PRIMARY PURPOSE:
+${clean(page.primaryPurpose)}
+
+PAGE TYPE:
+${clean(page.pageType)}
+
+RECOMMENDED COMPONENTS:
+${componentBlock}
+
+SYSTEM RELATIONSHIPS:
+Parent: ${clean(page.systemRelationships?.parent)}
+Siblings: ${clean(page.systemRelationships?.siblings)}
+Children: ${clean(page.systemRelationships?.children)}
+Entry Points: ${clean(page.systemRelationships?.entryPoints)}
+Next Steps: ${clean(page.systemRelationships?.nextSteps)}
+
+DUPLICATION RISKS:
+${dupesBlock}
+
+ENFORCEMENT CHECK:
+- What can be verified:
+${verifiableBlock}
+- What is unclear or not enforceable:
+${unclearBlock}
+
+PAGE DRAFT
+
+${(page.pageDraft || "").trim()}
+
+INTEGRATION NOTES:
+${notesBlock}`;
+};
+
+export const parseStructuredPage = (raw: string): ParseStructuredResult => {
+  const jsonCandidate = extractJsonObjectText(raw);
+  if (!jsonCandidate) {
+    return {
+      rawText: raw,
+      parsed: null,
+      parseError: { code: "missing_json_object", message: "No JSON object found in model response." }
+    };
+  }
+
+  try {
+    const parsedJson = JSON.parse(jsonCandidate) as unknown;
+    if (!validateStructuredShape(parsedJson)) {
+      return {
+        rawText: raw,
+        parsed: null,
+        parseError: { code: "schema_invalid", message: "JSON found but does not match required schema." }
+      };
+    }
+    if (!parsedJson.page.name || !parsedJson.page.pageDraft) {
+      return {
+        rawText: raw,
+        parsed: null,
+        parseError: { code: "missing_required_fields", message: "JSON is missing required page name or draft fields." }
+      };
+    }
+    const materializedRaw = structuredToRawPage(parsedJson);
+    return { rawText: materializedRaw, parsed: parsePage(materializedRaw), parseError: null };
+  } catch {
+    return {
+      rawText: raw,
+      parsed: null,
+      parseError: { code: "invalid_json", message: "JSON object extraction succeeded but parsing failed." }
+    };
+  }
 };
 
 export const parseRel = (rel: string): RelMap => {
@@ -177,11 +330,54 @@ export const runKarlEvaluation = async (page: {
         userType: page.userType
       })
     });
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
+    if (!res.ok) {
+      console.error("Karl evaluation request failed:", res.status);
+      return null;
+    }
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error("Karl evaluation error:", error);
     return null;
   }
+};
+
+const QUALITY_GATE_MIN_SCORE: Record<string, number> = {
+  "Transaction": 85,
+  "Step by step": 82,
+  "Information": 80,
+  "Topic": 78,
+  "Resource Collection": 78,
+  "Campaign Page": 78
+};
+
+export const evaluateQualityGate = (
+  pageType: string,
+  evaluation: import("./types").KarlEvaluation | null
+): { status: "pass" | "review_required"; reasons: string[] } => {
+  if (!evaluation) {
+    return {
+      status: "review_required",
+      reasons: ["Quality evaluation is unavailable. Manual review is required."]
+    };
+  }
+
+  if (evaluation.parseError) {
+    return {
+      status: "review_required",
+      reasons: [evaluation.parseFailureReason || "Evaluator parse failure. Manual review is required."]
+    };
+  }
+
+  const minScore = QUALITY_GATE_MIN_SCORE[pageType] ?? 80;
+  const reasons: string[] = [];
+  if (evaluation.score < minScore) reasons.push(`Score ${evaluation.score} is below minimum ${minScore} for ${pageType}.`);
+  if (evaluation.failed.length > 0) reasons.push(`${evaluation.failed.length} evaluator checks failed.`);
+
+  return {
+    status: reasons.length === 0 ? "pass" : "review_required",
+    reasons: reasons.length === 0 ? ["Meets automatic quality gate."] : reasons
+  };
 };
 
 export const plannedPagesApi = {
@@ -244,10 +440,14 @@ export const improveStructure = async (raw: string, preferences: string[]): Prom
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ raw, preferences })
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error("Structure improvement failed:", res.status);
+      return null;
+    }
     const data = await res.json();
     return data.improved || null;
-  } catch {
+  } catch (error) {
+    console.error("Structure improvement error:", error);
     return null;
   }
 };

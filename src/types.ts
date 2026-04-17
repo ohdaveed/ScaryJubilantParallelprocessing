@@ -5,6 +5,67 @@ export interface KarlEvaluation {
   passed: string[];
   warnings: string[];
   failed: string[];
+  parseError?: boolean;
+  parseFailureReason?: string;
+  confidence?: "high" | "medium" | "low";
+}
+
+export type ParseErrorCode =
+  | "missing_json_object"
+  | "invalid_json"
+  | "schema_invalid"
+  | "missing_required_fields";
+
+export interface ParseErrorDetail {
+  code: ParseErrorCode;
+  message: string;
+}
+
+export interface ParsedPageFields {
+  raw: string;
+  name: string;
+  userType: string;
+  userGoal: string;
+  purpose: string;
+  pageType: string;
+  components: string;
+  relationships: string;
+  duplication: string;
+  enforcement: string;
+  draft: string;
+  integration: string;
+  valid: boolean;
+}
+
+export interface ParseStructuredResult {
+  rawText: string;
+  parsed: ParsedPageFields | null;
+  parseError: ParseErrorDetail | null;
+}
+
+export interface StructuredPageOutput {
+  page: {
+    name: string;
+    primaryUser: string;
+    userGoal: string;
+    primaryPurpose: string;
+    pageType: string;
+    recommendedComponents: string[];
+    systemRelationships: {
+      parent: string;
+      siblings: string;
+      children: string;
+      entryPoints: string;
+      nextSteps: string;
+    };
+    duplicationRisks: string[];
+    enforcementCheck: {
+      verifiable: string[];
+      unclearOrNotEnforceable: string[];
+    };
+    pageDraft: string;
+    integrationNotes: string[];
+  };
 }
 
 export interface PageDraft {
@@ -28,6 +89,10 @@ export interface PageDraft {
   skeleton?: boolean;
   imported?: boolean;
   reviewStatus?: 'pending' | 'approved' | 'rejected';
+  qualityGate?: {
+    status: "pass" | "review_required";
+    reasons: string[];
+  };
   inputs: {
     topic: string;
     userType: string;

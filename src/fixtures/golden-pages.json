@@ -1,0 +1,92 @@
+[
+  {
+    "name": "Tenant Pest Report",
+    "topic": "Get help with pests, mold, and trash",
+    "userType": "Resident / tenant",
+    "pageType": "Transaction",
+    "structured": {
+      "page": {
+        "name": "Get help with pests, mold, and trash",
+        "primaryUser": "Resident / tenant",
+        "userGoal": "Report health hazards when a landlord does not act.",
+        "primaryPurpose": "Guide renters to 311 reporting and next steps.",
+        "pageType": "Transaction",
+        "recommendedComponents": ["Title", "Description", "Section", "Callout", "Button link", "Phone number", "Related"],
+        "systemRelationships": {
+          "parent": "Healthy Housing and Vector Control (Topic)",
+          "siblings": "Help with pests and bugs",
+          "children": "None",
+          "entryPoints": "311 and SF.gov search",
+          "nextSteps": "Inspection scheduling"
+        },
+        "duplicationRisks": ["Potential overlap with citywide tenant support pages"],
+        "enforcementCheck": {
+          "verifiable": ["Visible pests, mold, sewage, and trash hazards"],
+          "unclearOrNotEnforceable": ["Claims about landlord intent or legal timelines without policy backing"]
+        },
+        "pageDraft": "# I need help with pests, mold, and trash\n\nDescription: Report housing health problems and get help through 311.\n\n## What to know\nSection heading: What we inspect\nSection body: We inspect pests, mold, sewage, and trash hazards that affect your health.\n\n## What to do\nSection heading: Report the problem to 311\nSection body: Call 311 to start your report and share clear details about the problem.\nPhone number: 311\n\n## Related\n- Help with pests and bugs",
+        "integrationNotes": ["Tagging this Transaction page to HHVC Topic surfaces it on the HHVC hub."]
+      }
+    }
+  },
+  {
+    "name": "Owner Fee Guidance",
+    "topic": "Fee deadlines and late costs",
+    "userType": "Property owner / landlord",
+    "pageType": "Information",
+    "structured": {
+      "page": {
+        "name": "Fee deadlines and late costs",
+        "primaryUser": "Property owner / landlord",
+        "userGoal": "Understand fee amounts and avoid late penalties.",
+        "primaryPurpose": "Explain owner fee deadlines and consequences in plain language.",
+        "pageType": "Information",
+        "recommendedComponents": ["Title", "Description", "Section", "Related"],
+        "systemRelationships": {
+          "parent": "Healthy Housing and Vector Control (Topic)",
+          "siblings": "Pay your annual building fee",
+          "children": "None",
+          "entryPoints": "Owner service pages",
+          "nextSteps": "Complete payment workflow"
+        },
+        "duplicationRisks": ["Possible overlap with legacy fee FAQ pages"],
+        "enforcementCheck": {
+          "verifiable": ["Fee due date and amount requirements"],
+          "unclearOrNotEnforceable": ["General hardship claims without program criteria"]
+        },
+        "pageDraft": "# I need to understand HHVC fee deadlines\n\nDescription: Learn fee deadlines, late costs, and what to do next.\n\n## What to know\nSection heading: Fee amounts and due dates\nSection body: Building owners with 3 or more units must pay the annual HHVC fee by the listed deadline.\n\nSection heading: Late costs\nSection body: Late payments may result in added costs and follow-up notices.\n\n## Related\n- Pay your annual building fee",
+        "integrationNotes": ["Link this Information page from owner transaction flows."]
+      }
+    }
+  },
+  {
+    "name": "Community Campaign",
+    "topic": "Learn how to stop mosquitoes",
+    "userType": "General public",
+    "pageType": "Campaign Page",
+    "structured": {
+      "page": {
+        "name": "Learn how to stop mosquitoes",
+        "primaryUser": "General public",
+        "userGoal": "Prevent mosquitoes around home and school.",
+        "primaryPurpose": "Provide campaign guidance and workshop entry points.",
+        "pageType": "Campaign Page",
+        "recommendedComponents": ["Title", "Description", "Section", "Related"],
+        "systemRelationships": {
+          "parent": "Healthy Housing and Vector Control (Topic)",
+          "siblings": "Mosquito classes for schools",
+          "children": "None",
+          "entryPoints": "Community outreach and search",
+          "nextSteps": "Join school workshops"
+        },
+        "duplicationRisks": ["Possible overlap with other city mosquito campaigns"],
+        "enforcementCheck": {
+          "verifiable": ["Campaign event schedules and workshop participation guidance"],
+          "unclearOrNotEnforceable": ["Guarantees about mosquito elimination outcomes"]
+        },
+        "pageDraft": "# I want to stop mosquitoes around me\n\nDescription: Learn simple mosquito prevention steps and workshop options.\n\n## What to know\nSection heading: Why mosquito prevention matters\nSection body: Standing water and outdoor clutter can increase mosquito activity near homes and schools.\n\n## What to do\nSection heading: Start with prevention basics\nSection body: Remove standing water each week and share prevention tips in your community.\n\n## Related\n- Mosquito classes for schools",
+        "integrationNotes": ["Keep this campaign linked to community education pages."]
+      }
+    }
+  }
+]
