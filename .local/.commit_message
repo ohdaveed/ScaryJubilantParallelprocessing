@@ -1,0 +1,13 @@
+Task #10: SF.gov branding for page preview
+
+- Added Rubik + Roboto Mono Google Fonts to index.html
+- Created SfGovPreview.tsx with SfGovHeader, SfGovFooter, and
+  SfGovPagePreview components using SF.gov design tokens
+- Wired SfGovPagePreview into App.tsx replacing old DraftRenderer
+- Added inline markdown link parsing, table rendering, and checklist
+  support to the SF.gov preview renderer
+- Removed dead code: DraftRenderer, renderLines, highlightSpecial,
+  SectionIcon, ResponsibilitiesTable, ActionStepList, ChecklistRow,
+  PreventionSection, RelatedPagePills, getSectionStyle
+- Updated replit.md with new component docs
+- TypeScript compiles cleanly, no UI regressions

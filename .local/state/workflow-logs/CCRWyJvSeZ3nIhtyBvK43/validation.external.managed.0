@@ -1,0 +1,51 @@
+VERDICT: REJECTED
+The diff makes substantial progress on the 3-hub integration, but it misses core task requirements around skeleton workflow and download behavior, so it is not complete.
+
+Critical findings / analysis:
+- Implemented correctly:
+  VERDICT: REJECTED
+- The diff makes substantial progress on the 3-hub integration, but it misses core task requirements around skeleton workflow and download behavior, so it is not complete.
+Added `Campaign Pa
+ge` to content type handling (`PAGE_TYPES`, `TYPCritical findings / analysis:
+E_META`, `SECTION_STYLES`) and evaluator vali- Implemented correctly:
+d types in `server.js`.
+  - Replaced `SUGGESTED_PAGES` with the new 3-hub/Vector/Contact set.
+  - Added `SITEMAP_SKELETON` templates and `skeletonToPageDraft()` generation utility.
+  - Auto-seeding of planned pages + skeleton draft creation when `planned_pages` is empty is present and links `builtPageId`.
+  - Skeleton UI markers are present in Library/Builder; individual `.txt` download for selected draft is present.
+  - Improve-structure prompt includes 3-hub, field conventions, vocabulary, and UX law checks.
+
+- Blocking gaps:
+  1) “Generate with AI” on skeleton does not preserve skeleton structure or send skeleton draft content. It only calls normal `generate()` using topic/user/notes and replaces by ID. This does not satisfy the requirement to fill placeholders while preserving the skeleton structure.
+  2) “Download all skeletons” feature is missing. Only generic “Export all” exists, and it exports all pages, not a skeleton-only bundle/zip.
+
+- Additional material mismatch:
+  - System prompt includes 3-hub guidance, but not all pages are specified with exact Content Title/Service Title/Summary/CTA values as required (several entries are partial/high-level).
+
+Security:
+- None observed (no new serious authz, injection, secrets, or data exposure issues introduced by this diff).
+
+Next actions:
+1) Implement skeleton-aware generation path: pass selected skeleton raw/template to AI and enforce structure-preserving replacement of placeholders (not freeform regenerate-by-topic).
+2) Add explicit “Download all skeletons” control that filters `pages` by `skeleton === true` and bundles skeleton drafts (single bundle text or zip).
+3) Tighten `SYSTEM_PROMPT` architecture block to include exact Karl field values for every sitemap page, matching the architecture reference.  - Added `Campaign Page` to content type handling (`PAGE_TYPES`, `TYPE_META`, `SECTION_STYLES`) and evaluator valid types in `server.js`.
+  - Replaced `SUGGESTED_PAGES` with the new 3-hub/Vector/Contact set.
+  - Added `SITEMAP_SKELETON` templates and `skeletonToPageDraft()` generation utility.
+  - Auto-seeding of planned pages + skeleton draft creation when `planned_pages` is empty is present and links `builtPageId`.
+  - Skeleton UI markers are present in Library/Builder; individual `.txt` download for selected draft is present.
+  - Improve-structure prompt includes 3-hub, field conventions, vocabulary, and UX law checks.
+
+- Blocking gaps:
+  1) “Generate with AI” on skeleton does not preserve skeleton structure or send skeleton draft content. It only calls normal `generate()` using topic/user/notes and replaces by ID. This does not satisfy the requirement to fill placeholders while preserving the skeleton structure.
+  2) “Download all skeletons” feature is missing. Only generic “Export all” exists, and it exports all pages, not a skeleton-only bundle/zip.
+
+- Additional material mismatch:
+  - System prompt includes 3-hub guidance, but not all pages are specified with exact Content Title/Service Title/Summary/CTA values as required (several entries are partial/high-level).
+
+Security:
+- None observed (no new serious authz, injection, secrets, or data exposure issues introduced by this diff).
+
+Next actions:
+1) Implement skeleton-aware generation path: pass selected skeleton raw/template to AI and enforce structure-preserving replacement of placeholders (not freeform regenerate-by-topic).
+2) Add explicit “Download all skeletons” control that filters `pages` by `skeleton === true` and bundles skeleton drafts (single bundle text or zip).
+3) Tighten `SYSTEM_PROMPT` architecture block to include exact Karl field values for every sitemap page, matching the architecture reference.

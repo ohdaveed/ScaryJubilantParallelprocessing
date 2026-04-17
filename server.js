@@ -4,8 +4,15 @@ import { createRequire } from "module";
 import { randomUUID } from "crypto";
 import pkg from "pg";
 const { Pool } = pkg;
-import { ReplitConnectors } from "@replit/connectors-sdk";
 import mammoth from "mammoth";
+import {
+  getDrive,
+  listFilesInFolder,
+  getFileMetadata,
+  exportGoogleFile,
+  downloadFileMedia,
+  httpStatusFromDriveError
+} from "./lib/googleDrive.js";
 
 const require = createRequire(import.meta.url);
 const pdfParse = require("pdf-parse");
@@ -71,20 +78,18 @@ initDb();
 
 app.get("/api/drive/files", async (req, res) => {
   try {
-    const connectors = new ReplitConnectors();
-    const response = await connectors.proxy(
-      "google-drive",
-      `/drive/v3/files?q='${DRIVE_FOLDER_ID}'+in+parents+and+trashed=false&fields=files(id,name,mimeType,modifiedTime)&pageSize=50&orderBy=name`,
-      { method: "GET" }
-    );
-    if (!response.ok) {
-      const text = await response.text();
-      return res.status(response.status).json({ error: text });
-    }
-    const data = await response.json();
-    res.json({ files: data.files || [] });
+    const drive = await getDrive();
+    const files = await listFilesInFolder(drive, DRIVE_FOLDER_ID);
+    res.json({ files });
   } catch (err) {
     console.error("Drive list error:", err);
+    const status = httpStatusFromDriveError(err);
+    if (status) {
+      return res.status(status).json({ error: err.message || "Drive API error" });
+    }
+    if (err.message?.includes("Google Drive is not configured")) {
+      return res.status(503).json({ error: err.message });
+    }
     res.status(500).json({ error: "Failed to list Drive files" });
   }
 });
@@ -92,16 +97,15 @@ app.get("/api/drive/files", async (req, res) => {
 app.get("/api/drive/files/:fileId", async (req, res) => {
   const { fileId } = req.params;
   try {
-    const connectors = new ReplitConnectors();
-    const metaRes = await connectors.proxy(
-      "google-drive",
-      `/drive/v3/files/${fileId}?fields=id,name,mimeType,parents`,
-      { method: "GET" }
-    );
-    if (!metaRes.ok) {
-      return res.status(metaRes.status).json({ error: "File not found" });
+    const drive = await getDrive();
+    let meta;
+    try {
+      meta = await getFileMetadata(drive, fileId);
+    } catch (e) {
+      const st = httpStatusFromDriveError(e);
+      if (st === 404) return res.status(404).json({ error: "File not found" });
+      throw e;
     }
-    const meta = await metaRes.json();
 
     const parents = meta.parents || [];
     if (!parents.includes(DRIVE_FOLDER_ID)) {
@@ -121,21 +125,20 @@ app.get("/api/drive/files/:fileId", async (req, res) => {
     let contentText = "";
 
     if (isGoogleDoc) {
-      const exportRes = await connectors.proxy(
-        "google-drive",
-        `/drive/v3/files/${fileId}/export?mimeType=${encodeURIComponent(exportMime)}`,
-        { method: "GET" }
-      );
-      if (!exportRes.ok) return res.status(exportRes.status).json({ error: "Export failed" });
-      contentText = await exportRes.text();
+      try {
+        contentText = await exportGoogleFile(drive, fileId, exportMime);
+      } catch (e) {
+        const st = httpStatusFromDriveError(e);
+        return res.status(st || 500).json({ error: "Export failed" });
+      }
     } else if (isPdf) {
-      const downloadRes = await connectors.proxy(
-        "google-drive",
-        `/drive/v3/files/${fileId}?alt=media`,
-        { method: "GET" }
-      );
-      if (!downloadRes.ok) return res.status(downloadRes.status).json({ error: "Download failed" });
-      const buf = Buffer.from(await downloadRes.arrayBuffer());
+      let buf;
+      try {
+        buf = await downloadFileMedia(drive, fileId);
+      } catch (e) {
+        const st = httpStatusFromDriveError(e);
+        return res.status(st || 500).json({ error: "Download failed" });
+      }
       try {
         const parsed = await pdfParse(buf);
         contentText = parsed.text;
@@ -143,13 +146,13 @@ app.get("/api/drive/files/:fileId", async (req, res) => {
         return res.status(422).json({ error: "Could not extract text from this PDF. It may be scanned or image-based." });
       }
     } else if (isDocx) {
-      const downloadRes = await connectors.proxy(
-        "google-drive",
-        `/drive/v3/files/${fileId}?alt=media`,
-        { method: "GET" }
-      );
-      if (!downloadRes.ok) return res.status(downloadRes.status).json({ error: "Download failed" });
-      const buf = Buffer.from(await downloadRes.arrayBuffer());
+      let buf;
+      try {
+        buf = await downloadFileMedia(drive, fileId);
+      } catch (e) {
+        const st = httpStatusFromDriveError(e);
+        return res.status(st || 500).json({ error: "Download failed" });
+      }
       try {
         const { value } = await mammoth.extractRawText({ buffer: buf });
         contentText = value;
@@ -163,13 +166,20 @@ app.get("/api/drive/files/:fileId", async (req, res) => {
     res.json({ id: fileId, name: meta.name, mimeType, content: contentText.slice(0, 20000) });
   } catch (err) {
     console.error("Drive read error:", err);
+    const status = httpStatusFromDriveError(err);
+    if (status) {
+      return res.status(status).json({ error: err.message || "Drive API error" });
+    }
+    if (err.message?.includes("Google Drive is not configured")) {
+      return res.status(503).json({ error: err.message });
+    }
     res.status(500).json({ error: "Failed to read Drive file" });
   }
 });
 
 app.post("/api/chat", async (req, res) => {
   if (!ANTHROPIC_API_KEY) {
-    return res.status(500).json({ error: "ANTHROPIC_API_KEY is not configured. Please add it in the Secrets panel." });
+    return res.status(500).json({ error: "ANTHROPIC_API_KEY is not configured. Add it to your `.env` file." });
   }
 
   const { driveContext, images, ...anthropicBody } = req.body;
