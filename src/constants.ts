@@ -494,8 +494,11 @@ ${PROMPT_SELF_CHECK_RULES}
 ${STRUCTURED_OUTPUT_RULES}${exemplar}`;
 };
 
-export const buildRefineUserPrompt = (baseRequest: string): string => {
-  return `${baseRequest}
+export const buildRefineUserPrompt = (baseRequest: string, versionHistory?: string): string => {
+  const historySection = versionHistory
+    ? `\n\nPREVIOUS VERSIONS (most recent first — use this to understand what the user is optimizing toward; do not repeat discarded approaches):\n${versionHistory}`
+    : "";
+  return `${baseRequest}${historySection}
 
 PROMPT CONTRACT VERSION: ${PROMPT_CONTRACT_VERSION}
 
