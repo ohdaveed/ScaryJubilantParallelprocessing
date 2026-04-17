@@ -26,6 +26,8 @@ export interface PageDraft {
   karlConnected: boolean;
   karlEvaluation?: KarlEvaluation;
   skeleton?: boolean;
+  imported?: boolean;
+  reviewStatus?: 'pending' | 'approved' | 'rejected';
   inputs: {
     topic: string;
     userType: string;
