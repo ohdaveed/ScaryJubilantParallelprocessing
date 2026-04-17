@@ -427,6 +427,9 @@ export default function App() {
   const [selectedDriveIds, setSelectedDriveIds] = useState<Set<string>>(new Set());
   const [driveContents, setDriveContents] = useState<Record<string, string>>({});
   const [driveLoadingIds, setDriveLoadingIds] = useState<Set<string>>(new Set());
+  const [historyPageId, setHistoryPageId] = useState<string | null>(null);
+  const [historyVersions, setHistoryVersions] = useState<PageVersion[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [plannedPages, setPlannedPages] = useState<PlannedPage[]>([]);
   const [plannedLoading, setPlannedLoading] = useState(true);
   const [selectedPlanned, setSelectedPlanned] = useState<PlannedPage | null>(null);
@@ -915,6 +918,30 @@ export default function App() {
 
   const deletePage = async (id: string) => { await pagesApi.delete(id).catch(() => {}); setPages(p => p.filter(x => x.id !== id)); if (selected?.id === id) setSelected(null); };
 
+  const openHistory = useCallback(async (pageId: string) => {
+    setHistoryPageId(pageId);
+    setHistoryLoading(true);
+    try {
+      const versions = await versionsApi.list(pageId);
+      setHistoryVersions(versions);
+    } catch {
+      setHistoryVersions([]);
+    }
+    setHistoryLoading(false);
+  }, []);
+
+  const restoreVersion = useCallback(async (pageId: string, versionId: number, versionNumber: number) => {
+    if (!window.confirm(`Restore v${versionNumber}? This will replace the current page content. The current state will be saved as a new version automatically.`)) return;
+    try {
+      const restoredData = await versionsApi.restore(pageId, versionId);
+      setPages(prev => prev.map(p => p.id === pageId ? restoredData : p));
+      if (selected?.id === pageId) setSelected(restoredData);
+      setHistoryPageId(null);
+    } catch {
+      alert("Failed to restore version. Please try again.");
+    }
+  }, [selected]);
+
   const togglePageSelection = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedPageIds(prev => {
@@ -1313,6 +1340,7 @@ export default function App() {
                     <Btn onClick={() => handleCopy(selected.raw)} variant="ghost" size="sm">{copied ? "Copied!" : "Copy"}</Btn>
                     <Btn onClick={() => handleDownload(selected.raw, (clean(selected.name) || "page").toLowerCase().replace(/\s+/g, "-") + ".txt")} variant="ghost" size="sm">Download</Btn>
                     {!selected.skeleton && <Btn onClick={() => regenerate(selected)} variant="ghost" size="sm">Regenerate</Btn>}
+                    {!selected.skeleton && <Btn onClick={() => openHistory(selected.id)} variant="ghost" size="sm">History</Btn>}
                     <Btn onClick={() => deletePage(selected.id)} variant="danger" size="sm">Delete</Btn>
                   </div>
                 </div>
@@ -1641,6 +1669,47 @@ export default function App() {
                 </Card>
               );
             })}
+          </div>
+        </div>
+      )}
+      {historyPageId && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex" }} onClick={() => setHistoryPageId(null)}>
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)" }} />
+          <div
+            style={{ position: "fixed", right: 0, top: 0, bottom: 0, width: 380, background: "var(--color-background-primary)", borderLeft: "0.5px solid var(--color-border-secondary)", display: "flex", flexDirection: "column", zIndex: 101 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ padding: "16px 20px", borderBottom: "0.5px solid var(--color-border-secondary)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text-primary)" }}>Version History</span>
+              <button onClick={() => setHistoryPageId(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--color-text-tertiary)", lineHeight: 1, padding: "0 4px" }}>×</button>
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
+              {historyLoading ? (
+                <p style={{ fontSize: 13, color: "var(--color-text-secondary)", textAlign: "center", paddingTop: 24 }}>Loading…</p>
+              ) : historyVersions.length === 0 ? (
+                <p style={{ fontSize: 13, color: "var(--color-text-secondary)", textAlign: "center", paddingTop: 24 }}>No versions saved yet.</p>
+              ) : historyVersions.map(v => (
+                <div key={v.id} style={{ marginBottom: 12, padding: "12px 14px", background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-md)", border: "0.5px solid var(--color-border-tertiary)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text-primary)" }}>v{v.versionNumber}</span>
+                    <span style={{
+                      fontSize: 10, padding: "1px 6px", borderRadius: 8,
+                      background: v.trigger === "generate" ? "#E1F5EE" : v.trigger === "restore" ? "#E6F1FB" : "#FAEEDA",
+                      color: v.trigger === "generate" ? "#0F6E56" : v.trigger === "restore" ? "#185FA5" : "#854F0B"
+                    }}>{v.trigger}</span>
+                    <span style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginLeft: "auto" }}>
+                      {new Date(v.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
+                  {v.notes && (
+                    <p style={{ fontSize: 12, color: "var(--color-text-secondary)", margin: "0 0 8px", lineHeight: 1.5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const }}>
+                      {v.notes}
+                    </p>
+                  )}
+                  <Btn onClick={() => restoreVersion(historyPageId, v.id, v.versionNumber)} variant="ghost" size="sm">Restore this version</Btn>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
