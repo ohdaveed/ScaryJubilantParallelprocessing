@@ -74,6 +74,7 @@ export const Btn: React.FC<BtnProps> = ({ children, variant = "ghost", size = "s
 
   return (
     <button
+      type={props.type ?? "button"}
       style={{ ...base, ...sizes[size], ...variants[variant], ...(props.disabled ? { opacity: 0.4 } : {}) }}
       onMouseEnter={e => { if (!props.disabled) { e.currentTarget.style.opacity = "0.72"; e.currentTarget.style.transform = "translateY(-1px)"; } }}
       onMouseLeave={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; }}
