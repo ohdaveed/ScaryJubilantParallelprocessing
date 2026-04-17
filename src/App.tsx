@@ -1473,6 +1473,11 @@ export default function App() {
                     <span style={{ width: 6, height: 6, borderRadius: "50%", background: c.dot, flexShrink: 0, ...(p.skeleton ? { border: "1.5px dashed #6B21A8", background: "transparent" } : {}) }} />
                     <Badge type={clean(p.pageType)} small />
                     {p.skeleton && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#F3E8FF", color: "#6B21A8", border: "1px dashed #6B21A866" }}>skeleton</span>}
+                    {p.imported && (
+                      <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#F1EFE8", color: "#6B4C00", border: "0.5px solid #6B4C0033" }}>
+                        imported
+                      </span>
+                    )}
                     <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4 }}>
                       {ev && <span style={{ fontSize: 10, fontWeight: 700, color: gradeColor[ev.grade] || "#888" }}>{ev.grade}</span>}
                       {!p.karlConnected && !p.skeleton && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#FAEEDA", color: "#854F0B" }}>no Karl</span>}
@@ -1487,7 +1492,37 @@ export default function App() {
                       {ev.failed.length > 0 && <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 8, background: "#FCEBEB", color: "#A32D2D" }}>✗ {ev.failed.length}</span>}
                     </div>
                   )}
-                  <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", margin: 0 }}>{new Date(p.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: "auto" }}>
+                    <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", margin: 0, flex: 1 }}>{new Date(p.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+                    {p.imported && (
+                      <select
+                        value={p.reviewStatus || "pending"}
+                        onClick={e => e.stopPropagation()}
+                        onChange={async e => {
+                          e.stopPropagation();
+                          const newStatus = e.target.value as 'pending' | 'approved' | 'rejected';
+                          await pagesApi.updateReview(p.id, newStatus);
+                          setPages(prev => prev.map(x => x.id === p.id ? { ...x, reviewStatus: newStatus } : x));
+                        }}
+                        style={{
+                          fontSize: 10,
+                          padding: "2px 6px",
+                          borderRadius: 4,
+                          border: "0.5px solid",
+                          background: ({ pending: "#FAEEDA", approved: "#E1F5EE", rejected: "#FCEBEB" } as Record<string,string>)[p.reviewStatus || "pending"] || "#FAEEDA",
+                          color: ({ pending: "#854F0B", approved: "#0F6E56", rejected: "#A32D2D" } as Record<string,string>)[p.reviewStatus || "pending"] || "#854F0B",
+                          borderColor: ({ pending: "#854F0B33", approved: "#0F6E5633", rejected: "#A32D2D33" } as Record<string,string>)[p.reviewStatus || "pending"] || "#854F0B33",
+                          cursor: "pointer",
+                          appearance: "none" as const,
+                          WebkitAppearance: "none" as const
+                        }}
+                      >
+                        <option value="pending">pending review</option>
+                        <option value="approved">approved</option>
+                        <option value="rejected">rejected</option>
+                      </select>
+                    )}
+                  </div>
                 </Card>
               );
             })}
