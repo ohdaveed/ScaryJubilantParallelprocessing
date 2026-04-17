@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { PageDraft, TodoItem, KarlEvaluation, PlannedPage, UserPreference } from "./types";
+import { PageDraft, TodoItem, KarlEvaluation, PlannedPage, UserPreference, PageVersion } from "./types";
 import { USER_TYPES, PAGE_TYPES, SYSTEM_PROMPT, SUGGESTED_PAGES, TYPE_META, SITEMAP_SKELETON, STRUCTURED_OUTPUT_RULES, buildGenerationUserPrompt, buildRefineUserPrompt } from "./constants";
-import { clean, isPest, parsePage, parseRel, parseStructuredPage, pagesApi, todosApi, plannedPagesApi, preferencesApi, improveStructure, runKarlEvaluation, evaluateQualityGate, lsLegacy, driveApi, skeletonToPageDraft } from "./utils";
+import { clean, isPest, parsePage, parseRel, parseStructuredPage, pagesApi, todosApi, plannedPagesApi, preferencesApi, improveStructure, runKarlEvaluation, evaluateQualityGate, lsLegacy, driveApi, skeletonToPageDraft, versionsApi } from "./utils";
 import { DriveFile } from "./types";
 import { Badge, Label, Divider, Btn, Card, Field, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar, iStyle } from "./components/ui";
 import { SfGovPagePreview } from "./components/SfGovPreview";
@@ -417,6 +417,7 @@ export default function App() {
   const [refineInput, setRefineInput] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [preferences, setPreferences] = useState<UserPreference[]>([]);
+  const [selectedPageIds, setSelectedPageIds] = useState<Set<string>>(new Set());
   const [newPref, setNewPref] = useState("");
   const [screenshots, setScreenshots] = useState<{ name: string; base64: string; mimeType: string }[]>([]);
   const [driveFiles, setDriveFiles] = useState<DriveFile[]>([]);
@@ -762,7 +763,7 @@ export default function App() {
       setEvaluating(false);
 
       try {
-        await pagesApi.save(id, page);
+        await pagesApi.save(id, page, { notes: lastInput.current.notes || "", trigger: "generate" });
       } catch {
         setError("Page generated but could not be saved to the database. Refresh to retry.");
       }
@@ -804,8 +805,21 @@ export default function App() {
     streamRef.current = "";
     adv(0, "Sending revision request…");
 
+    let versionHistory: string | undefined;
+    try {
+      const versions = await versionsApi.list(selected.id, { limit: 3, includeData: true });
+      if (versions.length > 0) {
+        versionHistory = versions
+          .map(v => `v${v.versionNumber} notes: "${v.notes || "No notes"}"\n${((v.data as PageDraft).raw || "").trim()}`)
+          .join("\n---\n");
+      }
+    } catch {
+      // best-effort — don't block refine if versions unavailable
+    }
+
     const msg = buildRefineUserPrompt(
-      `Here is the current HHVC SF.gov page draft to revise:\n\n${selected.raw}\n\nPlease make this specific change: ${instruction}\n\nReturn the COMPLETE revised page, preserving all sections not being changed.`
+      `Here is the current HHVC SF.gov page draft to revise:\n\n${selected.raw}\n\nPlease make this specific change: ${instruction}\n\nReturn the COMPLETE revised page, preserving all sections not being changed.`,
+      versionHistory
     );
 
     try {
@@ -884,7 +898,7 @@ export default function App() {
       };
 
       adv(100, "Done"); setEvaluating(false);
-      try { await pagesApi.save(selected.id, updated); } catch { setError("Revised but could not save."); }
+      try { await pagesApi.save(selected.id, updated, { notes: instruction, trigger: "refine" }); } catch { setError("Revised but could not save."); }
       setPages(prev => prev.map(p => p.id === selected.id ? updated : p));
       setSelected(updated);
 
@@ -900,6 +914,23 @@ export default function App() {
   }, [selected, refineInput]);
 
   const deletePage = async (id: string) => { await pagesApi.delete(id).catch(() => {}); setPages(p => p.filter(x => x.id !== id)); if (selected?.id === id) setSelected(null); };
+
+  const togglePageSelection = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedPageIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+  const selectAllPages = () => setSelectedPageIds(new Set(filtered.map(p => p.id)));
+  const clearPageSelection = () => setSelectedPageIds(new Set());
+  const deleteSelectedPages = async () => {
+    const count = selectedPageIds.size;
+    if (!window.confirm(`Delete ${count} page${count !== 1 ? "s" : ""}? This cannot be undone.`)) return;
+    for (const id of selectedPageIds) { await deletePage(id); }
+    setSelectedPageIds(new Set());
+  };
   const selectById = (id: string) => { const p = pages.find(x => x.id === id); if (p) { setSelected(p); setShowSuccess(false); setTab("builder"); } };
   const handleCopy = (text: string) => { navigator.clipboard.writeText(text).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); };
   const handleDownload = (text: string, name: string) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "text/plain" })); a.download = name; a.click(); };
@@ -946,6 +977,7 @@ export default function App() {
 
   const filtered = pages.filter(p => { const ms = !search || (clean(p.name) || "").toLowerCase().includes(search.toLowerCase()) || (p.draft || "").toLowerCase().includes(search.toLowerCase()); return ms && (filterType === "All" || clean(p.pageType) === filterType); });
   const sorted = sortNewest ? [...filtered].reverse() : filtered;
+  useEffect(() => { setSelectedPageIds(new Set()); }, [search, filterType]);
   const topicError = topicTouched && !topic.trim();
 
   const Tab = ({ id, label, badge }: { id: string; label: string; badge?: number }) => {
@@ -1499,6 +1531,20 @@ export default function App() {
               </span>
             )}
           </div>
+          {selectedPageIds.size > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 12px", background: "#3a1a1a", border: "1px solid #e53e3e", borderRadius: 6, marginBottom: 12 }}>
+              <span style={{ color: "#e53e3e", fontWeight: 600, fontSize: 13 }}>{selectedPageIds.size} selected</span>
+              <span style={{ color: "#555" }}>|</span>
+              <button onClick={selectAllPages} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer", fontSize: 12, padding: 0 }}>Select all ({filtered.length})</button>
+              <span style={{ color: "#555" }}>|</span>
+              <button onClick={clearPageSelection} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer", fontSize: 12, padding: 0 }}>Clear</button>
+              <div style={{ marginLeft: "auto" }}>
+                <button onClick={deleteSelectedPages} style={{ background: "#e53e3e", color: "white", border: "none", borderRadius: 4, padding: "4px 12px", cursor: "pointer", fontSize: 12 }}>
+                  🗑 Delete ({selectedPageIds.size})
+                </button>
+              </div>
+            </div>
+          )}
           {seeding && (
             <div style={{ textAlign: "center", padding: "24px 0 12px", color: "#6B21A8" }}>
               <div style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid #6B21A833", borderTopColor: "#6B21A8", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
@@ -1525,8 +1571,16 @@ export default function App() {
               const ev = p.karlEvaluation;
               const gradeColor: Record<string, string> = { A: "#0F6E56", B: "#185FA5", C: "#854F0B", D: "#A32D2D", F: "#A32D2D" };
               return (
-                <Card key={p.id} onClick={() => { setSelected(p); setShowSuccess(false); setTab("builder"); }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 9 }}>
+                <Card key={p.id} onClick={() => { setSelected(p); setShowSuccess(false); setTab("builder"); }} style={{ position: "relative", outline: selectedPageIds.has(p.id) ? "2px solid #e53e3e" : "none" }}>
+                  <div
+                    onClick={(e) => togglePageSelection(p.id, e)}
+                    style={{ position: "absolute", top: 8, left: 8, width: 18, height: 18, borderRadius: 4, border: selectedPageIds.has(p.id) ? "none" : "1.5px solid #aaa", background: selectedPageIds.has(p.id) ? "#e53e3e" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 10, flexShrink: 0 }}
+                  >
+                    {selectedPageIds.has(p.id) && (
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 9, paddingLeft: 22 }}>
                     <span style={{ width: 6, height: 6, borderRadius: "50%", background: c.dot, flexShrink: 0, ...(p.skeleton ? { border: "1.5px dashed #6B21A8", background: "transparent" } : {}) }} />
                     <Badge type={clean(p.pageType)} small />
                     {p.skeleton && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#F3E8FF", color: "#6B21A8", border: "1px dashed #6B21A866" }}>skeleton</span>}
