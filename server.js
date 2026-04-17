@@ -1,6 +1,7 @@
 import express from "express";
 import { createServer } from "http";
 import { createRequire } from "module";
+import { randomUUID } from "crypto";
 import pkg from "pg";
 const { Pool } = pkg;
 import { ReplitConnectors } from "@replit/connectors-sdk";
@@ -533,11 +534,14 @@ app.post("/api/pages/import", async (req, res) => {
     const existing = await pool.query("SELECT data->>'name' AS name FROM pages");
     const existingNames = new Set(existing.rows.map(r => (r.name || "").toLowerCase().trim()));
 
-    const { randomUUID } = await import("crypto");
     let inserted = 0;
     let skipped = 0;
 
     for (const page of importData) {
+      if (!page || typeof page.name !== "string") {
+        skipped++;
+        continue;
+      }
       const pageName = (page.name || "").toLowerCase().trim();
       if (existingNames.has(pageName)) {
         skipped++;
