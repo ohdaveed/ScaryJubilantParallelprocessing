@@ -5,6 +5,7 @@ import { clean, isPest, parsePage, parseRel, parseStructuredPage, pagesApi, todo
 import { DriveFile } from "./types";
 import { Badge, Label, Divider, Btn, Card, Field, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar, iStyle } from "./components/ui";
 import { SfGovPagePreview } from "./components/SfGovPreview";
+import IdealSiteMap from "./components/IdealSiteMap";
 
 
 
@@ -82,53 +83,6 @@ function SuccessState({ page, onView }: { page: PageDraft; onView: () => void })
   );
 }
 
-function SystemMap({ pages, onSelect }: { pages: PageDraft[]; onSelect: (id: string) => void }) {
-  const W = 680, H = 400;
-  if (!pages.length) return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "56px 0", gap: 12, color: "var(--color-text-tertiary)" }}>
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><circle cx="12" cy="12" r="3" /><circle cx="4" cy="6" r="2" /><circle cx="20" cy="6" r="2" /><circle cx="4" cy="18" r="2" /><circle cx="20" cy="18" r="2" /><path d="M6 6l4 4M14 14l4 4M18 6l-4 4M10 14l-4 4" /></svg>
-      <div style={{ textAlign: "center" }}>
-        <p style={{ fontSize: 14, fontWeight: 500, margin: "0 0 4px", color: "var(--color-text-secondary)" }}>No pages yet</p>
-        <p style={{ fontSize: 13, margin: 0, lineHeight: 1.5 }}>Generate pages in the Builder tab to populate the system map.</p>
-      </div>
-    </div>
-  );
-
-  const topic = pages.filter(p => clean(p.pageType) === "Topic page");
-  const others = pages.filter(p => clean(p.pageType) !== "Topic page");
-  type MapNode = { id: string; name: string; type: string; x: number; y: number; tier: number };
-  type MapEdge = [string, string];
-  const nodes: MapNode[] = [];
-
-  topic.forEach((p, i) => { const a = (2 * Math.PI * i / Math.max(topic.length, 1)) - Math.PI / 2; nodes.push({ id: p.id, name: clean(p.name) || "Untitled", type: clean(p.pageType), x: W / 2 + 70 * Math.cos(a), y: H / 2 + 50 * Math.sin(a), tier: 0 }); });
-  others.forEach((p, i) => { const a = (2 * Math.PI * i / Math.max(others.length, 1)) - Math.PI / 2; nodes.push({ id: p.id, name: clean(p.name) || "Untitled", type: clean(p.pageType), x: W / 2 + 185 * Math.cos(a), y: H / 2 + 165 * Math.sin(a), tier: 1 }); });
-
-  const edges: MapEdge[] = [], orphans = new Set(pages.map(p => p.id));
-  pages.forEach(p => {
-    const rel = parseRel(p.relationships || "");
-    const txt = [rel.parent, rel.siblings, rel.children].join(" ").toLowerCase();
-    pages.forEach(q => {
-      if (p.id === q.id) return;
-      const qn = (clean(q.name) || "").toLowerCase();
-      if (qn.length > 4 && txt.includes(qn.slice(0, Math.min(10, qn.length)))) { edges.push([p.id, q.id]); orphans.delete(p.id); orphans.delete(q.id); }
-    });
-  });
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto" }}>
-      <defs><marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#B4B2A9" /></marker></defs>
-      {edges.map(([a, b], i) => { const na = nodes.find(n => n.id === a), nb = nodes.find(n => n.id === b); if (!na || !nb) return null; return <line key={i} x1={na.x} y1={na.y} x2={nb.x} y2={nb.y} stroke="#D3D1C7" strokeWidth="1" markerEnd="url(#arr)" />; })}
-      {nodes.map(n => {
-        const c = TYPE_META[n.type] || { fill: "#F1EFE8", stroke: "#888", text: "#444" };
-        const isOrphan = orphans.has(n.id) && pages.length > 1;
-        const label = n.name.length > 20 ? n.name.slice(0, 18) + "…" : n.name;
-        const rx = n.tier === 0 ? 72 : 62, ry = n.tier === 0 ? 26 : 22;
-        return <g key={n.id} onClick={() => onSelect(n.id)} style={{ cursor: "pointer" }}><ellipse cx={n.x} cy={n.y} rx={rx} ry={ry} fill={isOrphan ? "var(--color-background-secondary)" : c.fill} stroke={isOrphan ? "#B4B2A9" : c.stroke} strokeWidth={n.tier === 0 ? "2" : "1.5"} strokeDasharray={isOrphan ? "4,3" : "none"} /><text x={n.x} y={n.y + 5} textAnchor="middle" fontSize={n.tier === 0 ? 12 : 11} fontWeight={n.tier === 0 ? "500" : "400"} fill={isOrphan ? "#888780" : c.text}>{label}</text></g>;
-      })}
-      <text x={W / 2} y={H - 6} textAnchor="middle" fontSize="11" fill="#B4B2A9">{pages.length} page{pages.length !== 1 ? "s" : ""} · click to open</text>
-    </svg>
-  );
-}
 
 function PlanDiagram({ planned, pages, onSelectPlanned }: { planned: PlannedPage[]; pages: PageDraft[]; onSelectPlanned: (p: PlannedPage) => void }) {
   const W = 680, H = 400;
@@ -1442,7 +1396,7 @@ export default function App() {
               <>
                 <div>
                   <Card style={{ padding: "16px 20px", marginBottom: 14 }}>
-                    <SystemMap pages={pages} onSelect={selectById} />
+                    <IdealSiteMap pages={pages} onSelect={selectById} />
                   </Card>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
                     {PAGE_TYPES.map(t => { const c = TYPE_META[t]; return <span key={t} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: c.fill, color: c.text, border: `1px solid ${c.stroke}` }}>{t}</span>; })}
