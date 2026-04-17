@@ -2,8 +2,6 @@ import express from "express";
 import { createServer } from "http";
 import { createRequire } from "module";
 import { randomUUID } from "crypto";
-import pkg from "pg";
-const { Pool } = pkg;
 import mammoth from "mammoth";
 import {
   getDrive,
@@ -13,6 +11,7 @@ import {
   downloadFileMedia,
   httpStatusFromDriveError
 } from "./lib/googleDrive.js";
+import { createPersistence, formatPersistenceError } from "./lib/persistence.js";
 
 const require = createRequire(import.meta.url);
 const pdfParse = require("pdf-parse");
@@ -29,62 +28,8 @@ app.use((req, res, next) => {
 });
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes("sslmode=require")
-    ? { rejectUnauthorized: false }
-    : false
-});
-
-async function initDb() {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS pages (
-        id TEXT PRIMARY KEY,
-        data JSONB NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS todos (
-        id SERIAL PRIMARY KEY,
-        topic TEXT NOT NULL,
-        user_type TEXT NOT NULL,
-        done BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS planned_pages (
-        id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL,
-        page_type TEXT NOT NULL,
-        user_type TEXT NOT NULL,
-        parent_id INTEGER REFERENCES planned_pages(id) ON DELETE SET NULL,
-        built_page_id TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS user_preferences (
-        id SERIAL PRIMARY KEY,
-        preference TEXT NOT NULL,
-        source TEXT DEFAULT 'manual',
-        page_id TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    await pool.query(`
-      ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS page_id TEXT
-    `);
-    console.log("Database tables ready");
-  } catch (err) {
-    console.error("DB init error:", err.message);
-  }
-}
-
-initDb();
+const db = await createPersistence();
+const getErrorMessage = (error) => formatPersistenceError(error);
 
 const logWithRequest = (reqOrRes, stage, message, extra = {}) => {
   const requestId = reqOrRes?.locals?.requestId || reqOrRes?.res?.locals?.requestId || "no-request-id";
@@ -562,12 +507,11 @@ Return the COMPLETE improved page in exactly the same format. Change structure a
 app.get("/api/preferences", async (req, res) => {
   const { page_id } = req.query;
   try {
-    const result = page_id
-      ? await pool.query("SELECT * FROM user_preferences WHERE page_id = $1 ORDER BY created_at DESC", [page_id])
-      : await pool.query("SELECT * FROM user_preferences WHERE page_id IS NULL ORDER BY created_at DESC");
-    res.json({ preferences: result.rows.map(r => ({ id: r.id, preference: r.preference, source: r.source, pageId: r.page_id, createdAt: r.created_at })) });
+    const preferences = await db.listPreferences(page_id);
+    res.json({ preferences });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("GET /api/preferences error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
@@ -575,58 +519,56 @@ app.post("/api/preferences", async (req, res) => {
   const { preference, source, page_id } = req.body;
   if (!preference) return res.status(400).json({ error: "Missing preference" });
   try {
-    const result = await pool.query(
-      "INSERT INTO user_preferences (preference, source, page_id) VALUES ($1, $2, $3) RETURNING *",
-      [preference.slice(0, 500), source || "manual", page_id || null]
-    );
-    const r = result.rows[0];
-    res.json({ id: r.id, preference: r.preference, source: r.source, pageId: r.page_id, createdAt: r.created_at });
+    const created = await db.createPreference(preference.slice(0, 500), source || "manual", page_id || null);
+    res.json(created);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("POST /api/preferences error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
 app.delete("/api/preferences/:id", async (req, res) => {
   try {
-    await pool.query("DELETE FROM user_preferences WHERE id = $1", [req.params.id]);
+    await db.deletePreference(req.params.id);
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("DELETE /api/preferences error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
 app.get("/api/pages", async (req, res) => {
   try {
-    const result = await pool.query("SELECT data FROM pages ORDER BY created_at ASC");
-    res.json({ pages: result.rows.map(r => r.data) });
+    const pages = await db.listPages();
+    res.json({ pages });
   } catch (err) {
-    console.error("GET /api/pages error:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("GET /api/pages error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
 app.post("/api/pages", async (req, res) => {
-  const { id, data } = req.body;
+  const { id, data, versionNotes, versionTrigger } = req.body;
   if (!id || !data) return res.status(400).json({ error: "Missing id or data" });
   try {
-    await pool.query(
-      "INSERT INTO pages (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2",
-      [id, JSON.stringify(data)]
-    );
+    await db.savePage(id, data);
+    if (versionTrigger) {
+      await db.saveVersion(id, data, versionNotes || null, versionTrigger);
+    }
     res.json({ ok: true });
   } catch (err) {
-    console.error("POST /api/pages error:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("POST /api/pages error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
 app.delete("/api/pages/:id", async (req, res) => {
   try {
-    await pool.query("DELETE FROM pages WHERE id = $1", [req.params.id]);
+    await db.deletePage(req.params.id);
     res.json({ ok: true });
   } catch (err) {
-    console.error("DELETE /api/pages error:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("DELETE /api/pages error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
@@ -635,8 +577,8 @@ app.post("/api/pages/import", async (req, res) => {
     const importData = require("./src/data/hhvc-pages-import.json");
 
     // Get existing page names (case-insensitive dedup)
-    const existing = await pool.query("SELECT data->>'name' AS name FROM pages");
-    const existingNames = new Set(existing.rows.map(r => (r.name || "").toLowerCase().trim()));
+    const existing = await db.listPageNames();
+    const existingNames = new Set(existing.map((row) => (row.name || "").toLowerCase().trim()));
 
     let inserted = 0;
     let skipped = 0;
@@ -654,18 +596,15 @@ app.post("/api/pages/import", async (req, res) => {
       const id = randomUUID();
       const now = new Date().toISOString();
       const fullPage = { ...page, id, createdAt: now, raw: page.raw || page.draft || "" };
-      await pool.query(
-        "INSERT INTO pages (id, data, created_at) VALUES ($1, $2, $3)",
-        [id, JSON.stringify(fullPage), now]
-      );
+      await db.insertImportedPage(id, fullPage, now);
       existingNames.add(pageName); // prevent within-batch duplicates
       inserted++;
     }
 
     res.json({ inserted, skipped });
   } catch (err) {
-    console.error("POST /api/pages/import error:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("POST /api/pages/import error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
@@ -675,26 +614,61 @@ app.patch("/api/pages/:id/review", async (req, res) => {
     return res.status(400).json({ error: "Invalid status. Must be pending, approved, or rejected." });
   }
   try {
-    const result = await pool.query(
-      `UPDATE pages SET data = data || $1::jsonb WHERE id = $2 RETURNING data`,
-      [JSON.stringify({ reviewStatus: status }), req.params.id]
-    );
-    if (!result.rows.length) return res.status(404).json({ error: "Page not found" });
-    res.json(result.rows[0].data);
+    const page = await db.updatePageReview(req.params.id, status);
+    if (!page) return res.status(404).json({ error: "Page not found" });
+    res.json(page);
   } catch (err) {
-    console.error("PATCH /api/pages/:id/review error:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("PATCH /api/pages/:id/review error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
+  }
+});
+
+app.get("/api/pages/:id/versions", async (req, res) => {
+  const { includeData, limit } = req.query;
+  try {
+    const versions = await db.getVersions(req.params.id, {
+      includeData: includeData === "true",
+      limit: limit ? parseInt(limit) : undefined
+    });
+    res.json({ versions });
+  } catch (err) {
+    console.error("GET /api/pages/:id/versions error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
+  }
+});
+
+app.get("/api/pages/:id/versions/:versionId", async (req, res) => {
+  try {
+    const version = await db.getVersion(req.params.versionId);
+    if (!version) return res.status(404).json({ error: "Version not found" });
+    res.json(version);
+  } catch (err) {
+    console.error("GET /api/pages/:id/versions/:versionId error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
+  }
+});
+
+app.post("/api/pages/:id/restore/:versionId", async (req, res) => {
+  const { id, versionId } = req.params;
+  try {
+    const version = await db.getVersion(versionId);
+    if (!version) return res.status(404).json({ error: "Version not found" });
+    await db.savePage(id, version.data);
+    await db.saveVersion(id, version.data, `Restored from v${version.versionNumber}`, "restore");
+    res.json({ ok: true, data: version.data });
+  } catch (err) {
+    console.error("POST /api/pages/:id/restore/:versionId error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
 app.get("/api/todos", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM todos ORDER BY created_at ASC");
-    const todos = result.rows.map(r => ({ id: r.id, topic: r.topic, userType: r.user_type, done: r.done }));
+    const todos = await db.listTodos();
     res.json({ todos });
   } catch (err) {
-    console.error("GET /api/todos error:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("GET /api/todos error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
@@ -702,60 +676,43 @@ app.post("/api/todos", async (req, res) => {
   const { topic, userType } = req.body;
   if (!topic) return res.status(400).json({ error: "Missing topic" });
   try {
-    const result = await pool.query(
-      "INSERT INTO todos (topic, user_type) VALUES ($1, $2) RETURNING *",
-      [topic, userType || "General public"]
-    );
-    const r = result.rows[0];
-    res.json({ id: r.id, topic: r.topic, userType: r.user_type, done: r.done });
+    const todo = await db.createTodo(topic, userType || "General public");
+    res.json(todo);
   } catch (err) {
-    console.error("POST /api/todos error:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("POST /api/todos error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
 app.patch("/api/todos/:id", async (req, res) => {
   const { done } = req.body;
   try {
-    const result = await pool.query(
-      "UPDATE todos SET done = $1 WHERE id = $2 RETURNING *",
-      [done, req.params.id]
-    );
-    if (!result.rows.length) return res.status(404).json({ error: "Not found" });
-    const r = result.rows[0];
-    res.json({ id: r.id, topic: r.topic, userType: r.user_type, done: r.done });
+    const todo = await db.updateTodo(req.params.id, done);
+    if (!todo) return res.status(404).json({ error: "Not found" });
+    res.json(todo);
   } catch (err) {
-    console.error("PATCH /api/todos error:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("PATCH /api/todos error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
 app.delete("/api/todos/:id", async (req, res) => {
   try {
-    await pool.query("DELETE FROM todos WHERE id = $1", [req.params.id]);
+    await db.deleteTodo(req.params.id);
     res.json({ ok: true });
   } catch (err) {
-    console.error("DELETE /api/todos error:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("DELETE /api/todos error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
 app.get("/api/planned-pages", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM planned_pages ORDER BY created_at ASC");
-    const items = result.rows.map(r => ({
-      id: r.id,
-      name: r.name,
-      pageType: r.page_type,
-      userType: r.user_type,
-      parentId: r.parent_id,
-      builtPageId: r.built_page_id,
-      createdAt: r.created_at
-    }));
-    res.json({ plannedPages: items });
+    const plannedPages = await db.listPlannedPages();
+    res.json({ plannedPages });
   } catch (err) {
-    console.error("GET /api/planned-pages error:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("GET /api/planned-pages error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
@@ -763,19 +720,15 @@ app.post("/api/planned-pages", async (req, res) => {
   const { name, pageType, userType, parentId } = req.body;
   if (!name || !pageType || !userType) return res.status(400).json({ error: "Missing required fields" });
   if (parentId) {
-    const parentCheck = await pool.query("SELECT id FROM planned_pages WHERE id = $1", [parentId]);
-    if (!parentCheck.rows.length) return res.status(400).json({ error: "Parent not found" });
+    const parent = await db.getPlannedPage(parentId);
+    if (!parent) return res.status(400).json({ error: "Parent not found" });
   }
   try {
-    const result = await pool.query(
-      "INSERT INTO planned_pages (name, page_type, user_type, parent_id) VALUES ($1, $2, $3, $4) RETURNING *",
-      [name, pageType, userType, parentId || null]
-    );
-    const r = result.rows[0];
-    res.json({ id: r.id, name: r.name, pageType: r.page_type, userType: r.user_type, parentId: r.parent_id, builtPageId: r.built_page_id, createdAt: r.created_at });
+    const plannedPage = await db.createPlannedPage(name, pageType, userType, parentId || null);
+    res.json(plannedPage);
   } catch (err) {
-    console.error("POST /api/planned-pages error:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("POST /api/planned-pages error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
@@ -785,36 +738,30 @@ app.patch("/api/planned-pages/:id", async (req, res) => {
     return res.status(400).json({ error: "A page cannot be its own parent" });
   }
   try {
-    const fields = [];
-    const vals = [];
-    let idx = 1;
-    if (name !== undefined) { fields.push(`name = $${idx++}`); vals.push(name); }
-    if (pageType !== undefined) { fields.push(`page_type = $${idx++}`); vals.push(pageType); }
-    if (userType !== undefined) { fields.push(`user_type = $${idx++}`); vals.push(userType); }
-    if (parentId !== undefined) { fields.push(`parent_id = $${idx++}`); vals.push(parentId); }
-    if (builtPageId !== undefined) { fields.push(`built_page_id = $${idx++}`); vals.push(builtPageId); }
-    if (fields.length === 0) return res.status(400).json({ error: "No fields to update" });
-    vals.push(req.params.id);
-    const result = await pool.query(
-      `UPDATE planned_pages SET ${fields.join(", ")} WHERE id = $${idx} RETURNING *`,
-      vals
-    );
-    if (!result.rows.length) return res.status(404).json({ error: "Not found" });
-    const r = result.rows[0];
-    res.json({ id: r.id, name: r.name, pageType: r.page_type, userType: r.user_type, parentId: r.parent_id, builtPageId: r.built_page_id, createdAt: r.created_at });
+    const patch = {};
+    if (name !== undefined) patch.name = name;
+    if (pageType !== undefined) patch.pageType = pageType;
+    if (userType !== undefined) patch.userType = userType;
+    if (parentId !== undefined) patch.parentId = parentId;
+    if (builtPageId !== undefined) patch.builtPageId = builtPageId;
+    if (Object.keys(patch).length === 0) return res.status(400).json({ error: "No fields to update" });
+
+    const plannedPage = await db.updatePlannedPage(req.params.id, patch);
+    if (!plannedPage) return res.status(404).json({ error: "Not found" });
+    res.json(plannedPage);
   } catch (err) {
-    console.error("PATCH /api/planned-pages error:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("PATCH /api/planned-pages error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
 app.delete("/api/planned-pages/:id", async (req, res) => {
   try {
-    await pool.query("DELETE FROM planned_pages WHERE id = $1", [req.params.id]);
+    await db.deletePlannedPage(req.params.id);
     res.json({ ok: true });
   } catch (err) {
-    console.error("DELETE /api/planned-pages error:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("DELETE /api/planned-pages error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
   }
 });
 
