@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildGenerationUserPrompt, PROMPT_CONTRACT_VERSION } from "./constants";
-import { evaluateQualityGate, filterEligibleSuggestedPages, parseStructuredPage, sampleSuggestedPages, structuredToRawPage } from "./utils";
+import { evaluateQualityGate, filterEligibleSuggestedPages, formatVersionOrMonth, generateZip, parseStructuredPage, sampleSuggestedPages, sanitizeFilename, structuredToRawPage } from "./utils";
 import type { PageDraft, StructuredPageOutput } from "./types";
 import goldenPages from "./fixtures/golden-pages.json";
 
@@ -164,5 +164,44 @@ describe("suggested pages", () => {
     expect(sampled).toHaveLength(5);
     expect(new Set(topics).size).toBe(5);
     expect(randomCalls).toBeGreaterThan(0);
+  });
+});
+
+describe('formatVersionOrMonth', () => {
+  it('should return version if provided', () => {
+    const page = { version: 'v1.2.3', created_at: '2026-01-15' };
+    expect(formatVersionOrMonth(page as any)).toBe('v1.2.3');
+  });
+  it('should return formatted month if version is empty', () => {
+    const page = { version: '', created_at: '2026-04-17' };
+    expect(formatVersionOrMonth(page as any)).toBe('April 2026');
+  });
+  it('should return formatted month if version is undefined', () => {
+    const page = { version: undefined, created_at: '2026-02-28' };
+    expect(formatVersionOrMonth(page as any)).toBe('February 2026');
+  });
+});
+
+describe('sanitizeFilename', () => {
+  it('should remove invalid filename characters', () => {
+    expect(sanitizeFilename('Page: "v1"')).toBe('Page v1');
+    expect(sanitizeFilename('File|Name')).toBe('FileName');
+  });
+  it('should preserve valid characters', () => {
+    expect(sanitizeFilename('SF-Housing_Authority.v1')).toBe('SF-Housing_Authority.v1');
+  });
+  it('should collapse multiple spaces', () => {
+    expect(sanitizeFilename('SF  Housing')).toBe('SF Housing');
+  });
+});
+
+describe('generateZip', () => {
+  it('should create zip blob', async () => {
+    const files = [
+      { blob: new Blob(['content1'], { type: 'image/png' }), filename: 'page1.png' },
+      { blob: new Blob(['content2'], { type: 'image/png' }), filename: 'page2.png' }
+    ];
+    const zipBlob = await generateZip(files);
+    expect(zipBlob).toBeInstanceOf(Blob);
   });
 });
