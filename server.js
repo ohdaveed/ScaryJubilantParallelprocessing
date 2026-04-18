@@ -39,6 +39,26 @@ const logWithRequest = (reqOrRes, stage, message, extra = {}) => {
 
 const isObject = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 
+const BRACKETED_IMPORT_PLACEHOLDER_PATTERNS = [
+  "link to",
+  "url to be confirmed",
+  "content to be confirmed",
+];
+const STANDALONE_IMPORT_PLACEHOLDER_PATTERNS = [
+  "url\\s+tbd",
+  "tbd",
+];
+const IMPORT_PLACEHOLDER_RE = new RegExp(
+  `\\[(?:${BRACKETED_IMPORT_PLACEHOLDER_PATTERNS.join("|")})[^\\]]*\\]|\\b(?:${STANDALONE_IMPORT_PLACEHOLDER_PATTERNS.join("|")})\\b`,
+  "i"
+);
+
+const hasImportPlaceholders = (page) => {
+  if (!page || typeof page !== "object") return false;
+  const fieldsToCheck = [page.draft, page.integration, page.enforcement, page.duplication, page.relationships, page.components];
+  return fieldsToCheck.some((value) => typeof value === "string" && IMPORT_PLACEHOLDER_RE.test(value));
+};
+
 const withTimeout = async (promiseFactory, timeoutMs = 45000) => {
   const timeout = new Promise((_, reject) => {
     setTimeout(() => reject(new Error(`Operation timed out after ${timeoutMs}ms`)), timeoutMs);
@@ -582,10 +602,16 @@ app.post("/api/pages/import", async (req, res) => {
 
     let inserted = 0;
     let skipped = 0;
+    let skippedPlaceholders = 0;
 
     for (const page of importData) {
       if (!page || typeof page.name !== "string") {
         skipped++;
+        continue;
+      }
+      if (hasImportPlaceholders(page)) {
+        skipped++;
+        skippedPlaceholders++;
         continue;
       }
       const pageName = (page.name || "").toLowerCase().trim();
@@ -601,7 +627,7 @@ app.post("/api/pages/import", async (req, res) => {
       inserted++;
     }
 
-    res.json({ inserted, skipped });
+    res.json({ inserted, skipped, skippedPlaceholders });
   } catch (err) {
     console.error("POST /api/pages/import error:", getErrorMessage(err));
     res.status(500).json({ error: getErrorMessage(err) });

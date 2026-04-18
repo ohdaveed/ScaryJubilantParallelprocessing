@@ -93,7 +93,8 @@ function parseInlineLinks(text: string): React.ReactNode {
     lastIndex = m.index + m[0].length;
   }
   if (lastIndex < text.length) parts.push(text.slice(lastIndex));
-  return parts.length <= 1 ? text : <>{parts}</>;
+  if (parts.length === 0) return <>{text}</>;
+  return <>{parts}</>;
 }
 
 const karlTooltip = (label: string) => `Karl CMS: ${label}`;

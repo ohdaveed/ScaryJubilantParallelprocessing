@@ -42,4 +42,20 @@ This text explains the next step.
     expect(html).toContain(">healthyhousing@sfdph.org</span>");
     expect(html).toContain(">Contact HHVC</span>");
   });
+
+  it("renders a single inline markdown link as styled link text", () => {
+    const draft = `# Contact HHVC
+
+Description: Reach HHVC support.
+
+## What to do
+Section body: [Contact HHVC](https://sf.gov)`;
+
+    const html = renderToStaticMarkup(
+      <SfGovPagePreview draft={draft} pageType="Information" pageTitle="Contact HHVC" />
+    );
+
+    expect(html).toContain(">Contact HHVC</span>");
+    expect(html).toContain("text-decoration:underline");
+  });
 });

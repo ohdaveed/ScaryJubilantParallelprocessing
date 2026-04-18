@@ -68,6 +68,8 @@ export interface StructuredPageOutput {
   };
 }
 
+export type ReviewStatus = "pending" | "approved" | "rejected";
+
 export interface PageDraft {
   id: string;
   name: string;
@@ -89,7 +91,7 @@ export interface PageDraft {
   skeleton?: boolean;
   imported?: boolean;
   version?: string;
-  reviewStatus?: 'pending' | 'approved' | 'rejected';
+  reviewStatus?: ReviewStatus;
   qualityGate?: {
     status: "pass" | "review_required";
     reasons: string[];

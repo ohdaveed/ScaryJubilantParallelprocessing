@@ -66,6 +66,8 @@ describe("prompt contract", () => {
     expect(prompt).toContain(PROMPT_CONTRACT_VERSION);
     expect(prompt).toContain("STRUCTURED OUTPUT REQUIREMENT");
     expect(prompt).toContain("SELF-CHECK BEFORE FINAL ANSWER");
+
+    expect(prompt).not.toContain("OUTPUT FORMAT — return EXACTLY this structure");
   });
 });
 
