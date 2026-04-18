@@ -3,7 +3,7 @@ import { PageDraft, TodoItem, KarlEvaluation, PlannedPage, UserPreference, PageV
 import { USER_TYPES, PAGE_TYPES, SYSTEM_PROMPT, SUGGESTED_PAGES, TYPE_META, SITEMAP_SKELETON, STRUCTURED_OUTPUT_RULES, buildGenerationUserPrompt, buildRefineUserPrompt } from "./constants";
 import { clean, isPest, parsePage, parseRel, parseStructuredPage, pagesApi, todosApi, plannedPagesApi, preferencesApi, improveStructure, runKarlEvaluation, evaluateQualityGate, lsLegacy, driveApi, skeletonToPageDraft, versionsApi, filterEligibleSuggestedPages, sampleSuggestedPages, renderPageAsPNG, renderPageAsPDF, generateZip } from "./utils";
 import { DriveFile } from "./types";
-import { Badge, Label, Divider, Btn, Card, Field, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar, iStyle } from "./components/ui";
+import { Badge, Label, Divider, Btn, Card, Field, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar, iStyle, DeleteConfirmationModal } from "./components/ui";
 import { SfGovPagePreview } from "./components/SfGovPreview";
 import { toPng } from "html-to-image";
 import IdealSiteMap from "./components/IdealSiteMap";
@@ -445,6 +445,8 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [preferences, setPreferences] = useState<UserPreference[]>([]);
   const [selectedPageIds, setSelectedPageIds] = useState<Set<string>>(new Set());
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const [newPref, setNewPref] = useState("");
   const [screenshots, setScreenshots] = useState<{ name: string; base64: string; mimeType: string }[]>([]);
   const [driveFiles, setDriveFiles] = useState<DriveFile[]>([]);
@@ -980,10 +982,14 @@ export default function App() {
   const selectAllPages = () => setSelectedPageIds(new Set(filtered.map(p => p.id)));
   const clearPageSelection = () => setSelectedPageIds(new Set());
   const deleteSelectedPages = async () => {
-    const count = selectedPageIds.size;
-    if (!window.confirm(`Delete ${count} page${count !== 1 ? "s" : ""}? This cannot be undone.`)) return;
     for (const id of selectedPageIds) { await deletePage(id); }
     setSelectedPageIds(new Set());
+  };
+  const handleConfirmDelete = async () => {
+    setIsDeleteLoading(true);
+    await deleteSelectedPages();
+    setIsDeleteLoading(false);
+    setShowDeleteModal(false);
   };
   const handleDownloadPNG = async () => {
     const selectedPages = pages.filter(p => p.id && selectedPageIds.has(p.id));
@@ -1670,7 +1676,7 @@ export default function App() {
                 <button onClick={handleDownloadPDF} style={{ background: "none", border: "1px solid #aaa", color: "#ccc", borderRadius: 4, padding: "4px 12px", cursor: "pointer", fontSize: 12 }}>
                   Download PDF
                 </button>
-                <button onClick={deleteSelectedPages} style={{ background: "#e53e3e", color: "white", border: "none", borderRadius: 4, padding: "4px 12px", cursor: "pointer", fontSize: 12 }}>
+                <button onClick={() => setShowDeleteModal(true)} style={{ background: "#e53e3e", color: "white", border: "none", borderRadius: 4, padding: "4px 12px", cursor: "pointer", fontSize: 12 }}>
                   🗑 Delete ({selectedPageIds.size})
                 </button>
               </div>
@@ -1816,6 +1822,13 @@ export default function App() {
           </div>
         </div>
       )}
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        count={selectedPageIds.size}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setShowDeleteModal(false)}
+        isLoading={isDeleteLoading}
+      />
       {/* Hidden page previews for bulk PNG/PDF export */}
       <div style={{ position: "absolute", top: 0, left: 0, width: 800, visibility: "hidden", pointerEvents: "none", zIndex: -1 }}>
         {pages.filter(p => p.id && selectedPageIds.has(p.id)).map(p => (
