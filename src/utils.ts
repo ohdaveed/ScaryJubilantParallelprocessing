@@ -583,6 +583,7 @@ export function formatVersionOrMonth(page: { version?: string; created_at?: stri
   }
   const dateStr = page.created_at || page.createdAt || '';
   const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return 'Unknown';
   return `${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
 }
 
@@ -612,7 +613,7 @@ export async function renderPageAsPNG(
   const element = document.getElementById(elementId);
   if (!element) throw new Error('Element not found');
   const { toPng } = await import('html-to-image');
-  const version = formatVersionOrMonth(page as any);
+  const version = formatVersionOrMonth(page);
   const filename = `${sanitizeFilename(page.name)}_${version}.png`;
   const dataUrl = await toPng(element);
   const blob = await (await fetch(dataUrl)).blob();

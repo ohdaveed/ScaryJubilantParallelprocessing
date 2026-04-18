@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildGenerationUserPrompt, PROMPT_CONTRACT_VERSION } from "./constants";
-import { evaluateQualityGate, filterEligibleSuggestedPages, formatVersionOrMonth, generateZip, parseStructuredPage, sampleSuggestedPages, sanitizeFilename, structuredToRawPage } from "./utils";
+import { evaluateQualityGate, filterEligibleSuggestedPages, formatVersionOrMonth, generateZip, parseStructuredPage, renderPageAsPDF, renderPageAsPNG, sampleSuggestedPages, sanitizeFilename, structuredToRawPage } from "./utils";
 import type { PageDraft, StructuredPageOutput } from "./types";
 import goldenPages from "./fixtures/golden-pages.json";
 
@@ -180,6 +180,14 @@ describe('formatVersionOrMonth', () => {
     const page = { version: undefined, created_at: '2026-02-28' };
     expect(formatVersionOrMonth(page as any)).toBe('February 2026');
   });
+  it('should fall back to createdAt (camelCase) when created_at is absent', () => {
+    const page = { createdAt: '2026-03-10' };
+    expect(formatVersionOrMonth(page as any)).toBe('March 2026');
+  });
+  it('should return Unknown for missing date', () => {
+    const page = { version: undefined };
+    expect(formatVersionOrMonth(page as any)).toBe('Unknown');
+  });
 });
 
 describe('sanitizeFilename', () => {
@@ -193,6 +201,12 @@ describe('sanitizeFilename', () => {
   it('should collapse multiple spaces', () => {
     expect(sanitizeFilename('SF  Housing')).toBe('SF Housing');
   });
+  it('should remove all invalid characters: \\ / * ? < >', () => {
+    expect(sanitizeFilename('a\\b/c*d?e<f>g')).toBe('abcdefg');
+  });
+  it('should trim leading and trailing whitespace', () => {
+    expect(sanitizeFilename('  hello  ')).toBe('hello');
+  });
 });
 
 describe('generateZip', () => {
@@ -203,5 +217,35 @@ describe('generateZip', () => {
     ];
     const zipBlob = await generateZip(files);
     expect(zipBlob).toBeInstanceOf(Blob);
+  });
+  it('should produce a Blob (zip output)', async () => {
+    const files = [{ blob: new Blob(['x']), filename: 'f.txt' }];
+    const zip = await generateZip(files);
+    expect(zip).toBeInstanceOf(Blob);
+    expect(zip.size).toBeGreaterThan(0);
+  });
+});
+
+describe('renderPageAsPNG', () => {
+  it('should throw if element not found', async () => {
+    if (typeof document === 'undefined') {
+      (globalThis as any).document = { getElementById: () => null };
+    }
+    await expect(renderPageAsPNG({ name: 'Test', created_at: '2026-01-01' }, 'nonexistent-id-xyz')).rejects.toThrow('Element not found');
+    if ((globalThis as any).document?.getElementById?.toString().includes('null')) {
+      delete (globalThis as any).document;
+    }
+  });
+});
+
+describe('renderPageAsPDF', () => {
+  it('should throw if element not found', async () => {
+    if (typeof document === 'undefined') {
+      (globalThis as any).document = { getElementById: () => null };
+    }
+    await expect(renderPageAsPDF({ name: 'Test', created_at: '2026-01-01' }, 'nonexistent-id-xyz')).rejects.toThrow('Element not found');
+    if ((globalThis as any).document?.getElementById?.toString().includes('null')) {
+      delete (globalThis as any).document;
+    }
   });
 });
