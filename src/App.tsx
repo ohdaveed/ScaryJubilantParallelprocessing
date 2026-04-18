@@ -1015,6 +1015,7 @@ export default function App() {
       a.download = `pages-export-${timestamp}.zip`;
       a.click();
       URL.revokeObjectURL(url);
+      clearPageSelection();
     } catch (err) {
       console.error('Failed to create ZIP:', err);
     }
@@ -1049,6 +1050,7 @@ export default function App() {
       a.download = `pages-export-${timestamp}.zip`;
       a.click();
       URL.revokeObjectURL(url);
+      clearPageSelection();
     } catch (err) {
       console.error('Failed to create ZIP:', err);
     }
