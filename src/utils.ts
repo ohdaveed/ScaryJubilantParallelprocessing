@@ -584,14 +584,12 @@ export function formatVersionOrMonth(page: { version?: string; created_at?: stri
   const dateStr = page.created_at || page.createdAt || '';
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return 'Unknown';
-  return `${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+  return `${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 }
 
 export function sanitizeFilename(filename: string): string {
-  return filename
-    .replace(/[\\/"*?<>|:]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  const sanitized = filename.replace(/[\\/"*?<>|:]/g, '').replace(/\s+/g, ' ').trim();
+  return sanitized || 'untitled';
 }
 
 export async function generateZip(
@@ -612,11 +610,11 @@ export async function renderPageAsPNG(
 ): Promise<{ blob: Blob; filename: string }> {
   const element = document.getElementById(elementId);
   if (!element) throw new Error('Element not found');
-  const { toPng } = await import('html-to-image');
+  const { toBlob } = await import('html-to-image');
   const version = formatVersionOrMonth(page);
   const filename = `${sanitizeFilename(page.name)}_${version}.png`;
-  const dataUrl = await toPng(element);
-  const blob = await (await fetch(dataUrl)).blob();
+  const blob = await toBlob(element);
+  if (!blob) throw new Error('Failed to render page as PNG');
   return { blob, filename };
 }
 
@@ -628,14 +626,16 @@ export async function renderPageAsPDF(
   if (!element) throw new Error('Element not found');
   const html2canvas = (await import('html2canvas')).default;
   const { jsPDF } = await import('jspdf');
-  const version = formatVersionOrMonth(page as any);
+  const version = formatVersionOrMonth(page);
   const filename = `${sanitizeFilename(page.name)}_${version}.pdf`;
   const canvas = await html2canvas(element);
+  if (canvas.width === 0 || canvas.height === 0) throw new Error('Element rendered to empty canvas');
   const imgData = canvas.toDataURL('image/png');
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const imgWidth = 190;
   const imgHeight = (canvas.height * imgWidth) / canvas.width;
   pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
-  const pdfBlob = pdf.output('blob');
-  return { blob: pdfBlob as Blob, filename };
+  const pdfArrayBuffer = pdf.output('arraybuffer');
+  const pdfBlob = new Blob([pdfArrayBuffer], { type: 'application/pdf' });
+  return { blob: pdfBlob, filename };
 }

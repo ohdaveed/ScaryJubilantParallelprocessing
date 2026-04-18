@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import { buildGenerationUserPrompt, PROMPT_CONTRACT_VERSION } from "./constants";
 import { evaluateQualityGate, filterEligibleSuggestedPages, formatVersionOrMonth, generateZip, parseStructuredPage, renderPageAsPDF, renderPageAsPNG, sampleSuggestedPages, sanitizeFilename, structuredToRawPage } from "./utils";
 import type { PageDraft, StructuredPageOutput } from "./types";
@@ -210,42 +210,37 @@ describe('sanitizeFilename', () => {
 });
 
 describe('generateZip', () => {
-  it('should create zip blob', async () => {
+  it('should create zip blob with content', async () => {
     const files = [
       { blob: new Blob(['content1'], { type: 'image/png' }), filename: 'page1.png' },
       { blob: new Blob(['content2'], { type: 'image/png' }), filename: 'page2.png' }
     ];
     const zipBlob = await generateZip(files);
     expect(zipBlob).toBeInstanceOf(Blob);
-  });
-  it('should produce a Blob (zip output)', async () => {
-    const files = [{ blob: new Blob(['x']), filename: 'f.txt' }];
-    const zip = await generateZip(files);
-    expect(zip).toBeInstanceOf(Blob);
-    expect(zip.size).toBeGreaterThan(0);
+    expect(zipBlob.size).toBeGreaterThan(0);
   });
 });
 
 describe('renderPageAsPNG', () => {
+  beforeEach(() => {
+    vi.stubGlobal('document', { getElementById: () => null });
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
   it('should throw if element not found', async () => {
-    if (typeof document === 'undefined') {
-      (globalThis as any).document = { getElementById: () => null };
-    }
     await expect(renderPageAsPNG({ name: 'Test', created_at: '2026-01-01' }, 'nonexistent-id-xyz')).rejects.toThrow('Element not found');
-    if ((globalThis as any).document?.getElementById?.toString().includes('null')) {
-      delete (globalThis as any).document;
-    }
   });
 });
 
 describe('renderPageAsPDF', () => {
+  beforeEach(() => {
+    vi.stubGlobal('document', { getElementById: () => null });
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
   it('should throw if element not found', async () => {
-    if (typeof document === 'undefined') {
-      (globalThis as any).document = { getElementById: () => null };
-    }
     await expect(renderPageAsPDF({ name: 'Test', created_at: '2026-01-01' }, 'nonexistent-id-xyz')).rejects.toThrow('Element not found');
-    if ((globalThis as any).document?.getElementById?.toString().includes('null')) {
-      delete (globalThis as any).document;
-    }
   });
 });
