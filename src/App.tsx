@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { PageDraft, TodoItem, KarlEvaluation, PlannedPage, UserPreference, PageVersion, SuggestedPage } from "./types";
 import { USER_TYPES, PAGE_TYPES, SYSTEM_PROMPT, SUGGESTED_PAGES, TYPE_META, SITEMAP_SKELETON, STRUCTURED_OUTPUT_RULES, buildGenerationUserPrompt, buildRefineUserPrompt } from "./constants";
-import { clean, isPest, parsePage, parseRel, parseStructuredPage, pagesApi, todosApi, plannedPagesApi, preferencesApi, improveStructure, runKarlEvaluation, evaluateQualityGate, lsLegacy, driveApi, skeletonToPageDraft, versionsApi, filterEligibleSuggestedPages, sampleSuggestedPages } from "./utils";
+import { clean, isPest, parsePage, parseRel, parseStructuredPage, pagesApi, todosApi, plannedPagesApi, preferencesApi, improveStructure, runKarlEvaluation, evaluateQualityGate, lsLegacy, driveApi, skeletonToPageDraft, versionsApi, filterEligibleSuggestedPages, sampleSuggestedPages, renderPageAsPNG, renderPageAsPDF, generateZip } from "./utils";
 import { DriveFile } from "./types";
 import { Badge, Label, Divider, Btn, Card, Field, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar, iStyle } from "./components/ui";
 import { SfGovPagePreview } from "./components/SfGovPreview";
@@ -985,6 +985,74 @@ export default function App() {
     for (const id of selectedPageIds) { await deletePage(id); }
     setSelectedPageIds(new Set());
   };
+  const handleDownloadPNG = async () => {
+    const selectedPages = pages.filter(p => p.id && selectedPageIds.has(p.id));
+    const pngFiles: Array<{ blob: Blob; filename: string }> = [];
+    const failedNames: string[] = [];
+
+    for (const page of selectedPages) {
+      try {
+        const elementId = `page-preview-${page.id}`;
+        const result = await renderPageAsPNG(page, elementId);
+        pngFiles.push(result);
+      } catch (err) {
+        console.error(`Failed to render ${page.name} as PNG:`, err);
+        failedNames.push(page.name);
+      }
+    }
+
+    if (pngFiles.length === 0) {
+      console.error('No pages could be rendered as PNG', failedNames);
+      return;
+    }
+
+    try {
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+      const zipBlob = await generateZip(pngFiles);
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pages-export-${timestamp}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to create ZIP:', err);
+    }
+  };
+  const handleDownloadPDF = async () => {
+    const selectedPages = pages.filter(p => p.id && selectedPageIds.has(p.id));
+    const pdfFiles: Array<{ blob: Blob; filename: string }> = [];
+    const failedNames: string[] = [];
+
+    for (const page of selectedPages) {
+      try {
+        const elementId = `page-preview-${page.id}`;
+        const result = await renderPageAsPDF(page, elementId);
+        pdfFiles.push(result);
+      } catch (err) {
+        console.error(`Failed to render ${page.name} as PDF:`, err);
+        failedNames.push(page.name);
+      }
+    }
+
+    if (pdfFiles.length === 0) {
+      console.error('No pages could be rendered as PDF', failedNames);
+      return;
+    }
+
+    try {
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+      const zipBlob = await generateZip(pdfFiles);
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pages-export-${timestamp}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to create ZIP:', err);
+    }
+  };
   const selectById = (id: string) => { const p = pages.find(x => x.id === id); if (p) { setSelected(p); setShowSuccess(false); setTab("builder"); } };
   const handleCopy = (text: string) => { navigator.clipboard.writeText(text).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); };
   const handleDownload = (text: string, name: string) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "text/plain" })); a.download = name; a.click(); };
@@ -1593,7 +1661,13 @@ export default function App() {
               <button onClick={selectAllPages} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer", fontSize: 12, padding: 0 }}>Select all ({filtered.length})</button>
               <span style={{ color: "#555" }}>|</span>
               <button onClick={clearPageSelection} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer", fontSize: 12, padding: 0 }}>Clear</button>
-              <div style={{ marginLeft: "auto" }}>
+              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+                <button onClick={handleDownloadPNG} style={{ background: "none", border: "1px solid #aaa", color: "#ccc", borderRadius: 4, padding: "4px 12px", cursor: "pointer", fontSize: 12 }}>
+                  Download PNG
+                </button>
+                <button onClick={handleDownloadPDF} style={{ background: "none", border: "1px solid #aaa", color: "#ccc", borderRadius: 4, padding: "4px 12px", cursor: "pointer", fontSize: 12 }}>
+                  Download PDF
+                </button>
                 <button onClick={deleteSelectedPages} style={{ background: "#e53e3e", color: "white", border: "none", borderRadius: 4, padding: "4px 12px", cursor: "pointer", fontSize: 12 }}>
                   🗑 Delete ({selectedPageIds.size})
                 </button>
@@ -1740,6 +1814,14 @@ export default function App() {
           </div>
         </div>
       )}
+      {/* Hidden page previews for bulk PNG/PDF export */}
+      <div style={{ position: "absolute", top: 0, left: 0, width: 800, visibility: "hidden", pointerEvents: "none", zIndex: -1 }}>
+        {pages.filter(p => p.id && selectedPageIds.has(p.id)).map(p => (
+          <div key={p.id} id={`page-preview-${p.id}`}>
+            <SfGovPagePreview draft={p.draft} pageType={p.pageType} pageTitle={clean(p.name)} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
