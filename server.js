@@ -766,20 +766,41 @@ app.delete("/api/planned-pages/:id", async (req, res) => {
 });
 
 const PORT = 3001;
+const MAX_PORT_RECOVERY_ATTEMPTS = 2;
 
-function startServer(port) {
+async function killProcessOnPort(port) {
+  try {
+    const { execSync } = await import("child_process");
+    if (process.platform === "win32") {
+      execSync(
+        `powershell -NoProfile -Command "$connections = Get-NetTCPConnection -LocalPort ${port} -State Listen -ErrorAction SilentlyContinue; if ($connections) { $connections | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue } }"`,
+        { stdio: "ignore" }
+      );
+    } else {
+      execSync(`lsof -ti tcp:${port} | xargs -r kill -9`, {
+        stdio: "ignore",
+        shell: true
+      });
+    }
+  } catch {
+    // Best-effort cleanup; retry logic will handle remaining failures.
+  }
+}
+
+function startServer(port, attempt = 0) {
   const server = createServer(app);
   server.on("error", async (err) => {
     if (err.code === "EADDRINUSE") {
-      console.log(`Port ${port} in use — killing stale process and retrying…`);
-      try {
-        const { execSync } = await import("child_process");
-        execSync(`fuser -k ${port}/tcp 2>/dev/null`);
-      } catch {}
+      if (attempt >= MAX_PORT_RECOVERY_ATTEMPTS) {
+        console.error(`Port ${port} is still in use after ${attempt} recovery attempts.`);
+        process.exit(1);
+      }
+
+      console.log(`Port ${port} in use - killing stale process and retrying...`);
+      await killProcessOnPort(port);
+
       setTimeout(() => {
-        createServer(app).listen(port, () => {
-          console.log(`API server running on port ${port}`);
-        });
+        startServer(port, attempt + 1);
       }, 600);
     } else {
       console.error("Server error:", err);

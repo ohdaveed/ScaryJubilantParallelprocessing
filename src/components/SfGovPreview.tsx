@@ -96,17 +96,30 @@ function parseInlineLinks(text: string): React.ReactNode {
   return parts.length <= 1 ? text : <>{parts}</>;
 }
 
-function renderSfGovLines(lines: string[]): React.ReactNode {
+const karlTooltip = (label: string) => `Karl CMS: ${label}`;
+
+function renderSfGovLines(lines: string[], parentSection?: string): React.ReactNode {
   const elements: React.ReactNode[] = [];
   let currentList: string[] = [];
   let listType: "ul" | "ol" | null = null;
   let tableRows: string[][] = [];
+  let subsectionActive = false;
+
+  const bodyLabel = () =>
+    parentSection ? karlTooltip(`${parentSection} > ${subsectionActive ? "Section body" : "Text"}`) : undefined;
+
+  const blockLabel = (component: string) =>
+    parentSection ? karlTooltip(`${parentSection} > ${component}`) : undefined;
 
   const flushList = () => {
     if (currentList.length > 0 && listType) {
       const Tag = listType;
       elements.push(
-        <Tag key={`list-${elements.length}`} style={{ margin: "8px 0 8px 20px", padding: 0, fontFamily: SF.font, fontSize: 16, lineHeight: 1.7, color: SF.slate4 }}>
+        <Tag
+          key={`list-${elements.length}`}
+          title={bodyLabel()}
+          style={{ margin: "8px 0 8px 20px", padding: 0, fontFamily: SF.font, fontSize: 16, lineHeight: 1.7, color: SF.slate4 }}
+        >
           {currentList.map((item, j) => <li key={j} style={{ marginBottom: 4 }}>{parseInlineLinks(item)}</li>)}
         </Tag>
       );
@@ -120,7 +133,11 @@ function renderSfGovLines(lines: string[]): React.ReactNode {
       const headerRow = tableRows[0];
       const bodyRows = tableRows.slice(1);
       elements.push(
-        <div key={`table-${elements.length}`} style={{ margin: "12px 0", borderRadius: 4, border: `1px solid ${SF.lightBorder}`, overflow: "hidden" }}>
+        <div
+          key={`table-${elements.length}`}
+          title={bodyLabel()}
+          style={{ margin: "12px 0", borderRadius: 4, border: `1px solid ${SF.lightBorder}`, overflow: "hidden" }}
+        >
           <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: SF.font, fontSize: 14 }}>
             <thead>
               <tr style={{ background: SF.bg }}>
@@ -148,6 +165,71 @@ function renderSfGovLines(lines: string[]): React.ReactNode {
   lines.forEach((line, i) => {
     const trimmed = line.trim();
     if (!trimmed) { flushList(); flushTable(); return; }
+
+    const sectionHeadingMatch = trimmed.match(/^section heading:?\s*(.*)/i);
+    if (sectionHeadingMatch) {
+      flushList();
+      flushTable();
+      subsectionActive = true;
+      elements.push(
+        <h3
+          key={`section-heading-${i}`}
+          title={blockLabel("Section heading")}
+          style={{
+            fontFamily: SF.font, fontSize: 20, fontWeight: 600,
+            color: SF.slate4, margin: "0 0 10px", lineHeight: 1.3
+          }}
+        >
+          {sectionHeadingMatch[1]}
+        </h3>
+      );
+      return;
+    }
+
+    const sectionBodyMatch = trimmed.match(/^section body:?\s*(.*)/i);
+    if (sectionBodyMatch) {
+      flushList();
+      flushTable();
+      subsectionActive = true;
+      elements.push(
+        <p
+          key={`section-body-${i}`}
+          title={blockLabel("Section body")}
+          style={{ fontFamily: SF.font, fontSize: 16, lineHeight: 1.7, color: SF.slate4, margin: "0 0 12px" }}
+        >
+          {parseInlineLinks(sectionBodyMatch[1])}
+        </p>
+      );
+      return;
+    }
+
+    const inlineCalloutMatch = trimmed.match(/^callout:?\s*(.*)/i);
+    if (inlineCalloutMatch) {
+      flushList();
+      flushTable();
+      elements.push(
+        <div
+          key={`callout-${i}`}
+          title={blockLabel("Callout")}
+          style={{
+            margin: "16px 0", padding: "16px 20px",
+            background: "#FFF8E1", borderLeft: "4px solid #F9A825",
+            borderRadius: "0 4px 4px 0"
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F57F17" strokeWidth="2" style={{ flexShrink: 0, marginTop: 2 }}>
+              <circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" />
+            </svg>
+            <p style={{ fontFamily: SF.font, fontSize: 15, lineHeight: 1.6, color: SF.slate4, margin: 0, fontWeight: 400 }}>
+              {parseInlineLinks(inlineCalloutMatch[1])}
+            </p>
+          </div>
+        </div>
+      );
+      subsectionActive = false;
+      return;
+    }
 
     if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
       if (/^\|[\s-:|]+\|$/.test(trimmed)) return;
@@ -198,7 +280,7 @@ function renderSfGovLines(lines: string[]): React.ReactNode {
         const value = rest.join(":").trim();
         if (/^(button link|action link)/i.test(label)) {
           elements.push(
-            <div key={`cta-${i}`} style={{ margin: "12px 0" }}>
+            <div key={`cta-${i}`} title={blockLabel(/^button link/i.test(label) ? "Button link" : "Action link")} style={{ margin: "12px 0" }}>
               <span style={{
                 display: "inline-flex", alignItems: "center", gap: 8,
                 padding: "12px 24px", background: SF.blue, color: SF.white,
@@ -210,19 +292,31 @@ function renderSfGovLines(lines: string[]): React.ReactNode {
               </span>
             </div>
           );
+          subsectionActive = false;
         } else {
           elements.push(
-            <div key={`contact-${i}`} style={{ display: "flex", alignItems: "center", gap: 10, margin: "8px 0", padding: "10px 14px", background: SF.bg, borderRadius: 4 }}>
+            <div
+              key={`contact-${i}`}
+              title={blockLabel(/phone number/i.test(label) ? "Phone number" : "Email")}
+              style={{ display: "flex", alignItems: "center", gap: 10, margin: "8px 0", padding: "10px 14px", background: SF.bg, borderRadius: 4 }}
+            >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={SF.blue} strokeWidth="2" strokeLinecap="round">
                 <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.63A2 2 0 012 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />
               </svg>
               <span style={{ fontFamily: SF.font, fontSize: 16, color: SF.blue, fontWeight: 500 }}>{value}</span>
             </div>
           );
+          subsectionActive = false;
         }
       } else {
         elements.push(
-          <p key={`p-${i}`} style={{ fontFamily: SF.font, fontSize: 16, lineHeight: 1.7, color: SF.slate4, margin: "0 0 12px" }}>{parseInlineLinks(trimmed)}</p>
+          <p
+            key={`p-${i}`}
+            title={bodyLabel()}
+            style={{ fontFamily: SF.font, fontSize: 16, lineHeight: 1.7, color: SF.slate4, margin: "0 0 12px" }}
+          >
+            {parseInlineLinks(trimmed)}
+          </p>
         );
       }
     }
@@ -263,7 +357,7 @@ export const SfGovPagePreview = React.forwardRef<HTMLDivElement, { draft: string
                 <h1 style={{
                   fontFamily: SF.font, fontSize: 36, fontWeight: 700, lineHeight: 1.15,
                   color: SF.slate4, margin: "0 0 12px", letterSpacing: "-0.5px"
-                }}>{sec.title || pageTitle || "Untitled"}</h1>
+                }} title={karlTooltip("Title")}>{sec.title || pageTitle || "Untitled"}</h1>
                 {sec.lines.filter((l: string) => clean(l)).map((l: string, j: number) => (
                   <p key={j} style={{ fontFamily: SF.font, fontSize: 18, lineHeight: 1.6, color: SF.slate2, margin: "0 0 6px", fontWeight: 300 }}>{clean(l)}</p>
                 ))}
@@ -275,7 +369,7 @@ export const SfGovPagePreview = React.forwardRef<HTMLDivElement, { draft: string
             return (
               <div key={i} style={{ marginBottom: 24, padding: "14px 18px", background: "#F0F4F8", borderLeft: `4px solid ${SF.blue}`, borderRadius: "0 4px 4px 0" }}>
                 <span style={{ fontFamily: SF.font, fontSize: 11, fontWeight: 600, color: SF.slate2, textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>Description</span>
-                <p style={{ fontFamily: SF.font, fontSize: 15, color: SF.slate4, margin: "4px 0 0", lineHeight: 1.5, fontStyle: "italic" }}>{sec.text}</p>
+                <p title={karlTooltip("Description")} style={{ fontFamily: SF.font, fontSize: 15, color: SF.slate4, margin: "4px 0 0", lineHeight: 1.5, fontStyle: "italic" }}>{sec.text}</p>
               </div>
             );
           }
@@ -322,7 +416,7 @@ export const SfGovPagePreview = React.forwardRef<HTMLDivElement, { draft: string
                       display: "flex", alignItems: "center", justifyContent: "space-between",
                       padding: "14px 0", borderBottom: `1px solid ${SF.lightBorder}`,
                       cursor: "default"
-                    }}>
+                    }} title={karlTooltip("Related > item")}>
                       <span style={{ fontFamily: SF.font, fontSize: 16, color: SF.blue, fontWeight: 400 }}>{item}</span>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={SF.blue} strokeWidth="2" strokeLinecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
                     </div>
@@ -338,9 +432,9 @@ export const SfGovPagePreview = React.forwardRef<HTMLDivElement, { draft: string
                 <h2 style={{
                   fontFamily: SF.font, fontSize: 26, fontWeight: 600,
                   color: SF.slate4, margin: "0 0 4px", letterSpacing: "-0.3px"
-                }}>{sec.title}</h2>
+                }} title={karlTooltip(sec.title)}>{sec.title}</h2>
                 <div style={{ width: 32, height: 3, background: SF.blue, borderRadius: 2, marginBottom: 16 }} />
-                {hasContent && renderSfGovLines(sec.lines)}
+                {hasContent && renderSfGovLines(sec.lines, sec.title)}
               </div>
             );
           }
@@ -358,7 +452,7 @@ export const SfGovPagePreview = React.forwardRef<HTMLDivElement, { draft: string
                   color: SF.slate4, margin: "0 0 10px", lineHeight: 1.3
                 }}>{headingText}</h3>
               )}
-              {hasContent && renderSfGovLines(sec.lines)}
+              {hasContent && renderSfGovLines(sec.lines, sec.title)}
             </div>
           );
         })}
