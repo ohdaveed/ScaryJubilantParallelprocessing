@@ -243,6 +243,72 @@ export const KarlEvalPanel: React.FC<{ evaluation: KarlEvaluation }> = ({ evalua
   );
 };
 
+interface CheckboxProps {
+  id?: string;
+  checked?: boolean;
+  onChange?: (checked: boolean) => void;
+  label?: string;
+  className?: string;
+}
+
+export const Checkbox: React.FC<CheckboxProps> = ({
+  id,
+  checked = false,
+  onChange,
+  label,
+  className = ""
+}) => {
+  return (
+    <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }} className={className}>
+      <input
+        type="checkbox"
+        id={id}
+        checked={checked}
+        onChange={(e) => onChange?.(e.target.checked)}
+        style={{ width: 16, height: 16, cursor: "pointer" }}
+      />
+      {label && <span style={{ marginLeft: 8, fontSize: 13, color: "var(--color-text-primary)" }}>{label}</span>}
+    </label>
+  );
+};
+
+interface DeleteConfirmationModalProps {
+  isOpen: boolean;
+  count: number;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isLoading?: boolean;
+}
+
+export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
+  isOpen,
+  count,
+  onConfirm,
+  onCancel,
+  isLoading = false
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200 }}>
+      <div style={{ background: "var(--color-background-primary)", borderRadius: "var(--border-radius-lg)", padding: 24, maxWidth: 360, width: "100%", margin: "0 16px", border: "0.5px solid var(--color-border-secondary)" }}>
+        <h2 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 10px", color: "var(--color-text-primary)", fontFamily: "var(--font-sans)" }}>Confirm Delete</h2>
+        <p style={{ fontSize: 13, color: "var(--color-text-secondary)", margin: "0 0 20px", lineHeight: 1.55 }}>
+          Delete {count} selected page{count !== 1 ? "s" : ""}? This cannot be undone.
+        </p>
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <Btn variant="ghost" size="md" onClick={onCancel} disabled={isLoading}>
+            Cancel
+          </Btn>
+          <Btn variant="danger" size="md" onClick={onConfirm} disabled={isLoading}>
+            {isLoading ? "Deleting…" : "Delete"}
+          </Btn>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const ProgressBar: React.FC<{ progress: number; label: string }> = ({ progress, label }) => {
   const eased = progress < 80 ? progress : 80 + (progress - 80) * 1.8;
   const clamped = Math.min(100, eased);
