@@ -12,6 +12,7 @@ import {
   httpStatusFromDriveError
 } from "./lib/googleDrive.js";
 import { createPersistence, formatPersistenceError } from "./lib/persistence.js";
+import { withKarlCitations, enforceKarlCitationsOnEvaluation } from "./lib/karlCitations.js";
 
 const require = createRequire(import.meta.url);
 const pdfParse = require("pdf-parse");
@@ -259,6 +260,7 @@ ${existingContent}`
   }
 
   body = { ...anthropicBody, messages: msgs };
+  body.system = typeof body.system === "string" ? withKarlCitations(body.system) : withKarlCitations("");
 
   try {
     logWithRequest(res, "generate", "forwarding request to anthropic");
@@ -359,16 +361,19 @@ DIGITAL.GOV PLAIN LANGUAGE CHECKS (check each of these specifically and include 
 - Reader addressed as "you": flag as a failure if body content does not use "you" to address the reader directly (titles are exempt).
 - Unnecessary filler phrases: flag as a warning for each filler phrase found, e.g. 'in order to', 'it is important to note that', 'please be advised', 'at this point in time'.
 
-For every item in warnings and failed, write the feedback as a specific, actionable instruction referencing the actual text (e.g., "Sentence on line 3 exceeds 20 words — split into two sentences." or "Avoid hidden verbs — use 'decide' not 'make a decision'.").`;
+For every item in warnings and failed, write the feedback as a specific, actionable instruction referencing the actual text (e.g., "Sentence on line 3 exceeds 20 words — split into two sentences." or "Avoid hidden verbs — use 'decide' not 'make a decision'.").
+
+If any passed, warnings, or failed item discusses Karl CMS page types, Related pages, Transaction layout, or Information vs Transaction choice, include one exact URL from the GUARANTEED KARL EDITOR CITES block (in system) inside that string.`;
+
+  const evalSystem = withKarlCitations("You are an SF.gov content standards evaluator. Return only valid JSON.");
 
   try {
     logWithRequest(res, "evaluate", "running evaluator");
     const upstream = await postAnthropic({
         model: "claude-haiku-4-20250514",
         max_tokens: 1024,
-        system: "You are an SF.gov content standards evaluator. Return only valid JSON.",
-        messages: [{ role: "user", content: evalPrompt }],
-        mcp_servers: [{ type: "url", url: "https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/~gitbook/mcp", name: "karl-docs" }]
+        system: evalSystem,
+        messages: [{ role: "user", content: evalPrompt }]
       }, 45000, 1);
 
     if (!upstream.ok) {
@@ -397,7 +402,7 @@ ${textContent}`;
       const repairUpstream = await postAnthropic({
           model: "claude-haiku-4-20250514",
           max_tokens: 1024,
-          system: "You are an SF.gov content standards evaluator. Return only valid JSON.",
+          system: evalSystem,
           messages: [{ role: "user", content: repairPrompt }]
         }, 30000, 0);
       if (repairUpstream.ok) {
@@ -426,7 +431,7 @@ ${textContent}`;
       });
     }
 
-    const normalized = {
+    const normalized = enforceKarlCitationsOnEvaluation({
       score: Number.isFinite(Number(evaluation.score)) ? Number(evaluation.score) : 0,
       grade: typeof evaluation.grade === "string" ? evaluation.grade : "F",
       summary: typeof evaluation.summary === "string" ? evaluation.summary : "No evaluator summary provided.",
@@ -436,7 +441,7 @@ ${textContent}`;
       parseError: false,
       parseFailureReason: null,
       confidence: evaluation.failed?.length > 0 ? "medium" : "high"
-    };
+    });
     res.json(normalized);
   } catch (err) {
     logWithRequest(res, "evaluate", "evaluation error", { error: String(err?.message || err) });

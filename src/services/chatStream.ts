@@ -42,7 +42,6 @@ export async function streamModelText(options: StreamModelTextOptions): Promise<
       stream: true,
       system: systemPrompt,
       messages: [{ role: "user", content: msg }],
-      mcp_servers: [{ type: "url", url: "https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/~gitbook/mcp", name: "karl-docs" }],
       ...(driveContext ? { driveContext } : {}),
       ...(images && images.length > 0 ? { images } : {})
     })

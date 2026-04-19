@@ -1,7 +1,7 @@
 import React from "react";
 import { PAGE_TYPES, TYPE_META } from "../../constants";
 import { PageDraft, ReviewStatus } from "../../types";
-import { Badge, Btn, Card, iStyle } from "../ui";
+import { Badge, Btn, Card, UI_INPUT_CLASS } from "../ui";
 import { ImportResult } from "../../state/appTypes";
 import { clean } from "../../utils";
 
@@ -59,8 +59,8 @@ export function LibraryTab(props: LibraryTabProps) {
   return (
     <div style={{ marginTop: 20 }}>
       <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
-        <input style={{ ...iStyle({ maxWidth: 220 }) }} placeholder="Search pages..." value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search pages" />
-        <select style={{ ...iStyle({ maxWidth: 170 }) }} value={filterType} onChange={(e) => setFilterType(e.target.value)} aria-label="Filter by page type">
+        <input className={`${UI_INPUT_CLASS} ui-input--search`} placeholder="Search pages..." value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search pages" />
+        <select className={`${UI_INPUT_CLASS} ui-input--filter`} value={filterType} onChange={(e) => setFilterType(e.target.value)} aria-label="Filter by page type">
           <option>All</option>
           {PAGE_TYPES.map((t) => <option key={t}>{t}</option>)}
         </select>
@@ -128,7 +128,7 @@ export function LibraryTab(props: LibraryTabProps) {
           const ev = p.karlEvaluation;
           const gradeColor: Record<string, string> = { A: "#0F6E56", B: "#185FA5", C: "#854F0B", D: "#A32D2D", F: "#A32D2D" };
           return (
-            <Card key={p.id} onClick={() => onSelectPage(p)} style={{ position: "relative", outline: selectedPageIds.has(p.id) ? "2px solid #e53e3e" : "none" }}>
+            <Card key={p.id} onClick={() => onSelectPage(p)} className={["ui-card--lib", selectedPageIds.has(p.id) ? "ui-card--bulk-selected" : ""].filter(Boolean).join(" ")}>
               <div onClick={(e) => onTogglePageSelection(p.id, e)} style={{ position: "absolute", top: 8, left: 8, width: 18, height: 18, borderRadius: 4, border: selectedPageIds.has(p.id) ? "none" : "1.5px solid #aaa", background: selectedPageIds.has(p.id) ? "#e53e3e" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 10, flexShrink: 0 }}>
                 {selectedPageIds.has(p.id) && (
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -157,6 +157,8 @@ export function LibraryTab(props: LibraryTabProps) {
                 <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", margin: 0, flex: 1 }}>{new Date(p.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
                 {p.imported && (
                   <select
+                    aria-label="Review status"
+                    title="Review status"
                     value={p.reviewStatus || "pending"}
                     onClick={(e) => e.stopPropagation()}
                     onChange={async (e) => {

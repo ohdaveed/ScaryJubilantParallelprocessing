@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { PageDraft, TodoItem, KarlEvaluation, PlannedPage, UserPreference, SuggestedPage, ReviewStatus } from "./types";
 import { USER_TYPES, PAGE_TYPES, SUGGESTED_PAGES, TYPE_META } from "./constants";
 import { clean, pagesApi, todosApi, preferencesApi, filterEligibleSuggestedPages, sampleSuggestedPages } from "./utils";
-import { Badge, Divider, Btn, Card, Field, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar } from "./components/ui";
+import { Badge, Label, Divider, Btn, Card, Field, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar, iStyle } from "./components/ui";
 import { SfGovPagePreview } from "./components/SfGovPreview";
 import { toPng } from "html-to-image";
 import IdealSiteMap from "./components/IdealSiteMap";
@@ -217,7 +217,7 @@ function PlanSidebar({ planned, pages, selectedPlanned, onSelectPlanned, onAdd, 
           ) : (
             <Btn onClick={() => onGenerate(selectedPlanned)} variant="primary" size="md" fullWidth>Generate content &rarr;</Btn>
           )}
-          <Divider variant="plan" />
+          <Divider m="14px 0" />
           <Btn onClick={() => onDelete(selectedPlanned.id)} variant="danger" size="sm">Delete from plan</Btn>
         </div>
       ) : (
@@ -337,83 +337,86 @@ function TodoPanel({ pages, onGenerate }: { pages: PageDraft[]; onGenerate: (top
   const pending = todos.filter(t => !t.done), done = todos.filter(t => t.done);
 
   return (
-    <Card className="app-card-pad--16-18">
-      <div className="app-todo-header">
-        <p className="app-up-label app-up-label--flush">Pages to build</p>
-        {pending.length > 0 && <span className="app-pending-badge">{pending.length}</span>}
+    <Card style={{ padding: "16px 18px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <Label style={{ margin: 0 }}>Pages to build</Label>
+        {pending.length > 0 && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 10, background: "var(--color-text-primary)", color: "var(--color-background-primary)", fontWeight: 500 }}>{pending.length}</span>}
       </div>
 
-      {loadingTodos && <p className="app-loading-p">Loading…</p>}
+      {loadingTodos && <p style={{ fontSize: 12, color: "var(--color-text-tertiary)", margin: "0 0 8px", textAlign: "center" }}>Loading…</p>}
 
       {!loadingTodos && pending.length === 0 && done.length === 0 && (
-        <div className="app-todo-empty">
-          <p className="app-todo-empty__t">No pages queued</p>
-          <p className="app-todo-empty__s">Add topics below or pick from suggestions</p>
+        <div style={{ textAlign: "center", padding: "14px 0 10px", color: "var(--color-text-tertiary)" }}>
+          <p style={{ fontSize: 12, margin: "0 0 4px" }}>No pages queued</p>
+          <p style={{ fontSize: 11, margin: 0 }}>Add topics below or pick from suggestions</p>
         </div>
       )}
 
       {pending.map(t => (
-        <div key={t.id} className="app-todo-row">
-          <button type="button" className="app-todo-check" onClick={() => toggle(t.id, t.done)} aria-label="Mark done" />
-          <div className="app-todo-body">
-            <p className="app-todo-topic">{t.topic}</p>
-            <p className="app-todo-ut">{t.userType}</p>
+        <div key={t.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 7, padding: "9px 10px", background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-md)" }}>
+          <button onClick={() => toggle(t.id, t.done)} aria-label="Mark done" style={{ marginTop: 2, width: 15, height: 15, borderRadius: 3, border: "1.5px solid var(--color-border-secondary)", background: "transparent", cursor: "pointer", flexShrink: 0, padding: 0, outline: "none" }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 12, fontWeight: 500, margin: "0 0 2px", lineHeight: 1.4, color: "var(--color-text-primary)" }}>{t.topic}</p>
+            <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", margin: 0 }}>{t.userType}</p>
           </div>
-          <div className="app-todo-actions">
+          <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
             <Btn onClick={() => onGenerate(t.topic, t.userType)} variant="primary" size="sm">Build</Btn>
-            <button type="button" className="app-ghost-x" onClick={() => remove(t.id)}>✕</button>
+            <Btn onClick={() => remove(t.id)} variant="ghost" size="sm" style={{ padding: "5px 7px", border: "none", color: "var(--color-text-tertiary)" }}>✕</Btn>
           </div>
         </div>
       ))}
 
       {done.map(t => (
-        <div key={t.id} className="app-todo-done-row">
-          <button type="button" className="app-todo-done-check" onClick={() => toggle(t.id, t.done)} aria-label="Unmark">
+        <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", opacity: 0.4 }}>
+          <button onClick={() => toggle(t.id, t.done)} aria-label="Unmark" style={{ width: 15, height: 15, borderRadius: 3, border: "1.5px solid var(--color-border-secondary)", background: "var(--color-background-secondary)", cursor: "pointer", flexShrink: 0, padding: 0, display: "flex", alignItems: "center", justifyContent: "center", outline: "none" }}>
             <svg width="9" height="9" viewBox="0 0 10 10"><path d="M1.5 5l3 3 4-5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" /></svg>
           </button>
-          <p className="app-todo-done-topic">{t.topic}</p>
-          <button type="button" className="app-ghost-x app-ghost-x--tight" onClick={() => remove(t.id)}>✕</button>
+          <p style={{ fontSize: 12, margin: 0, color: "var(--color-text-tertiary)", textDecoration: "line-through", flex: 1 }}>{t.topic}</p>
+          <Btn onClick={() => remove(t.id)} variant="ghost" size="sm" style={{ padding: "4px 6px", border: "none", color: "var(--color-text-tertiary)" }}>✕</Btn>
         </div>
       ))}
 
       {adding ? (
-        <div className="app-todo-add-box">
-          <input className="app-input app-input--sm app-input--mb6" placeholder="Page topic…" value={newTopic} onChange={e => setNewTopic(e.target.value)} onKeyDown={e => e.key === "Enter" && addTodo()} autoFocus />
-          <select className="app-input app-input--sm app-input--mb8" aria-label="Primary user" title="Primary user" value={newUT} onChange={e => setNewUT(e.target.value)}>
+        <div style={{ marginBottom: 10, padding: "10px 12px", border: "0.5px solid var(--color-border-secondary)", borderRadius: "var(--border-radius-md)", marginTop: 4 }}>
+          <input style={{ ...iStyle(), marginBottom: 6, fontSize: 12 }} placeholder="Page topic…" value={newTopic} onChange={e => setNewTopic(e.target.value)} onKeyDown={e => e.key === "Enter" && addTodo()} autoFocus />
+          <select style={{ ...iStyle({ fontSize: 12 }), marginBottom: 8 }} value={newUT} onChange={e => setNewUT(e.target.value)}>
             {USER_TYPES.map(u => <option key={u}>{u}</option>)}
           </select>
-          <div className="app-row-gap-6">
+          <div style={{ display: "flex", gap: 6 }}>
             <Btn onClick={addTodo} variant="primary" size="sm">Add</Btn>
             <Btn onClick={() => { setAdding(false); setNewTopic(""); }} variant="ghost" size="sm">Cancel</Btn>
           </div>
         </div>
       ) : (
         <button
-          type="button"
           onClick={suggested.length === 1 ? undefined : suggested.length > 0 ? refreshSuggestions : () => setAdding(true)}
           disabled={suggested.length === 1}
-          className={`app-todo-dash${suggested.length === 1 ? " app-todo-dash--disabled" : ""}`}
-        >
+          style={{ width: "100%", padding: "8px 0", fontSize: 12, border: "0.5px dashed var(--color-border-secondary)", borderRadius: "var(--border-radius-md)", background: "transparent", color: "var(--color-text-secondary)", cursor: suggested.length === 1 ? "not-allowed" : "pointer", marginTop: 4, transition: "border-color 0.15s,color 0.15s", opacity: suggested.length === 1 ? 0.5 : 1 }}
+          onMouseEnter={e => { if (suggested.length !== 1) { e.currentTarget.style.borderColor = "var(--color-border-primary)"; e.currentTarget.style.color = "var(--color-text-primary)"; } }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--color-border-secondary)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}>
           {suggested.length > 0 ? "Refresh choices" : "+ Add page"}
         </button>
       )}
 
       {suggested.length > 0 && (
         <>
-          <Divider variant="suggested" />
-          <div className="app-sug-head">
-            <p className="app-up-label app-up-label--flush">Suggested</p>
+          <Divider m="14px 0 10px" />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <Label style={{ margin: 0 }}>Suggested</Label>
             <Btn onClick={refreshSuggestions} variant="ghost" size="sm" disabled={suggested.length <= 1}>Refresh choices</Btn>
           </div>
-          {visibleSuggested.map((s, i) => (
-            <div key={i} className="app-sug-row">
-              <div className="app-sug-body">
-                <p className="app-sug-topic">{s.topic}</p>
-                <span className="app-sug-type" data-page-type={s.pageType}>{s.pageType}</span>
+          {visibleSuggested.map((s, i) => {
+            const c = TYPE_META[s.pageType] || { fill: "#F1EFE8", text: "#444", stroke: "#888" };
+            return (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, padding: "6px 8px", borderRadius: "var(--border-radius-md)" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 12, margin: "0 0 4px", lineHeight: 1.3, color: "var(--color-text-primary)" }}>{s.topic}</p>
+                  <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 10, background: c.fill, color: c.text, border: `0.5px solid ${c.stroke}` }}>{s.pageType}</span>
+                </div>
+                <Btn onClick={() => addSug(s)} variant="ghost" size="sm">+ Add</Btn>
               </div>
-              <Btn onClick={() => addSug(s)} variant="ghost" size="sm">+ Add</Btn>
-            </div>
-          ))}
+            );
+          })}
         </>
       )}
     </Card>
@@ -437,7 +440,6 @@ export default function App() {
   const [selectedPageIds, setSelectedPageIds] = useState<Set<string>>(new Set());
   const [newPref, setNewPref] = useState("");
   const [screenshots, setScreenshots] = useState<ScreenshotAsset[]>([]);
-  const [dropzoneDepth, setDropzoneDepth] = useState(0);
   const screenshotRef = useRef<HTMLDivElement>(null);
 
   const { pages, setPages, pagesLoading, deletePage: deleteStoredPage, importing, importResult, importPages } = usePagesData();
@@ -626,15 +628,17 @@ export default function App() {
   const Tab = ({ id, label, badge }: { id: string; label: string; badge?: number }) => {
     const active = tab === id;
     return (
-      <button
-        type="button"
-        onClick={() => setTab(id)}
-        aria-current={active ? "page" : undefined}
-        className={`app-tab${active ? " app-tab--active" : ""}`}
-      >
+      <button onClick={() => setTab(id)} aria-current={active ? "page" : undefined}
+        style={{
+          fontSize: 13, fontWeight: active ? 500 : 400,
+          color: active ? "var(--color-text-primary)" : "var(--color-text-tertiary)",
+          background: "none", border: "none", cursor: "pointer",
+          padding: "8px 2px", borderBottom: `2px solid ${active ? "var(--color-text-primary)" : "transparent"}`,
+          transition: "color 0.15s, border-color 0.15s", position: "relative", display: "inline-flex", alignItems: "center", gap: 6
+        }}>
         {label}
         {badge !== undefined && badge > 0 && (
-          <span className={`app-tab__badge${active ? " app-tab__badge--on" : " app-tab__badge--off"}`}>{badge}</span>
+          <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 10, background: active ? "var(--color-text-primary)" : "var(--color-background-secondary)", color: active ? "var(--color-background-primary)" : "var(--color-text-secondary)", border: "0.5px solid var(--color-border-secondary)" }}>{badge}</span>
         )}
       </button>
     );
@@ -654,101 +658,114 @@ export default function App() {
   }, [setPages]);
 
   return (
-    <div className="app-shell">
-      <div className="app-shell__header">
-        <div className="app-shell__title-row">
-          <h1 className="app-shell__h1">HHVC Page Builder</h1>
-          <span className="app-shell__kicker">SF.gov · Healthy Housing & Vector Control</span>
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--font-sans)", minHeight: "100vh" }}>
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 4 }}>
+          <h1 style={{ fontSize: 20, fontWeight: 500, margin: 0, letterSpacing: "-0.3px", color: "var(--color-text-primary)" }}>HHVC Page Builder</h1>
+          <span style={{ fontSize: 11, color: "var(--color-text-tertiary)" }}>SF.gov · Healthy Housing & Vector Control</span>
         </div>
-        <p className="app-shell__lead">Design SF.gov-compliant content pages for Healthy Housing & Vector Control.</p>
+        <p style={{ fontSize: 13, color: "var(--color-text-secondary)", margin: 0, lineHeight: 1.5 }}>Design SF.gov-compliant content pages for Healthy Housing & Vector Control.</p>
       </div>
 
-      <div className="app-tab-bar">
+      <div style={{ display: "flex", gap: 24, borderBottom: "0.5px solid var(--color-border-tertiary)", marginBottom: 24 }}>
         <Tab id="builder" label="Builder" />
         <Tab id="library" label="Library" badge={pages.length} />
         <Tab id="map" label="System Map" />
       </div>
 
       {tab === "builder" && (
-        <div className={`app-builder-grid${sidebarOpen ? "" : " app-builder-grid--collapsed"}`}>
-          <div className="app-builder-sidebar-wrap">
+        <div style={{ display: "grid", gridTemplateColumns: sidebarOpen ? "300px 1fr" : "40px 1fr", gap: sidebarOpen ? 16 : 8, alignItems: "start", transition: "grid-template-columns 0.25s ease, gap 0.25s ease" }}>
+          <div style={{ position: "relative", overflow: "hidden" }}>
             <button
-              type="button"
               onClick={() => setSidebarOpen(o => !o)}
               title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
               aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-              className={`app-sidebar-toggle${sidebarOpen ? " app-sidebar-toggle--open" : " app-sidebar-toggle--closed"}`}
+              style={{
+                position: sidebarOpen ? "absolute" : "relative",
+                top: sidebarOpen ? 8 : 0,
+                right: sidebarOpen ? 8 : undefined,
+                zIndex: 2,
+                width: sidebarOpen ? 24 : 36,
+                height: sidebarOpen ? 24 : 36,
+                borderRadius: "var(--border-radius-md)",
+                border: "0.5px solid var(--color-border-secondary)",
+                background: "var(--color-background-primary)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 0,
+                color: "var(--color-text-tertiary)",
+                transition: "all 0.15s"
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--color-border-primary)"; e.currentTarget.style.color = "var(--color-text-secondary)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--color-border-secondary)"; e.currentTarget.style.color = "var(--color-text-tertiary)"; }}
             >
-              <svg className={`app-sidebar-toggle__chev${sidebarOpen ? "" : " app-sidebar-toggle__chev--collapsed"}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: sidebarOpen ? "none" : "rotate(180deg)", transition: "transform 0.2s" }}>
                 <path d="M15 18l-6-6 6-6" />
               </svg>
             </button>
 
             {sidebarOpen && <>
-            <Card className="app-card-pad--18-20">
+            <Card style={{ padding: "18px 20px", marginBottom: 12 }}>
               <KarlStatus status={karlStatus} />
               <Field label="Topic" hint={topicError ? "Required" : undefined}>
                 <textarea
-                  className={`app-input app-input--minh-70 app-input--lh-16${topicError ? " app-input--invalid" : ""}`}
+                  style={{ ...iStyle({ minHeight: 70, resize: "vertical", fontSize: 13, borderColor: topicError ? "var(--color-border-danger)" : undefined }), lineHeight: 1.6 }}
                   placeholder="Describe the page topic…"
                   value={topic}
                   onChange={e => { setTopic(e.target.value); setTopicTouched(true); }}
                   onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) generate(); }}
                 />
-                {topicError && <p className="app-topic-err">Enter a topic to continue</p>}
+                {topicError && <p style={{ fontSize: 11, color: "var(--color-text-danger)", margin: "3px 0 0" }}>Enter a topic to continue</p>}
               </Field>
               <Field label="Primary user">
-                <select className="app-input" aria-label="Primary user" title="Primary user" value={userType} onChange={e => setUserType(e.target.value)}>
+                <select style={iStyle()} value={userType} onChange={e => setUserType(e.target.value)}>
                   {USER_TYPES.map(u => <option key={u}>{u}</option>)}
                 </select>
               </Field>
               <Field label="Context / notes" hint="Optional">
-                <input className="app-input" placeholder="Add context or requirements…" value={notes} onChange={e => setNotes(e.target.value)} onKeyDown={e => e.key === "Enter" && generate()} />
+                <input style={iStyle()} placeholder="Add context or requirements…" value={notes} onChange={e => setNotes(e.target.value)} onKeyDown={e => e.key === "Enter" && generate()} />
               </Field>
-              <div className="app-field-mb8">
-                <p className="app-shot-label">Screenshots <span>(optional, up to 3)</span></p>
+              <div style={{ marginBottom: 8 }}>
+                <Label style={{ marginBottom: 6, fontSize: 11 }}>Screenshots <span style={{ fontWeight: 400, color: "var(--color-text-tertiary)" }}>(optional, up to 3)</span></Label>
                 <div
-                  className={`app-dropzone${screenshots.length > 0 ? " app-dropzone--compact" : ""}${screenshots.length >= 3 ? " app-dropzone--disabled" : ""}${dropzoneDepth > 0 && screenshots.length < MAX_SCREENSHOTS ? " app-dropzone--drag" : ""}`}
-                  onDragEnter={e => { e.preventDefault(); e.stopPropagation(); setDropzoneDepth(d => d + 1); }}
-                  onDragLeave={e => { e.preventDefault(); e.stopPropagation(); setDropzoneDepth(d => Math.max(0, d - 1)); }}
-                  onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+                  onDragOver={e => { e.preventDefault(); e.stopPropagation(); e.currentTarget.style.borderColor = "#185FA5"; e.currentTarget.style.background = "#E6F1FB"; }}
+                  onDragLeave={e => { e.preventDefault(); e.currentTarget.style.borderColor = "var(--color-border-secondary)"; e.currentTarget.style.background = "var(--color-background-secondary)"; }}
                   onDrop={e => {
                     e.preventDefault(); e.stopPropagation();
-                    setDropzoneDepth(0);
+                    e.currentTarget.style.borderColor = "var(--color-border-secondary)"; e.currentTarget.style.background = "var(--color-background-secondary)";
                     handleImageFiles(Array.from(e.dataTransfer.files));
                   }}
                   onClick={() => { if (screenshots.length < MAX_SCREENSHOTS) browseForImages(); }}
+                  style={{ padding: screenshots.length > 0 ? "8px" : "14px 8px", border: "1.5px dashed var(--color-border-secondary)", borderRadius: "var(--border-radius-md)", background: "var(--color-background-secondary)", cursor: screenshots.length >= 3 ? "default" : "pointer", textAlign: "center", transition: "border-color 0.15s, background 0.15s" }}
                 >
                   {screenshots.length === 0 && (
                     <div>
-                      <svg className="app-dropzone__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 4 }}>
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                         <circle cx="8.5" cy="8.5" r="1.5" />
                         <polyline points="21 15 16 10 5 21" />
                       </svg>
-                      <p className="app-dropzone__p1">Drop images here or click to browse</p>
-                      <p className="app-dropzone__p2">PNG, JPG, WEBP &middot; max 4MB each</p>
+                      <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", margin: 0, lineHeight: 1.4 }}>Drop images here or click to browse</p>
+                      <p style={{ fontSize: 10, color: "var(--color-text-tertiary)", margin: "2px 0 0", opacity: 0.7 }}>PNG, JPG, WEBP &middot; max 4MB each</p>
                     </div>
                   )}
                   {screenshots.length > 0 && (
-                    <div className="app-shot-grid" onClick={e => e.stopPropagation()}>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-start" }} onClick={e => e.stopPropagation()}>
                       {screenshots.map((s, i) => (
-                        <div key={i} className="app-shot-thumb">
-                          <img src={`data:${s.mimeType};base64,${s.base64}`} alt={s.name} />
+                        <div key={i} style={{ position: "relative", width: 64, height: 64, borderRadius: "var(--border-radius-md)", overflow: "hidden", border: "0.5px solid var(--color-border-secondary)" }}>
+                          <img src={`data:${s.mimeType};base64,${s.base64}`} alt={s.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                           <button
-                            type="button"
-                            className="app-shot-remove"
                             onClick={e => { e.stopPropagation(); setScreenshots(prev => prev.filter((_, idx) => idx !== i)); }}
+                            style={{ position: "absolute", top: 2, right: 2, width: 16, height: 16, borderRadius: "50%", background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", cursor: "pointer", fontSize: 10, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
                           >&#10005;</button>
                         </div>
                       ))}
                       {screenshots.length < MAX_SCREENSHOTS && (
                         <div
-                          role="button"
-                          tabIndex={0}
-                          className="app-shot-add"
                           onClick={() => browseForImages()}
-                          onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); browseForImages(); } }}
+                          style={{ width: 64, height: 64, borderRadius: "var(--border-radius-md)", border: "1.5px dashed var(--color-border-secondary)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--color-text-tertiary)", fontSize: 20, fontWeight: 300 }}
                         >+</div>
                       )}
                     </div>
@@ -756,10 +773,10 @@ export default function App() {
                 </div>
               </div>
               {pendingPageType && (
-                <div className="app-pending-type-banner">
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, padding: "6px 10px", background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-md)", border: "0.5px solid var(--color-border-tertiary)" }}>
                   <Badge type={pendingPageType} small />
-                  <span>from plan</span>
-                  <button type="button" className="app-icon-btn" onClick={() => { setPendingPageType(""); setPendingPlannedId(null); }}>&#10005;</button>
+                  <span style={{ fontSize: 11, color: "var(--color-text-secondary)", flex: 1 }}>from plan</span>
+                  <button onClick={() => { setPendingPageType(""); setPendingPlannedId(null); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--color-text-tertiary)", padding: "2px 4px" }}>&#10005;</button>
                 </div>
               )}
               <Btn onClick={() => generate()} variant="primary" size="md" fullWidth disabled={loading}>
@@ -767,62 +784,56 @@ export default function App() {
               </Btn>
             </Card>
 
-            <Card className="app-card-pad--14-16-mb">
+            <Card style={{ padding: "14px 16px", marginBottom: 12 }}>
               <button
-                type="button"
                 onClick={() => setDriveOpen(o => !o)}
-                className="app-drive-toggle"
-              >
-                <div className="app-drive-toggle__left">
-                  <svg className="app-drive-toggle__icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" /></svg>
-                  <p className="app-up-label app-up-label--flush app-drive-toggle__label">Reference documents</p>
+                style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--color-text-tertiary)" }}><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" /></svg>
+                  <Label style={{ margin: 0, cursor: "pointer" }}>Reference documents</Label>
                   {selectedDriveIds.size > 0 && (
-                    <span className="app-drive-count">{selectedDriveIds.size}</span>
+                    <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 10, background: "#185FA5", color: "#fff", fontWeight: 500 }}>{selectedDriveIds.size}</span>
                   )}
                 </div>
-                <svg className={`app-drive-toggle__chev${driveOpen ? " app-drive-toggle__chev--open" : ""}`} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--color-text-tertiary)", transform: driveOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}><path d="M6 9l6 6 6-6" /></svg>
               </button>
 
               {driveOpen && (
-                <div className="app-drive-body">
-                  {driveLoading && <p className="app-drive-p">Loading Drive files…</p>}
+                <div style={{ marginTop: 12 }}>
+                  {driveLoading && <p style={{ fontSize: 12, color: "var(--color-text-tertiary)", margin: 0, textAlign: "center" }}>Loading Drive files…</p>}
                   {driveError && !driveLoading && (
-                    <p className="app-drive-err">Could not load Drive files: {driveError}</p>
+                    <p style={{ fontSize: 11, color: "#791F1F", margin: 0, lineHeight: 1.5 }}>Could not load Drive files: {driveError}</p>
                   )}
                   {!driveLoading && !driveError && driveFiles.length === 0 && (
-                    <p className="app-drive-p">No files found in folder.</p>
+                    <p style={{ fontSize: 12, color: "var(--color-text-tertiary)", margin: 0, textAlign: "center" }}>No files found in folder.</p>
                   )}
                   {!driveLoading && driveFiles.map(file => {
-                    const rowSelected = selectedDriveIds.has(file.id);
+                    const selected = selectedDriveIds.has(file.id);
                     const loading = driveLoadingIds.has(file.id);
                     const isDoc = file.mimeType.includes("google-apps") || file.mimeType.includes("text") || file.mimeType.includes("pdf") || file.mimeType.includes("word");
                     return (
                       <button
-                        type="button"
                         key={file.id}
                         onClick={() => !loading && toggleDriveFile(file)}
                         disabled={loading}
-                        className={`app-drive-row${rowSelected ? " app-drive-row--selected" : ""}`}
-                      >
-                        <div className="app-drive-check">
-                          {rowSelected && <svg width="9" height="9" viewBox="0 0 10 10"><path d="M1.5 5l3 3 4-5" stroke="#fff" strokeWidth="1.5" fill="none" strokeLinecap="round" /></svg>}
+                        style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: "var(--border-radius-md)", background: selected ? "#E6F1FB" : "transparent", border: `0.5px solid ${selected ? "#185FA5" : "transparent"}`, cursor: loading ? "default" : "pointer", textAlign: "left", marginBottom: 3, transition: "background 0.12s" }}>
+                        <div style={{ width: 14, height: 14, borderRadius: 3, border: `1.5px solid ${selected ? "#185FA5" : "var(--color-border-secondary)"}`, background: selected ? "#185FA5" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.12s" }}>
+                          {selected && <svg width="9" height="9" viewBox="0 0 10 10"><path d="M1.5 5l3 3 4-5" stroke="#fff" strokeWidth="1.5" fill="none" strokeLinecap="round" /></svg>}
                         </div>
-                        <span className="app-drive-name">{file.name}</span>
-                        {loading && <span className="app-drive-meta">…</span>}
-                        {!isDoc && !loading && <span className="app-drive-meta">binary</span>}
+                        <span style={{ fontSize: 11, color: selected ? "#0C447C" : "var(--color-text-primary)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.4 }}>{file.name}</span>
+                        {loading && <span style={{ fontSize: 10, color: "var(--color-text-tertiary)" }}>…</span>}
+                        {!isDoc && !loading && <span style={{ fontSize: 9, color: "var(--color-text-tertiary)" }}>binary</span>}
                       </button>
                     );
                   })}
                   {selectedDriveIds.size > 0 && (
                     <button
-                      type="button"
                       onClick={clearSelectedDriveFiles}
-                      className="app-drive-clear"
-                    >
+                      style={{ marginTop: 6, fontSize: 11, color: "var(--color-text-tertiary)", background: "none", border: "none", cursor: "pointer", padding: "3px 0" }}>
                       Clear selection
                     </button>
                   )}
-                  <p className="app-drive-foot">
+                  <p style={{ fontSize: 10, color: "var(--color-text-tertiary)", margin: "8px 0 0", lineHeight: 1.5 }}>
                     Selected documents are included as context when generating pages.
                   </p>
                 </div>
@@ -830,29 +841,28 @@ export default function App() {
             </Card>
 
             {selected && (
-            <Card className="app-card-pad--14-16-mb">
-              <p className="app-up-label app-up-label--mb8">Preferences</p>
-              <p className="app-pref-lead">
+            <Card style={{ padding: "14px 16px", marginBottom: 12 }}>
+              <Label style={{ marginBottom: 8 }}>Preferences</Label>
+              <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", margin: "0 0 8px", lineHeight: 1.5 }}>
                 Remembered for this page. Refine to teach the agent.
               </p>
               {preferences.map(p => (
-                <div key={p.id} className="app-pref-row">
-                  <span className="app-pref-text">{p.preference}</span>
-                  <span className="app-pref-src">{p.source}</span>
+                <div key={p.id} style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: 5, padding: "5px 8px", background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-md)", border: "0.5px solid var(--color-border-tertiary)" }}>
+                  <span style={{ fontSize: 11, color: "var(--color-text-primary)", flex: 1, lineHeight: 1.5 }}>{p.preference}</span>
+                  <span style={{ fontSize: 9, color: "var(--color-text-tertiary)", flexShrink: 0, marginTop: 2 }}>{p.source}</span>
                   <button
-                    type="button"
-                    className="app-pref-remove"
                     onClick={async () => { await preferencesApi.delete(p.id).catch(() => {}); setPreferences(prev => prev.filter(x => x.id !== p.id)); }}
+                    style={{ background: "none", border: "none", cursor: "pointer", padding: "0 2px", fontSize: 11, color: "var(--color-text-tertiary)", flexShrink: 0, lineHeight: 1 }}
                     title="Remove preference"
                   >&#10005;</button>
                 </div>
               ))}
               {preferences.length === 0 && (
-                <p className="app-pref-empty">No preferences yet. Add one below or refine this page to teach the agent.</p>
+                <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", margin: "0 0 6px", fontStyle: "italic" }}>No preferences yet. Add one below or refine this page to teach the agent.</p>
               )}
-              <div className="app-pref-add-row">
+              <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
                 <input
-                  className="app-input app-input--pref"
+                  style={{ ...iStyle({ fontSize: 11 }), flex: 1 }}
                   placeholder='e.g. "Always lead with tenant rights"'
                   value={newPref}
                   onChange={e => setNewPref(e.target.value)}
@@ -879,30 +889,29 @@ export default function App() {
             )}
 
             {pages.length > 0 && (
-              <Card className="app-card-pad--14-16-only">
-                <p className="app-up-label">Recent pages</p>
-                {[...pages].reverse().slice(0, 5).map(p => (
-                    <button
-                      type="button"
-                      key={p.id}
-                      onClick={() => { setSelected(p); setShowSuccess(false); }}
-                      className={`app-recent-btn${selected?.id === p.id ? " app-recent-btn--active" : ""}`}
-                    >
-                      <span className="app-recent-dot" data-page-type={clean(p.pageType) || undefined} />
-                      <span className="app-recent-name">{clean(p.name) || "Untitled"}</span>
+              <Card style={{ padding: "14px 16px" }}>
+                <Label>Recent pages</Label>
+                {[...pages].reverse().slice(0, 5).map(p => {
+                  const c = TYPE_META[clean(p.pageType)] || { dot: "#888" };
+                  return (
+                    <button key={p.id} onClick={() => { setSelected(p); setShowSuccess(false); }}
+                      style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: "var(--border-radius-md)", background: selected?.id === p.id ? "var(--color-background-secondary)" : "transparent", border: "none", cursor: "pointer", textAlign: "left", transition: "background 0.12s" }}>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: c.dot, flexShrink: 0 }} />
+                      <span style={{ fontSize: 12, color: "var(--color-text-primary)", lineHeight: 1.4, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{clean(p.name) || "Untitled"}</span>
                       {p.karlEvaluation && (
-                        <span className="app-recent-grade" data-grade={p.karlEvaluation.grade}>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: { A: "#0F6E56", B: "#185FA5", C: "#854F0B", D: "#A32D2D", F: "#A32D2D" }[p.karlEvaluation.grade] || "#888" }}>
                           {p.karlEvaluation.grade}
                         </span>
                       )}
                     </button>
-                ))}
+                  );
+                })}
               </Card>
             )}
             </>}
           </div>
 
-          <Card className="app-card-pad--20-24">
+          <Card style={{ padding: "20px 24px", minHeight: 400 }}>
             {streaming && (
               <div>
                 <ProgressBar progress={progress} label={progressLabel} />
@@ -919,26 +928,26 @@ export default function App() {
             {!streaming && !evaluating && !showSuccess && selected && (
               <div>
                 {/* Page header */}
-                <div className="app-page-head">
-                  <div className="app-page-head__left">
-                    <div className="app-page-badges">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 7, flexWrap: "wrap" }}>
                       <Badge type={clean(selected.pageType)} />
                       {selected.skeleton && (
-                        <span className="app-pill-skeleton">Skeleton</span>
+                        <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: "#F3E8FF", color: "#6B21A8", border: "1px dashed #6B21A866", fontWeight: 500 }}>Skeleton</span>
                       )}
                       {selected.karlConnected && (
-                        <span className="app-pill-karl">Karl verified</span>
+                        <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: "#E1F5EE", color: "#0F6E56", border: "0.5px solid #0F6E5630" }}>Karl verified</span>
                       )}
                       {selected.karlEvaluation && (
-                        <span className="app-pill-grade-inline" data-grade={selected.karlEvaluation.grade}>
+                        <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, fontWeight: 600, background: ({ A: "#E1F5EE", B: "#E6F1FB", C: "#FAEEDA", D: "#FCEBEB", F: "#FCEBEB" } as Record<string,string>)[selected.karlEvaluation.grade] || "#F1EFE8", color: ({ A: "#0F6E56", B: "#185FA5", C: "#854F0B", D: "#A32D2D", F: "#A32D2D" } as Record<string,string>)[selected.karlEvaluation.grade] || "#444" }}>
                           Grade {selected.karlEvaluation.grade} · {selected.karlEvaluation.score}/100
                         </span>
                       )}
                     </div>
-                    <h2 className="app-page-h2">{clean(selected.name) || "Untitled"}</h2>
-                    <p className="app-page-sub">SF.gov · Healthy Housing &amp; Vector Control</p>
+                    <h2 style={{ fontSize: 22, fontWeight: 600, margin: "0 0 2px", letterSpacing: "-0.4px", lineHeight: 1.2, color: "var(--color-text-primary)" }}>{clean(selected.name) || "Untitled"}</h2>
+                    <p style={{ fontSize: 12, margin: 0, color: "var(--color-text-tertiary)" }}>SF.gov · Healthy Housing &amp; Vector Control</p>
                   </div>
-                  <div className="app-page-actions">
+                  <div style={{ display: "flex", gap: 6, flexShrink: 0, marginLeft: 12 }}>
                     {selected.skeleton && (
                       <Btn onClick={() => { if (selected.inputs) generate({ topic: selected.inputs.topic, userType: selected.inputs.userType, notes: selected.inputs.notes, replaceSkeletonId: selected.id }); }} variant="primary" size="sm">Generate with AI</Btn>
                     )}
@@ -951,29 +960,29 @@ export default function App() {
                 </div>
 
                 {/* Compact metadata row */}
-                <div className="app-meta-row">
+                <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
                   {[["User", selected.userType], ["Goal", selected.userGoal], ["Purpose", selected.purpose]].map(([k, v]) => v && (
-                    <div key={k} className="app-meta-chip">
-                      <span className="app-meta-chip__k">{k}</span>
-                      <span className="app-meta-chip__v">{clean(v as string)}</span>
+                    <div key={k} style={{ display: "flex", alignItems: "baseline", gap: 5, padding: "5px 10px", background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-md)", border: "0.5px solid var(--color-border-tertiary)" }}>
+                      <span style={{ fontSize: 10, fontWeight: 500, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.07em", flexShrink: 0 }}>{k}</span>
+                      <span style={{ fontSize: 12, color: "var(--color-text-primary)", lineHeight: 1.4 }}>{clean(v as string)}</span>
                     </div>
                   ))}
                 </div>
 
                 {selected.karlEvaluation && <KarlEvalPanel evaluation={selected.karlEvaluation} />}
                 {selected.qualityGate?.status === "review_required" && (
-                  <div className="app-qg-banner">
-                    <p className="app-qg-banner__title">Manual review required before publish</p>
+                  <div style={{ marginBottom: 12, padding: "10px 12px", background: "#FAEEDA", borderRadius: "var(--border-radius-md)", border: "0.5px solid #854F0B40" }}>
+                    <p style={{ fontSize: 12, margin: "0 0 6px", color: "#633806", fontWeight: 500 }}>Manual review required before publish</p>
                     {selected.qualityGate.reasons.map((reason, idx) => (
-                      <p key={idx} className="app-qg-banner__item">{reason}</p>
+                      <p key={idx} style={{ fontSize: 11, margin: "0 0 3px", color: "#633806", lineHeight: 1.5 }}>{reason}</p>
                     ))}
                   </div>
                 )}
 
                 {/* SF.gov page preview */}
-                <div className="app-preview-wrap">
-                  <div className="app-preview-toolbar">
-                    <span className="app-preview-toolbar__label">SF.gov preview</span>
+                <div style={{ border: "1px solid #D1D5DB", borderRadius: 8, overflow: "hidden", marginBottom: 14, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 14px", background: "#F7F6F2", borderBottom: "1px solid #E5E4DF" }}>
+                    <span style={{ fontSize: 10, fontWeight: 500, color: "#8C8B87", textTransform: "uppercase", letterSpacing: "0.09em" }}>SF.gov preview</span>
                     <Btn onClick={() => handleExportScreenshot(selected.name)} variant="ghost" size="sm">Download preview</Btn>
                   </div>
                   <SfGovPagePreview ref={screenshotRef} draft={selected.draft} pageType={selected.pageType} pageTitle={clean(selected.name)} />
@@ -981,25 +990,25 @@ export default function App() {
 
                 {/* Enforcement & integration notes */}
                 {selected.enforcement && (
-                  <div className="app-note-panel app-note-panel--enf">
-                    <div className="app-note-panel__head">
-                      <span>Enforcement check</span>
+                  <div style={{ borderRadius: "var(--border-radius-md)", border: "0.5px solid #854F0B33", overflow: "hidden", marginBottom: 10 }}>
+                    <div style={{ padding: "7px 14px", background: "#FAEEDA88", borderBottom: "0.5px solid #854F0B22" }}>
+                      <span style={{ fontSize: 10, fontWeight: 500, color: "#854F0B", textTransform: "uppercase", letterSpacing: "0.08em" }}>Enforcement check</span>
                     </div>
-                    <div className="app-note-panel__body">
+                    <div style={{ padding: "12px 14px" }}>
                       {clean(selected.enforcement).split("\n").filter(l => l.trim()).map((line, i) => (
-                        <p key={i}>{line}</p>
+                        <p key={i} style={{ fontSize: 12, margin: "0 0 6px", lineHeight: 1.65, color: "var(--color-text-secondary)" }}>{line}</p>
                       ))}
                     </div>
                   </div>
                 )}
                 {selected.integration && (
-                  <div className="app-note-panel app-note-panel--int">
-                    <div className="app-note-panel__head">
-                      <span>Integration notes</span>
+                  <div style={{ borderRadius: "var(--border-radius-md)", border: "0.5px solid #185FA533", overflow: "hidden", marginBottom: 10 }}>
+                    <div style={{ padding: "7px 14px", background: "#E6F1FB88", borderBottom: "0.5px solid #185FA522" }}>
+                      <span style={{ fontSize: 10, fontWeight: 500, color: "#185FA5", textTransform: "uppercase", letterSpacing: "0.08em" }}>Integration notes</span>
                     </div>
-                    <div className="app-note-panel__body">
+                    <div style={{ padding: "12px 14px" }}>
                       {clean(selected.integration).split("\n").filter(l => l.trim()).map((line, i) => (
-                        <p key={i}>{line}</p>
+                        <p key={i} style={{ fontSize: 12, margin: "0 0 6px", lineHeight: 1.65, color: "var(--color-text-secondary)" }}>{line}</p>
                       ))}
                     </div>
                   </div>
@@ -1009,19 +1018,19 @@ export default function App() {
                 <RelPanel rel={selected.relationships} />
 
                 {/* Refine panel */}
-                <div className="app-refine">
-                  <p className="app-up-label app-up-label--mb8">Refine this page</p>
-                  <p className="app-refine__hint">Describe a specific change and the agent will revise the page content.</p>
-                  <div className="app-refine__row">
+                <div style={{ marginTop: 20, borderTop: "0.5px solid var(--color-border-tertiary)", paddingTop: 16 }}>
+                  <Label style={{ marginBottom: 8 }}>Refine this page</Label>
+                  <p style={{ fontSize: 12, color: "var(--color-text-tertiary)", margin: "0 0 10px", lineHeight: 1.5 }}>Describe a specific change and the agent will revise the page content.</p>
+                  <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
                     <textarea
-                      className="app-input app-textarea-refine"
                       value={refineInput}
                       onChange={e => setRefineInput(e.target.value)}
                       onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) refine(); }}
                       placeholder='e.g. "Shorten the responsibilities section" or "Add a step about taking photos of the problem"'
                       rows={2}
+                      style={{ ...iStyle({ resize: "vertical", fontSize: 13, lineHeight: 1.6, flex: "1" }), minHeight: 52 }}
                     />
-                    <Btn onClick={refine} variant="primary" size="md" disabled={loading || !refineInput.trim()} className="app-refine__send">
+                    <Btn onClick={refine} variant="primary" size="md" disabled={loading || !refineInput.trim()} style={{ flexShrink: 0, alignSelf: "flex-end" }}>
                       Send
                     </Btn>
                   </div>
@@ -1030,18 +1039,18 @@ export default function App() {
             )}
 
             {!streaming && !evaluating && !showSuccess && !selected && (
-              <div className="app-builder-empty">
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 360, gap: 14, color: "var(--color-text-tertiary)" }}>
                 {pagesLoading ? (
                   <>
-                    <div className="app-spinner-32" />
-                    <p className="app-builder-empty__p">Loading pages…</p>
+                    <div style={{ width: 32, height: 32, borderRadius: "50%", border: "2px solid var(--color-border-secondary)", borderTopColor: "var(--color-text-secondary)", animation: "spin 0.8s linear infinite" }} />
+                    <p style={{ fontSize: 13, margin: 0 }}>Loading pages…</p>
                   </>
                 ) : (
                   <>
                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M9 12h6M12 9v6" /></svg>
-                    <div className="app-builder-empty__center">
-                      <p className="app-builder-empty__title">{pages.length === 0 ? "No pages yet" : "Select a page"}</p>
-                      <p className="app-builder-empty__sub">{pages.length === 0 ? "Enter a topic in the form and click Generate to create your first page." : "Choose a page from the Recent list or Library tab."}</p>
+                    <div style={{ textAlign: "center", maxWidth: 220 }}>
+                      <p style={{ fontSize: 14, fontWeight: 500, margin: "0 0 4px", color: "var(--color-text-secondary)" }}>{pages.length === 0 ? "No pages yet" : "Select a page"}</p>
+                      <p style={{ fontSize: 13, margin: 0, lineHeight: 1.6 }}>{pages.length === 0 ? "Enter a topic in the form and click Generate to create your first page." : "Choose a page from the Recent list or Library tab."}</p>
                     </div>
                   </>
                 )}
@@ -1049,14 +1058,14 @@ export default function App() {
             )}
 
             {error && (
-              <div className="app-error-banner">
-                <p className="app-error-banner__title">Generation failed</p>
-                <p className="app-error-banner__body">{error}</p>
+              <div style={{ marginTop: 16, padding: "12px 16px", background: "#FCEBEB", borderRadius: "var(--border-radius-md)", border: "0.5px solid #A32D2D30" }}>
+                <p style={{ fontSize: 13, color: "#791F1F", margin: "0 0 6px", fontWeight: 500 }}>Generation failed</p>
+                <p style={{ fontSize: 12, color: "#791F1F", margin: 0, lineHeight: 1.5 }}>{error}</p>
               </div>
             )}
             {parseWarn && !error && (
-              <div className="app-parse-warn">
-                <p>Page was generated but some fields could not be parsed fully. Review the draft carefully.</p>
+              <div style={{ marginTop: 12, padding: "10px 14px", background: "#FAEEDA", borderRadius: "var(--border-radius-md)", border: "0.5px solid #854F0B30" }}>
+                <p style={{ fontSize: 12, color: "#633806", margin: 0 }}>Page was generated but some fields could not be parsed fully. Review the draft carefully.</p>
               </div>
             )}
           </Card>
@@ -1110,32 +1119,36 @@ export default function App() {
         />
       )}
       {historyPageId && (
-        <div className="app-history-overlay" onClick={() => setHistoryPageId(null)}>
-          <div className="app-history-backdrop" />
+        <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex" }} onClick={() => setHistoryPageId(null)}>
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)" }} />
           <div
-            className="app-history-drawer"
+            style={{ position: "fixed", right: 0, top: 0, bottom: 0, width: 380, background: "var(--color-background-primary)", borderLeft: "0.5px solid var(--color-border-secondary)", display: "flex", flexDirection: "column", zIndex: 101 }}
             onClick={e => e.stopPropagation()}
           >
-            <div className="app-history-head">
-              <span className="app-history-head__title">Version History</span>
-              <button type="button" className="app-history-close" onClick={() => setHistoryPageId(null)}>×</button>
+            <div style={{ padding: "16px 20px", borderBottom: "0.5px solid var(--color-border-secondary)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text-primary)" }}>Version History</span>
+              <button onClick={() => setHistoryPageId(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--color-text-tertiary)", lineHeight: 1, padding: "0 4px" }}>×</button>
             </div>
-            <div className="app-history-scroll">
+            <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
               {historyLoading ? (
-                <p className="app-history-p">Loading…</p>
+                <p style={{ fontSize: 13, color: "var(--color-text-secondary)", textAlign: "center", paddingTop: 24 }}>Loading…</p>
               ) : historyVersions.length === 0 ? (
-                <p className="app-history-p">No versions saved yet.</p>
+                <p style={{ fontSize: 13, color: "var(--color-text-secondary)", textAlign: "center", paddingTop: 24 }}>No versions saved yet.</p>
               ) : historyVersions.map(v => (
-                <div key={v.id} className="app-history-card">
-                  <div className="app-history-card__row">
-                    <span className="app-history-card__v">v{v.versionNumber}</span>
-                    <span className={`app-history-trigger${v.trigger === "generate" ? " app-history-trigger--generate" : v.trigger === "restore" ? " app-history-trigger--restore" : " app-history-trigger--other"}`}>{v.trigger}</span>
-                    <span className="app-history-date">
+                <div key={v.id} style={{ marginBottom: 12, padding: "12px 14px", background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-md)", border: "0.5px solid var(--color-border-tertiary)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text-primary)" }}>v{v.versionNumber}</span>
+                    <span style={{
+                      fontSize: 10, padding: "1px 6px", borderRadius: 8,
+                      background: v.trigger === "generate" ? "#E1F5EE" : v.trigger === "restore" ? "#E6F1FB" : "#FAEEDA",
+                      color: v.trigger === "generate" ? "#0F6E56" : v.trigger === "restore" ? "#185FA5" : "#854F0B"
+                    }}>{v.trigger}</span>
+                    <span style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginLeft: "auto" }}>
                       {new Date(v.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>
                   {v.notes && (
-                    <p className="app-history-notes">
+                    <p style={{ fontSize: 12, color: "var(--color-text-secondary)", margin: "0 0 8px", lineHeight: 1.5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const }}>
                       {v.notes}
                     </p>
                   )}

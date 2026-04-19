@@ -72,7 +72,7 @@ export function MapTab(props: MapTabProps) {
         {mapMode === "view" ? (
           <>
             <div>
-              <Card style={{ padding: "16px 20px", marginBottom: 14 }}>
+              <Card className="ui-card--map">
                 <IdealSiteMap pages={pages} onSelect={selectById} />
               </Card>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
@@ -85,7 +85,7 @@ export function MapTab(props: MapTabProps) {
         ) : (
           <>
             <div>
-              <Card style={{ padding: "16px 20px", marginBottom: 14 }}>
+              <Card className="ui-card--map">
                 {plannedLoading ? (
                   <div style={{ textAlign: "center", padding: "56px 0", color: "var(--color-text-tertiary)" }}>
                     <div style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid var(--color-border-secondary)", borderTopColor: "var(--color-text-secondary)", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />

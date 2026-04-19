@@ -1,0 +1,32 @@
+[
+  {
+    "title": "Choosing a content type (Transaction, Information, Step by step, Location)",
+    "url": "https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/content-types/choosing-a-content-type",
+    "excerpt": "Transaction: entry-point into a service; must be actionable. Information: non-actionable reference; use Transaction if the user must do something with the City. Step by step: multi-step processes over time (overview, not every detail). Location: where to go for a City-controlled service."
+  },
+  {
+    "title": "Building a Transaction page",
+    "url": "https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/content-types/building-a-page-by-content-type/transaction",
+    "excerpt": "Related pages on the right can include Transaction, Information, Campaign, and Topic. Supporting information lives near the bottom in expandable or static sections with custom headings (the label Supporting information is not shown on the live page)."
+  },
+  {
+    "title": "Related (which content types can be linked)",
+    "url": "https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/components/related",
+    "excerpt": "Only Transaction, Information, Campaign, and Topic pages can be tagged as Related; titles and descriptions sync when the linked page changes."
+  },
+  {
+    "title": "Supporting information on a Transaction page",
+    "url": "https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/content-types/building-a-page-by-content-type/transaction/supporting-information-on-a-transaction-page",
+    "excerpt": "Extra sections below the main flow for text; headings are yours—the default Supporting information heading does not display on the public page."
+  },
+  {
+    "title": "Part of on an Information page (linking to a Transaction)",
+    "url": "https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/content-types/building-a-page-by-content-type/information/part-of-on-an-information-page",
+    "excerpt": "Use the Part of component to choose exactly one SF.gov Transaction page the Information page supports."
+  },
+  {
+    "title": "Using Karl the CMS (overview)",
+    "url": "https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms",
+    "excerpt": "Karl is SF.gov custom CMS on Wagtail: enter content, arrange pages, publish; Digital Services builds and maintains Karl."
+  }
+]
