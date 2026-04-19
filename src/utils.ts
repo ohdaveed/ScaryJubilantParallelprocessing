@@ -396,7 +396,7 @@ const QUALITY_GATE_MIN_SCORE: Record<string, number> = {
   "Information": 80,
   "Topic": 78,
   "Resource Collection": 78,
-  "Campaign Page": 78
+  "Campaign": 78
 };
 
 export const evaluateQualityGate = (
@@ -528,15 +528,19 @@ export const improveStructure = async (raw: string, preferences: string[]): Prom
 export const skeletonToPageDraft = (tmpl: import("./types").SkeletonTemplate): import("./types").PageDraft => {
   const parentLine = tmpl.parentName
     ? `Parent: ${tmpl.parentName}`
-    : "Parent: Healthy Housing and Vector Control (Topic)";
+    : "Parent: Healthy housing and pests (Topic)";
+  const isReportTransaction = tmpl.pageType === "Transaction" && /^report\s/i.test(tmpl.name);
   const relatedList = (tmpl.related || []).map(r => `- ${r}`).join("\n");
   const sectionBlocks = tmpl.sections.map(s =>
     `Section heading: ${s.heading}\nSection body: ${s.body}`
   ).join("\n\n");
   const calloutBlocks = (tmpl.callouts || []).map(c => `Callout: ${c}`).join("\n\n");
   const ctaBlock = tmpl.cta ? `\nButton link: ${tmpl.cta}\n` : "";
+  const report311Block = isReportTransaction
+    ? "Action link: Report to 311 https://sf311.org\nPhone number: 311\n"
+    : "";
 
-  const raw = `PAGE NAME:\n${tmpl.name}\n\nPRIMARY USER:\n${tmpl.userType}\n\nUSER GOAL:\n[To be generated]\n\nPRIMARY PURPOSE:\n${tmpl.summary}\n\nPAGE TYPE:\n${tmpl.pageType}\n\nRECOMMENDED COMPONENTS:\n- Section\n- Callout\n- Text${tmpl.cta ? "\n- Button link" : ""}\n\nSYSTEM RELATIONSHIPS:\n${parentLine}\nSiblings: [To be determined]\nChildren: [To be determined]\nEntry Points: [To be determined]\nNext Steps: [To be determined]\n\nDUPLICATION RISKS:\n- [To be checked during generation]\n\nENFORCEMENT CHECK:\n- What can be verified: [To be checked during generation]\n- What is unclear or not enforceable: [To be checked during generation]\n\nPAGE DRAFT\n\n# ${tmpl.serviceTitle}\n\nDescription: ${tmpl.summary}\n\n## What to know\n${sectionBlocks}\n\n${calloutBlocks ? calloutBlocks + "\n\n" : ""}## What to do\n${ctaBlock}\nPhone number: 311\n\n## Related\n${relatedList}\n\nINTEGRATION NOTES:\n- Content Title: ${tmpl.contentTitle}\n- Hub: ${tmpl.hub}\n- This is a skeleton draft. Generate with AI to fill in the content.`;
+  const raw = `PAGE NAME:\n${tmpl.name}\n\nPRIMARY USER:\n${tmpl.userType}\n\nUSER GOAL:\n[To be generated]\n\nPRIMARY PURPOSE:\n${tmpl.summary}\n\nPAGE TYPE:\n${tmpl.pageType}\n\nRECOMMENDED COMPONENTS:\n- Section\n- Callout\n- Text${tmpl.cta ? "\n- Button link" : ""}${isReportTransaction ? "\n- Action link\n- Phone number" : ""}\n\nSYSTEM RELATIONSHIPS:\n${parentLine}\nSiblings: [To be determined]\nChildren: [To be determined]\nEntry Points: [To be determined]\nNext Steps: [To be determined]\n\nDUPLICATION RISKS:\n- [To be checked during generation]\n\nENFORCEMENT CHECK:\n- What can be verified: [To be checked during generation]\n- What is unclear or not enforceable: [To be checked during generation]\n\nPAGE DRAFT\n\n# ${tmpl.serviceTitle}\n\nDescription: ${tmpl.summary}\n\n## What to know\n${sectionBlocks}\n\n${calloutBlocks ? calloutBlocks + "\n\n" : ""}## What to do\n${ctaBlock}${report311Block}\n## Related\n${relatedList}\n\nINTEGRATION NOTES:\n- Content Title: ${tmpl.contentTitle}\n- Hub: ${tmpl.hub}\n- This is a skeleton draft. Generate with AI to fill in the content.`;
 
   const parsed = parsePage(raw);
   return {

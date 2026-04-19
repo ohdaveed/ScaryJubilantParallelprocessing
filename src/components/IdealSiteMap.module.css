@@ -1,0 +1,310 @@
+.root {
+  display: block;
+}
+
+.emptyRoot {
+  text-align: center;
+  padding: 56px 0;
+  color: var(--color-text-tertiary);
+}
+
+.emptyTitle {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 4px;
+  color: var(--color-text-secondary);
+}
+
+.emptyText {
+  font-size: 13px;
+  margin: 0;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.downloadBtn {
+  font-size: 12px;
+  padding: 5px 14px;
+  border-radius: var(--border-radius-md);
+  border: 0.5px solid var(--color-border-secondary);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-family: var(--font-sans);
+}
+
+.mapCard {
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 8px;
+}
+
+.mapTitle {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8c8b87;
+  margin-bottom: 20px;
+  margin-top: 0;
+}
+
+.hub {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.hub[data-hub="main"] {
+  border-color: #3b6d1140;
+}
+.hub[data-hub="report"] {
+  border-color: #185fa540;
+}
+.hub[data-hub="fix"] {
+  border-color: #854f0b40;
+}
+.hub[data-hub="prevent"] {
+  border-color: #6b21a840;
+}
+.hub[data-hub="programs"] {
+  border-color: #0e766e40;
+}
+.hub[data-hub="tools"] {
+  border-color: #3730a340;
+}
+.hub[data-hub="fees"] {
+  border-color: #9a341240;
+}
+.hub[data-hub="resources"] {
+  border-color: #0f6e5640;
+}
+.hub[data-hub="unplaced"] {
+  border-style: dashed;
+  border-color: #88878040;
+}
+
+.hubHeader {
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+}
+
+.hub[data-hub="main"] .hubHeader {
+  background: #3b6d1110;
+  border-bottom-color: #3b6d1130;
+}
+.hub[data-hub="report"] .hubHeader {
+  background: #185fa510;
+  border-bottom-color: #185fa530;
+}
+.hub[data-hub="fix"] .hubHeader {
+  background: #854f0b10;
+  border-bottom-color: #854f0b30;
+}
+.hub[data-hub="prevent"] .hubHeader {
+  background: #6b21a810;
+  border-bottom-color: #6b21a830;
+}
+.hub[data-hub="programs"] .hubHeader {
+  background: #0e766e10;
+  border-bottom-color: #0e766e30;
+}
+.hub[data-hub="tools"] .hubHeader {
+  background: #3730a310;
+  border-bottom-color: #3730a330;
+}
+.hub[data-hub="fees"] .hubHeader {
+  background: #9a341210;
+  border-bottom-color: #9a341230;
+}
+.hub[data-hub="resources"] .hubHeader {
+  background: #0f6e5610;
+  border-bottom-color: #0f6e5630;
+}
+.hub[data-hub="unplaced"] .hubHeader {
+  background: #88878010;
+  border-bottom-color: #88878030;
+  border-bottom-style: dashed;
+}
+
+.hubTitle {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.hub[data-hub="main"] .hubTitle {
+  color: #3b6d11;
+}
+.hub[data-hub="report"] .hubTitle {
+  color: #185fa5;
+}
+.hub[data-hub="fix"] .hubTitle {
+  color: #854f0b;
+}
+.hub[data-hub="prevent"] .hubTitle {
+  color: #6b21a8;
+}
+.hub[data-hub="programs"] .hubTitle {
+  color: #0e766e;
+}
+.hub[data-hub="tools"] .hubTitle {
+  color: #3730a3;
+}
+.hub[data-hub="fees"] .hubTitle {
+  color: #9a3412;
+}
+.hub[data-hub="resources"] .hubTitle {
+  color: #0f6e56;
+}
+.hub[data-hub="unplaced"] .hubTitle {
+  color: #888780;
+}
+
+.hubCount {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.hub[data-hub="main"] .hubCount {
+  color: #3b6d11;
+}
+.hub[data-hub="report"] .hubCount {
+  color: #185fa5;
+}
+.hub[data-hub="fix"] .hubCount {
+  color: #854f0b;
+}
+.hub[data-hub="prevent"] .hubCount {
+  color: #6b21a8;
+}
+.hub[data-hub="programs"] .hubCount {
+  color: #0e766e;
+}
+.hub[data-hub="tools"] .hubCount {
+  color: #3730a3;
+}
+.hub[data-hub="fees"] .hubCount {
+  color: #9a3412;
+}
+.hub[data-hub="resources"] .hubCount {
+  color: #0f6e56;
+}
+.hub[data-hub="unplaced"] .hubCount {
+  color: #888780;
+}
+
+.hubBody {
+  padding: 8px 0;
+}
+
+.pageRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.pageRow:hover {
+  background: #f7f6f2;
+}
+
+.typeDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #888;
+}
+
+.typeDot[data-page-type="Transaction"] {
+  background: #378add;
+}
+.typeDot[data-page-type="Information"] {
+  background: #ba7517;
+}
+.typeDot[data-page-type="Step by step"] {
+  background: #7f77dd;
+}
+.typeDot[data-page-type="Location"] {
+  background: #d97706;
+}
+.typeDot[data-page-type="News"] {
+  background: #14b8a6;
+}
+.typeDot[data-page-type="Event"] {
+  background: #ea580c;
+}
+.typeDot[data-page-type="Campaign"] {
+  background: #9333ea;
+}
+.typeDot[data-page-type="About"] {
+  background: #6366f1;
+}
+.typeDot[data-page-type="Agency"] {
+  background: #71717a;
+}
+.typeDot[data-page-type="Topic"] {
+  background: #639922;
+}
+.typeDot[data-page-type="Resource Collection"] {
+  background: #1d9e75;
+}
+.typeDot[data-page-type="Meeting"] {
+  background: #3b82f6;
+}
+.typeDot[data-page-type="Profile"] {
+  background: #ec4899;
+}
+.typeDot[data-page-type="Data story"] {
+  background: #10b981;
+}
+.typeDot[data-page-type="Reports"] {
+  background: #8b5cf6;
+}
+
+.pageName {
+  font-size: 12px;
+  color: #3d3c38;
+  flex: 1;
+  line-height: 1.4;
+}
+
+.pageType {
+  font-size: 10px;
+  color: #8c8b87;
+  flex-shrink: 0;
+}
+
+.review {
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.review[data-review="pending"] {
+  background: #faeeda;
+  color: #854f0b;
+}
+
+.review[data-review="approved"] {
+  background: #e1f5ee;
+  color: #0f6e56;
+}
+
+.review[data-review="rejected"] {
+  background: #fcebeb;
+  color: #a32d2d;
+}

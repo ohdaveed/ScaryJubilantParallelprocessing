@@ -13,7 +13,7 @@ const validStructured: StructuredPageOutput = {
     pageType: "Transaction",
     recommendedComponents: ["Title", "Description", "Section"],
     systemRelationships: {
-      parent: "Healthy Housing and Vector Control (Topic)",
+      parent: "Healthy housing and pests (Topic)",
       siblings: "Contact HHVC",
       children: "None",
       entryPoints: "311",
@@ -131,7 +131,7 @@ describe("suggested pages", () => {
     const suggested = [
       { topic: "Help with pests and bugs", userType: "Resident / tenant", pageType: "Information" },
       { topic: "Contact HHVC", userType: "General public", pageType: "Information" },
-      { topic: "Report a dead bird", userType: "General public", pageType: "Transaction" }
+      { topic: "Report overgrown plants or weeds that attract pests", userType: "General public", pageType: "Transaction" }
     ];
     const pages = [{ name: "**Help with pests and bugs**" }];
     const todos = [{ topic: "contact hhvc" }];
@@ -139,7 +139,7 @@ describe("suggested pages", () => {
     const eligible = filterEligibleSuggestedPages(suggested, pages, todos);
 
     expect(eligible).toEqual([
-      { topic: "Report a dead bird", userType: "General public", pageType: "Transaction" }
+      { topic: "Report overgrown plants or weeds that attract pests", userType: "General public", pageType: "Transaction" }
     ]);
   });
 

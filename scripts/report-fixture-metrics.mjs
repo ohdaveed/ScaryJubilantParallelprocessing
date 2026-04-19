@@ -7,7 +7,7 @@ const MIN_SCORE_BY_TYPE = {
   "Information": 80,
   "Topic": 78,
   "Resource Collection": 78,
-  "Campaign Page": 78
+  "Campaign": 78
 };
 
 const fixturePath = resolve(process.cwd(), "src/fixtures/golden-pages.json");

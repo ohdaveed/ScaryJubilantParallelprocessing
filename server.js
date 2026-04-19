@@ -323,10 +323,10 @@ Evaluate and return ONLY this JSON structure (no other text, no markdown):
 }
 
 VALID KARL CONTENT TYPES (only these are acceptable):
-Transaction, Information, Step by step, Topic, Resource Collection, Campaign Page
+Transaction, Information, Step by step, Location, News, Event, Campaign, About, Resource Collection, Meeting, Profile, Data story, Reports, Agency, Topic
 
 INVALID CONTENT TYPES (flag as FAILED if any appear):
-Guidance page, Issue page, Enforcement page, Support page, Hub page, any other type not in the valid list above
+Guidance page, Issue page, Enforcement page, Support page, Hub page, Campaign Page, any other type not in the valid list above
 
 VALID KARL COMPONENTS (only these are acceptable):
 Title, Description, Button link, Callout, Spotlight, Text, Section, Phone number, Email, Related, Address, Media, Profile, Resource tile, What to know, What to do

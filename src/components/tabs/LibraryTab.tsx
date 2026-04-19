@@ -102,8 +102,8 @@ export function LibraryTab(props: LibraryTabProps) {
       {seeding && (
         <div style={{ textAlign: "center", padding: "24px 0 12px", color: "#6B21A8" }}>
           <div style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid #6B21A833", borderTopColor: "#6B21A8", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
-          <p style={{ fontSize: 13, margin: 0, fontWeight: 500 }}>Seeding 3-hub sitemap skeleton...</p>
-          <p style={{ fontSize: 12, margin: "4px 0 0", color: "var(--color-text-tertiary)" }}>Creating 13 planned pages with skeleton drafts</p>
+          <p style={{ fontSize: 13, margin: 0, fontWeight: 500 }}>Seeding HHVC site map skeleton...</p>
+          <p style={{ fontSize: 12, margin: "4px 0 0", color: "var(--color-text-tertiary)" }}>Creating the new HHVC planned pages and skeleton drafts</p>
         </div>
       )}
 

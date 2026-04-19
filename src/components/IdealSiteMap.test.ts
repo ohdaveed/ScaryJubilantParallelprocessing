@@ -1,45 +1,46 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { assignHub } from "./IdealSiteMap";
 import type { PageDraft } from "../types";
 
-const base: PageDraft = {
-  id: "1", name: "Test", userType: "", userGoal: "", purpose: "",
-  pageType: "Transaction", components: "", relationships: "", duplication: "",
-  enforcement: "", draft: "", integration: "", valid: true, raw: "",
-  createdAt: new Date().toISOString(), karlConnected: false,
-  inputs: { topic: "", userType: "", notes: "" },
-};
+function stub(overrides: Partial<PageDraft>): PageDraft {
+  return {
+    id: "1",
+    name: "",
+    userType: "",
+    userGoal: "",
+    purpose: "",
+    pageType: "",
+    components: "",
+    relationships: "",
+    duplication: "",
+    enforcement: "",
+    draft: "",
+    integration: "",
+    valid: true,
+    raw: "",
+    createdAt: "",
+    karlConnected: false,
+    inputs: { topic: "", userType: "", notes: "" },
+    ...overrides,
+  };
+}
 
 describe("assignHub", () => {
-  it("assigns tenant for 'Resident / tenant' userType", () => {
-    expect(assignHub({ ...base, userType: "Resident / tenant" })).toBe("tenant");
+  it("classifies West Nile dead bird reporting under programs, not report", () => {
+    const page = stub({
+      name: "Report a dead bird for West Nile Virus testing",
+      relationships: "Programs and Services; West Nile surveillance",
+    });
+    expect(assignHub(page)).toBe("programs");
   });
 
-  it("assigns owner for 'Property owner / landlord' userType", () => {
-    expect(assignHub({ ...base, userType: "Property owner / landlord" })).toBe("owner");
+  it("still classifies 311 housing reports under report when not West Nile", () => {
+    const page = stub({ name: "Report a housing or pest problem" });
+    expect(assignHub(page)).toBe("report");
   });
 
-  it("assigns community for 'General public' userType", () => {
-    expect(assignHub({ ...base, userType: "General public" })).toBe("community");
-  });
-
-  it("assigns community for Campaign Page type regardless of userType", () => {
-    expect(assignHub({ ...base, userType: "", pageType: "Campaign Page" })).toBe("community");
-  });
-
-  it("falls back to relationships for tenant", () => {
-    expect(assignHub({ ...base, userType: "", relationships: "Parent: pests, mold hub" })).toBe("tenant");
-  });
-
-  it("falls back to relationships for owner", () => {
-    expect(assignHub({ ...base, userType: "", relationships: "Parent: building fee page" })).toBe("owner");
-  });
-
-  it("falls back to relationships for community", () => {
-    expect(assignHub({ ...base, userType: "", relationships: "Parent: mosquito education" })).toBe("community");
-  });
-
-  it("returns unplaced when no signal matches", () => {
-    expect(assignHub({ ...base, userType: "", pageType: "Information", relationships: "" })).toBe("unplaced");
+  it("classifies get-help page under resources, not report", () => {
+    const page = stub({ name: "Get help with a housing or pest problem" });
+    expect(assignHub(page)).toBe("resources");
   });
 });

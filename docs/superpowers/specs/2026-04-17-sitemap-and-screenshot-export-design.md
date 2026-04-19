@@ -7,7 +7,7 @@
 
 Two related features that share a single new dependency (`html-to-image`):
 
-1. **Ideal Site Map** — Replace the existing radial `SystemMap` "View" mode with a hierarchical indented outline organized by the 3-hub HHVC architecture. Includes a "Download Site Map" button that exports the map as a PNG.
+1. **Ideal Site Map** — Replace the existing radial `SystemMap` "View" mode with a hierarchical indented outline organized by the finalized HHVC site map. Includes a "Download Site Map" button that exports the map as a PNG.
 2. **Export Screenshot** — Replace the "Export" button inside the SF.gov preview panel (currently downloads raw draft as `.txt`) with a PNG screenshot of the `SfGovPagePreview` component.
 
 ---
@@ -33,15 +33,14 @@ Replaces the existing "View" mode in the System Map tab (`tab === "map"`, `mapMo
 
 ### Hub Assignment Logic
 
-Each page is assigned to a hub using this priority order:
+Each page is assigned to a section using this priority order:
 
-| Priority | Signal | Hub |
+| Priority | Signal | Section |
 |---|---|---|
-| 1st | `userType === "Resident / tenant"` | Tenant Hub |
-| 1st | `userType === "Property owner / landlord"` | Owner Hub |
-| 1st | `userType === "General public"` | Community Hub |
-| 2nd | `relationships` parent field contains hub keyword | Matched hub |
-| 3rd | `pageType === "Campaign Page"` | Community Hub |
+| 1st | Page name matches a finalized HHVC section | Matched section |
+| 2nd | `relationships` parent field matches the finalized HHVC site map | Matched section |
+| 3rd | `pageType === "Transaction"` | Report and 311 |
+| 4th | `pageType === "Campaign"` | Programs and services or prevention, depending on topic |
 | Fallback | None of the above | Unplaced |
 
 ### Layout Structure
@@ -49,23 +48,25 @@ Each page is assigned to a hub using this priority order:
 ```
 [ Download Site Map ]                    ← top-right button
 
-┌─ Tenant Hub (N) ───────────────────┐
-│  ● Transaction   I need to report rats…    [pending]
-│  ● Step by step  I need to fix mold…
-│  ● Information   Help with pests and bugs
+┌─ Report and 311 (N) ───────────────┐
+│  ● Transaction   Report rats or mice…    [pending]
+│  ● Transaction   Report cockroaches…
+│  ● Transaction   Report bed bugs…
 └────────────────────────────────────┘
 
-┌─ Owner Hub (N) ────────────────────┐
-│  ● Transaction   Pay your annual fee
+┌─ Fix and enforcement (N) ──────────┐
+│  ● Step by step   Get ready for a housing inspection…
+│  ● Information    What owners need to do after...
 └────────────────────────────────────┘
 
-┌─ Community Hub (N) ────────────────┐
-│  ● Campaign Page  Learn how to stop mosquitoes
+┌─ Prevention (N) ───────────────────┐
+│  ● Information    Prevent rats or mice...
+│  ● Information    Reduce indoor moisture...
 └────────────────────────────────────┘
 
-┌╌ Unplaced (N) ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┐  ← dashed border
-│  ● Topic   Healthy Housing and Vector Control
-└╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┘
+┌─ Main topic (N) ───────────────────┐
+│  ● Topic   Healthy housing and pests
+└────────────────────────────────────┘
 ```
 
 ### Page Row Contents
@@ -74,7 +75,7 @@ Each row shows:
 - Colored type dot (matches existing `TYPE_META` badge colors)
 - Full page name (not truncated)
 - Review status pill if `page.imported === true` (`pending` / `approved` / `rejected`)
-- Clicking opens the page in the Builder tab (calls existing `selectById`)
+- Clicking opens the page in the Builder tab (calls existing selection behavior)
 
 ### Download
 

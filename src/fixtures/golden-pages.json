@@ -63,14 +63,14 @@
     "name": "Community Campaign",
     "topic": "Learn how to stop mosquitoes",
     "userType": "General public",
-    "pageType": "Campaign Page",
+    "pageType": "Campaign",
     "structured": {
       "page": {
         "name": "Learn how to stop mosquitoes",
         "primaryUser": "General public",
         "userGoal": "Prevent mosquitoes around home and school.",
         "primaryPurpose": "Provide campaign guidance and workshop entry points.",
-        "pageType": "Campaign Page",
+        "pageType": "Campaign",
         "recommendedComponents": ["Title", "Description", "Section", "Related"],
         "systemRelationships": {
           "parent": "Healthy Housing and Vector Control (Topic)",
