@@ -358,6 +358,11 @@
     line-height: 1.5;
   }
 
+  .field-textarea--goal {
+    min-height: 100px;
+    height: auto;
+  }
+
   .field-select {
     background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='rgba(255,255,255,0.3)' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
@@ -940,4 +945,14 @@
     border-color: rgba(73, 94, 212, 0.3);
     color: var(--blue-light);
   }
+}
+
+/* Full-width preview (no editor rail) — class lives on same node as .sf-cdt */
+.sf-cdt.sf-cdt--preview-only :is(.left-panel, .drag-handle) {
+  display: none !important;
+}
+
+.sf-cdt.sf-cdt--preview-only .right-panel {
+  flex: 1;
+  min-width: 0;
 }

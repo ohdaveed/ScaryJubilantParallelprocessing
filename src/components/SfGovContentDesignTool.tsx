@@ -1,5 +1,8 @@
-import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import React, { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import "./SfGovContentDesignTool.css";
+import { pageTypeToDotClass } from "./sfGovContentDesignTool/pageTypeDots";
+
+export { normalizePageTypeKey, pageTypeToDotClass } from "./sfGovContentDesignTool/pageTypeDots";
 
 export type ContentDesignTab = { id: string; label: string };
 
@@ -23,6 +26,10 @@ export type LibraryPageRow = {
 export type SfGovContentDesignToolProps = {
   className?: string;
   style?: React.CSSProperties;
+  /** Main product name in the top bar (reference: “SF.gov Content Tool”) */
+  brandTitle?: string;
+  /** Small caps line under the title (reference: “HHVC · Design System”) */
+  brandSubtitle?: string;
   /** Semantic version or build label shown in the top bar */
   version?: string;
   tabs: readonly ContentDesignTab[];
@@ -58,6 +65,10 @@ export type SfGovContentDesignToolProps = {
   defaultLeftPanelWidth?: number;
   minLeftPanelWidth?: number;
   maxLeftPanelWidth?: number;
+  /** When false, the preview fills the main area (tabs + map/library views). */
+  showLeftPanel?: boolean;
+  /** Use a taller textarea for long topics (HHVC) instead of a single-line input. */
+  pageGoalInputMode?: "input" | "textarea";
 };
 
 const DEFAULT_USER_TYPES = ["Resident", "Business Owner", "Contractor", "City Employee"] as const;
@@ -70,28 +81,6 @@ const DEFAULT_PAGE_TYPES = [
   "Step-by-step",
   "Form"
 ] as const;
-
-function normalizePageTypeKey(pageType: string): string {
-  return pageType.trim().toLowerCase().replace(/\s+/g, "-");
-}
-
-/** Maps page type labels to the reference design’s dot color classes */
-export function pageTypeToDotClass(pageType: string): string {
-  const key = normalizePageTypeKey(pageType);
-  if (key === "transaction") return "type-dot-transaction";
-  if (key === "information") return "type-dot-information";
-  if (key === "department") return "type-dot-department";
-  if (key === "topic") return "type-dot-topic";
-  if (key === "step-by-step" || key === "step-by-step".replace(/\s+/g, "-") || key === "step-by-step") return "type-dot-step-by-step";
-  if (key === "step-by-step" || key === "step-by-step") {
-    return "type-dot-step-by-step";
-  }
-  if (key === "step-by-step" || key === "step-by-step") {
-    return "type-dot-step-by-step";
-  }
-  if (key === "form") return "type-dot-form";
-  return "type-dot-default";
-}
 
 function gradeToBadgeClass(grade: string): string {
   const g = grade.trim().toUpperCase().charAt(0);
@@ -157,7 +146,7 @@ type LibraryRowProps = {
   dismissSignal: number;
 };
 
-function LibraryPageItem({ page, active, onSelect, onDelete, dismissSignal }: LibraryRowProps) {
+const LibraryPageItem = memo(function LibraryPageItem({ page, active, onSelect, onDelete, dismissSignal }: LibraryRowProps) {
   const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
@@ -189,20 +178,36 @@ function LibraryPageItem({ page, active, onSelect, onDelete, dismissSignal }: Li
       ) : null}
       <div className="confirm-row">
         <span className="confirm-text">Delete this page?</span>
-        <button type="button" className="confirm-yes" onClick={() => onDelete?.()}>
+        <button
+          type="button"
+          className="confirm-yes"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete?.();
+          }}
+        >
           Delete
         </button>
-        <button type="button" className="confirm-no" onClick={() => setConfirming(false)}>
+        <button
+          type="button"
+          className="confirm-no"
+          onClick={(e) => {
+            e.stopPropagation();
+            setConfirming(false);
+          }}
+        >
           Keep
         </button>
       </div>
     </div>
   );
-}
+});
 
 export function SfGovContentDesignTool({
   className,
   style,
+  brandTitle = "SF.gov Content Tool",
+  brandSubtitle = "HHVC · Design System",
   version = "v0.9.4",
   tabs,
   activeTabId,
@@ -236,15 +241,18 @@ export function SfGovContentDesignTool({
   streamFooterMeta,
   defaultLeftPanelWidth = 300,
   minLeftPanelWidth = 240,
-  maxLeftPanelWidth = 480
+  maxLeftPanelWidth = 480,
+  showLeftPanel = true,
+  pageGoalInputMode = "input"
 }: SfGovContentDesignToolProps) {
   const baseId = useId();
   const userFieldId = `${baseId}-user-type`;
   const goalFieldId = `${baseId}-goal`;
   const contextFieldId = `${baseId}-context`;
 
+  const shellRef = useRef<HTMLDivElement>(null);
   const [leftWidth, setLeftWidth] = useState(defaultLeftPanelWidth);
-  const dragActive = useRef(false);
+  const [splitterDragging, setSplitterDragging] = useState(false);
   const [dismissConfirm, setDismissConfirm] = useState(0);
 
   const shellStyle = useMemo(
@@ -256,34 +264,33 @@ export function SfGovContentDesignTool({
     [style, leftWidth]
   );
 
-  const onPointerDownHandle = useCallback(
-    (e: React.PointerEvent) => {
-      e.preventDefault();
-      (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-      dragActive.current = true;
-    },
-    []
-  );
+  const onPointerDownHandle = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setSplitterDragging(true);
+  }, []);
 
   useEffect(() => {
+    if (!splitterDragging) return;
+
     const onMove = (e: PointerEvent) => {
-      if (!dragActive.current) return;
-      const shell = document.getElementById(`${baseId}-shell`);
+      const shell = shellRef.current;
       if (!shell) return;
       const rect = shell.getBoundingClientRect();
       const next = e.clientX - rect.left;
       setLeftWidth(Math.min(maxLeftPanelWidth, Math.max(minLeftPanelWidth, next)));
     };
-    const onUp = () => {
-      dragActive.current = false;
-    };
+    const onUp = () => setSplitterDragging(false);
+
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
     return () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
     };
-  }, [baseId, maxLeftPanelWidth, minLeftPanelWidth]);
+  }, [splitterDragging, maxLeftPanelWidth, minLeftPanelWidth]);
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
@@ -299,10 +306,10 @@ export function SfGovContentDesignTool({
   const maxScore = karlEvaluation?.maxScore ?? 100;
   const scorePct = karlEvaluation ? Math.min(100, Math.max(0, (karlEvaluation.score / maxScore) * 100)) : 0;
 
-  const rootClass = ["sf-cdt", className].filter(Boolean).join(" ");
+  const rootClass = ["sf-cdt", !showLeftPanel ? "sf-cdt--preview-only" : "", className].filter(Boolean).join(" ");
 
   return (
-    <div id={`${baseId}-shell`} className={rootClass} style={shellStyle}>
+    <div ref={shellRef} id={`${baseId}-shell`} className={rootClass} style={shellStyle}>
       <div className="app">
         <header className="topbar">
           <div className="brand">
@@ -310,23 +317,27 @@ export function SfGovContentDesignTool({
               SF
             </div>
             <div>
-              <div className="brand-text">SF.gov Content Tool</div>
-              <div className="brand-sub">HHVC · Design System</div>
+              <div className="brand-text">{brandTitle}</div>
+              <div className="brand-sub">{brandSubtitle}</div>
             </div>
           </div>
 
-          <div className="tabs" role="tablist" aria-label="Main">
+          <div className="tabs" role="tablist" aria-label="Workspace">
             {tabs.map((tab) => {
               const isActive = tab.id === activeTabId;
+              const tabId = `${baseId}-tab-${tab.id}`;
+              const tabClass = `tab${isActive ? " active" : ""}`;
+              const onTabClick = () => onTabChange?.(tab.id);
+              // WebHint/Edge Tools treats `aria-selected={expr}` as invalid; use static literals per branch.
+              if (isActive) {
+                return (
+                  <button key={tab.id} type="button" role="tab" id={tabId} aria-selected="true" className={tabClass} onClick={onTabClick}>
+                    {tab.label}
+                  </button>
+                );
+              }
               return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  className={`tab${isActive ? " active" : ""}`}
-                  onClick={() => onTabChange?.(tab.id)}
-                >
+                <button key={tab.id} type="button" role="tab" id={tabId} aria-selected="false" className={tabClass} onClick={onTabClick}>
                   {tab.label}
                 </button>
               );
@@ -344,7 +355,8 @@ export function SfGovContentDesignTool({
           </div>
         </header>
 
-        <div className="main">
+        <div className="main" role="tabpanel" aria-label="Editor and preview" aria-labelledby={`${baseId}-tab-${activeTabId}`}>
+          {showLeftPanel ? (
           <aside className="left-panel" aria-label="Editor controls">
             <section className="panel-section">
               <div className="section-label">Context</div>
@@ -390,14 +402,25 @@ export function SfGovContentDesignTool({
                 <label className="field-label" htmlFor={goalFieldId}>
                   Page Name / Goal
                 </label>
-                <input
-                  id={goalFieldId}
-                  className="field-input"
-                  type="text"
-                  placeholder="e.g. Apply for a business permit"
-                  value={pageGoal}
-                  onChange={(e) => onPageGoalChange?.(e.target.value)}
-                />
+                {pageGoalInputMode === "textarea" ? (
+                  <textarea
+                    id={goalFieldId}
+                    className="field-textarea field-textarea--goal"
+                    placeholder="Describe the page topic…"
+                    value={pageGoal}
+                    onChange={(e) => onPageGoalChange?.(e.target.value)}
+                    rows={4}
+                  />
+                ) : (
+                  <input
+                    id={goalFieldId}
+                    className="field-input"
+                    type="text"
+                    placeholder="e.g. Apply for a business permit"
+                    value={pageGoal}
+                    onChange={(e) => onPageGoalChange?.(e.target.value)}
+                  />
+                )}
               </div>
               <div className="field">
                 <label className="field-label" htmlFor={contextFieldId}>
@@ -468,12 +491,14 @@ export function SfGovContentDesignTool({
               </div>
             </section>
           </aside>
+          ) : null}
 
+          {showLeftPanel ? (
           <div
-            className={`drag-handle${dragActive.current ? " is-dragging" : ""}`}
+            className={`drag-handle${splitterDragging ? " is-dragging" : ""}`}
             role="separator"
             aria-orientation="vertical"
-            aria-valuenow={leftWidth}
+            aria-valuenow={Math.round(leftWidth)}
             aria-valuemin={minLeftPanelWidth}
             aria-valuemax={maxLeftPanelWidth}
             tabIndex={0}
@@ -490,6 +515,7 @@ export function SfGovContentDesignTool({
               }
             }}
           />
+          ) : null}
 
           <section className="right-panel" aria-label="Preview">
             <div className="preview-topbar">

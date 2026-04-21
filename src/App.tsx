@@ -2,10 +2,9 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { PageDraft, TodoItem, KarlEvaluation, PlannedPage, UserPreference, SuggestedPage, ReviewStatus } from "./types";
 import { USER_TYPES, PAGE_TYPES, SUGGESTED_PAGES, TYPE_META } from "./constants";
 import { clean, pagesApi, replacePageDraftInRaw, todosApi, preferencesApi, filterEligibleSuggestedPages, sampleSuggestedPages } from "./utils";
-import { Badge, Divider, Btn, Card, Field, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar } from "./components/ui";
+import { Badge, Divider, Btn, Card, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar } from "./components/ui";
 import { SfGovPagePreview } from "./components/SfGovPreview";
 import { toPng } from "html-to-image";
-import IdealSiteMap from "./components/IdealSiteMap";
 import { usePagesData } from "./hooks/usePagesData";
 import { useDriveContext } from "./hooks/useDriveContext";
 import { usePlanMap } from "./hooks/usePlanMap";
@@ -13,6 +12,7 @@ import { useVersionHistory } from "./hooks/useVersionHistory";
 import { usePageGeneration } from "./hooks/usePageGeneration";
 import { MapTab } from "./components/tabs/MapTab";
 import { LibraryTab } from "./components/tabs/LibraryTab";
+import { SfGovContentDesignTool, type ContentDesignTab, type KarlEvaluationView } from "./components/SfGovContentDesignTool";
 import { ScreenshotAsset } from "./state/appTypes";
 import "./App.css";
 
@@ -420,8 +420,51 @@ function TodoPanel({ pages, onGenerate }: { pages: PageDraft[]; onGenerate: (top
   );
 }
 
+type WorkspaceTab = "plan" | "generate" | "library" | "ideal";
+
+const WORKSPACE_TABS: readonly ContentDesignTab[] = [
+  { id: "plan", label: "Site Plan" },
+  { id: "generate", label: "Generate" },
+  { id: "library", label: "Library" },
+  { id: "ideal", label: "Ideal Map" }
+];
+
+const STUDIO_PAGE_TYPE_CHIPS = [
+  "Transaction",
+  "Information",
+  "Topic",
+  "Step by step",
+  "Location",
+  "Resource Collection"
+] as const;
+
+function studioPageTypes(): string[] {
+  return STUDIO_PAGE_TYPE_CHIPS.filter((t) => PAGE_TYPES.includes(t));
+}
+
+function buildKarlPanelView(ev: KarlEvaluation | undefined): KarlEvaluationView | null {
+  if (!ev) return null;
+  const checks: KarlEvaluationView["checks"] = [
+    ...ev.passed.map((label, i) => ({ id: `p-${i}`, label: `${label} — passed`, status: "pass" as const })),
+    ...ev.warnings.map((label, i) => ({ id: `w-${i}`, label: `${label} — warning`, status: "warn" as const })),
+    ...ev.failed.map((label, i) => ({ id: `f-${i}`, label: `${label} — failed`, status: "fail" as const }))
+  ];
+  const w = ev.warnings.length;
+  const f = ev.failed.length;
+  const parts: string[] = [];
+  if (w) parts.push(`${w} warning${w !== 1 ? "s" : ""}`);
+  if (f) parts.push(`${f} failed`);
+  return {
+    grade: ev.grade || "—",
+    score: ev.score,
+    maxScore: 100,
+    warningsSummary: parts.length ? parts.join(" · ") : undefined,
+    checks
+  };
+}
+
 export default function App() {
-  const [tab, setTab] = useState("builder");
+  const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTab>("generate");
   const [topic, setTopic] = useState("");
   const [userType, setUserType] = useState(USER_TYPES[0]);
   const [notes, setNotes] = useState("");
@@ -432,7 +475,6 @@ export default function App() {
   const [copied, setCopied] = useState(false);
   const [topicTouched, setTopicTouched] = useState(false);
   const [refineInput, setRefineInput] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [preferences, setPreferences] = useState<UserPreference[]>([]);
   const [selectedPageIds, setSelectedPageIds] = useState<Set<string>>(new Set());
   const [newPref, setNewPref] = useState("");
@@ -606,7 +648,7 @@ export default function App() {
     for (const id of selectedPageIds) { await deletePage(id); }
     setSelectedPageIds(new Set());
   };
-  const selectById = (id: string) => { const p = pages.find(x => x.id === id); if (p) { setSelected(p); setShowSuccess(false); setTab("builder"); } };
+  const selectById = (id: string) => { const p = pages.find(x => x.id === id); if (p) { setSelected(p); setShowSuccess(false); setWorkspaceTab("generate"); } };
   const handleCopy = (text: string) => { navigator.clipboard.writeText(text).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); };
   const handleDownload = (text: string, name: string) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "text/plain" })); a.download = name; a.click(); };
 
@@ -665,7 +707,7 @@ export default function App() {
     setUserType(p.userType);
     setPendingPlannedId(p.id);
     setPendingPageType(p.pageType);
-    setTab("builder");
+    setWorkspaceTab("generate");
     void generate({
       topic: p.name,
       userType: p.userType,
@@ -685,23 +727,6 @@ export default function App() {
   useEffect(() => { setSelectedPageIds(new Set()); }, [search, filterType]);
   const topicError = topicTouched && !topic.trim();
 
-  const Tab = ({ id, label, badge }: { id: string; label: string; badge?: number }) => {
-    const active = tab === id;
-    return (
-      <button
-        type="button"
-        onClick={() => setTab(id)}
-        aria-current={active ? "page" : undefined}
-        className={`app-tab${active ? " app-tab--active" : ""}`}
-      >
-        {label}
-        {badge !== undefined && badge > 0 && (
-          <span className={`app-tab__badge${active ? " app-tab__badge--on" : " app-tab__badge--off"}`}>{badge}</span>
-        )}
-      </button>
-    );
-  };
-
   const handleImport = useCallback(async () => {
     await importPages();
   }, [importPages]);
@@ -715,58 +740,105 @@ export default function App() {
     }
   }, [setPages]);
 
+  const studioKarlView = useMemo(() => buildKarlPanelView(selected?.karlEvaluation), [selected?.karlEvaluation]);
+
+  const streamBarMessage = useMemo(() => {
+    if (streaming) return progressLabel || "Generating…";
+    if (evaluating) return "Evaluating against Karl standards…";
+    if (error) return error;
+    if (selected) {
+      const n = clean(selected.name) || "Untitled";
+      const g = selected.karlEvaluation?.grade;
+      const s = selected.karlEvaluation?.score;
+      if (g !== undefined && s !== undefined) return `Last opened: ${n} · Karl grade ${g} · ${s}/100`;
+      return `Last opened: ${n}`;
+    }
+    if (justGenerated) {
+      const n = clean(justGenerated.name) || "Untitled";
+      const g = justGenerated.karlEvaluation?.grade;
+      const s = justGenerated.karlEvaluation?.score;
+      if (g !== undefined && s !== undefined) return `Last generated: ${n} · Karl grade ${g} · ${s}/100`;
+      return `Last generated: ${n}`;
+    }
+    return "Ready — enter a topic and generate a page draft";
+  }, [streaming, evaluating, error, selected, justGenerated, progressLabel]);
+
+  const previewUrlSlug = useMemo(() => {
+    const base = (clean(selected?.name) || topic || "preview").toLowerCase().replace(/\s+/g, "-").slice(0, 48);
+    return `sf.gov / hhvc / ${base || "preview"}`;
+  }, [selected?.name, topic]);
+
+  const libraryRows = useMemo(
+    () =>
+      pages.map((p) => ({
+        id: p.id,
+        title: clean(p.name) || "Untitled",
+        pageType: clean(p.pageType) || "Transaction",
+        gradeLetter: p.karlEvaluation?.grade?.trim().charAt(0)
+      })),
+    [pages]
+  );
+
+  const handleWorkspaceTab = useCallback((id: string) => {
+    const next = id as WorkspaceTab;
+    setWorkspaceTab(next);
+    if (next === "plan") setMapMode("plan");
+    if (next === "ideal") setMapMode("view");
+  }, [setMapMode]);
+
   return (
-    <div className="app-shell">
-      <div className="app-shell__header">
-        <div className="app-shell__title-row">
-          <h1 className="app-shell__h1">HHVC Page Builder</h1>
-          <span className="app-shell__kicker">SF.gov · Healthy Housing & Vector Control</span>
-        </div>
-        <p className="app-shell__lead">Design SF.gov-compliant content pages for Healthy Housing & Vector Control.</p>
-      </div>
-
-      <div className="app-tab-bar">
-        <Tab id="builder" label="Builder" />
-        <Tab id="library" label="Library" badge={pages.length} />
-        <Tab id="map" label="System Map" />
-      </div>
-
-      {tab === "builder" && (
-        <div className={`app-builder-grid${sidebarOpen ? "" : " app-builder-grid--collapsed"}`}>
-          <div className="app-builder-sidebar-wrap">
-            <button
-              type="button"
-              onClick={() => setSidebarOpen(o => !o)}
-              title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-              aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-              className={`app-sidebar-toggle${sidebarOpen ? " app-sidebar-toggle--open" : " app-sidebar-toggle--closed"}`}
-            >
-              <svg className={`app-sidebar-toggle__chev${sidebarOpen ? "" : " app-sidebar-toggle__chev--collapsed"}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
-            </button>
-
-            {sidebarOpen && <>
+    <div className="app-root-sf-studio">
+      <SfGovContentDesignTool
+        className="app-sf-studio-shell"
+        brandTitle="HHVC Page Builder"
+        brandSubtitle="SF.gov · Healthy Housing & Vector Control"
+        showLeftPanel={workspaceTab === "generate"}
+        pageGoalInputMode="textarea"
+        tabs={WORKSPACE_TABS}
+        activeTabId={workspaceTab}
+        onTabChange={handleWorkspaceTab}
+        onExportClick={() => {
+          if (selected) void handleExportScreenshot(selected.name);
+        }}
+        userType={userType}
+        onUserTypeChange={setUserType}
+        userTypeOptions={USER_TYPES}
+        pageTypeOptions={studioPageTypes()}
+        activePageType={pendingPageType || studioPageTypes()[0] || "Transaction"}
+        onPageTypeChange={(pt) => {
+          setPendingPageType(pt);
+          setPendingPlannedId(null);
+        }}
+        pageGoal={topic}
+        onPageGoalChange={(v) => {
+          setTopic(v);
+          setTopicTouched(true);
+        }}
+        additionalContext={notes}
+        onAdditionalContextChange={setNotes}
+        onGenerateClick={() => void generate({ pageType: pendingPageType || studioPageTypes()[0] })}
+        generateLabel={
+          loading ? (streaming ? "Generating…" : evaluating ? "Evaluating…" : "Working…") : `Generate page${selectedDriveIds.size > 0 || screenshots.length > 0 ? ` (${[selectedDriveIds.size > 0 ? `${selectedDriveIds.size} doc${selectedDriveIds.size !== 1 ? "s" : ""}` : "", screenshots.length > 0 ? `${screenshots.length} image${screenshots.length !== 1 ? "s" : ""}` : ""].filter(Boolean).join(", ")})` : ""}`
+        }
+        generateDisabled={loading || topicError}
+        karlEvaluation={studioKarlView}
+        libraryPages={libraryRows}
+        selectedLibraryPageId={selected?.id ?? null}
+        onLibraryPageSelect={(id) => selectById(id)}
+        onLibraryPageDelete={(id) => void deletePage(id)}
+        previewUrlText={previewUrlSlug}
+        streamMessage={streamBarMessage}
+        streamFooterMeta={karlStatus !== "idle" ? `Karl: ${karlStatus}` : undefined}
+        onExportPreview={() => {
+          if (selected) void handleExportScreenshot(selected.name);
+        }}
+        previewSlot={
+          workspaceTab === "generate" ? (
+        <div className="app-studio-generate">
+          <div className="app-studio-generate__rail">
             <Card className="app-card-pad--18-20">
               <KarlStatus status={karlStatus} />
-              <Field label="Topic" hint={topicError ? "Required" : undefined}>
-                <textarea
-                  className={`app-input app-input--minh-70 app-input--lh-16${topicError ? " app-input--invalid" : ""}`}
-                  placeholder="Describe the page topic…"
-                  value={topic}
-                  onChange={e => { setTopic(e.target.value); setTopicTouched(true); }}
-                  onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) generate(); }}
-                />
-                {topicError && <p className="app-topic-err">Enter a topic to continue</p>}
-              </Field>
-              <Field label="Primary user">
-                <select className="app-input" aria-label="Primary user" title="Primary user" value={userType} onChange={e => setUserType(e.target.value)}>
-                  {USER_TYPES.map(u => <option key={u}>{u}</option>)}
-                </select>
-              </Field>
-              <Field label="Context / notes" hint="Optional">
-                <input className="app-input" placeholder="Add context or requirements…" value={notes} onChange={e => setNotes(e.target.value)} onKeyDown={e => e.key === "Enter" && generate()} />
-              </Field>
+              {topicError && <p className="app-topic-err">Enter a topic in the left panel to continue</p>}
               <div className="app-field-mb8">
                 <p className="app-shot-label">Screenshots <span>(optional, up to 3)</span></p>
                 <div
@@ -824,9 +896,6 @@ export default function App() {
                   <button type="button" className="app-icon-btn" onClick={() => { setPendingPageType(""); setPendingPlannedId(null); }}>&#10005;</button>
                 </div>
               )}
-              <Btn onClick={() => generate()} variant="primary" size="md" fullWidth disabled={loading}>
-                {loading ? (streaming ? "Generating…" : evaluating ? "Evaluating…" : "Working…") : `Generate page${selectedDriveIds.size > 0 || screenshots.length > 0 ? ` (${[selectedDriveIds.size > 0 ? `${selectedDriveIds.size} doc${selectedDriveIds.size !== 1 ? "s" : ""}` : "", screenshots.length > 0 ? `${screenshots.length} image${screenshots.length !== 1 ? "s" : ""}` : ""].filter(Boolean).join(", ")})` : ""}`}
-              </Btn>
             </Card>
 
             <Card className="app-card-pad--14-16-mb">
@@ -961,9 +1030,9 @@ export default function App() {
                 ))}
               </Card>
             )}
-            </>}
           </div>
 
+          <div className="app-studio-generate__main">
           <Card className="app-card-pad--20-24">
             {streaming && (
               <div>
@@ -1145,41 +1214,9 @@ export default function App() {
               </div>
             )}
           </Card>
+          </div>
         </div>
-      )}
-
-      {tab === "map" && (
-        <MapTab
-          mapMode={mapMode}
-          setMapMode={setMapMode}
-          pages={pages}
-          plannedPages={plannedPages}
-          plannedLoading={plannedLoading}
-          selectedPlanned={selectedPlanned}
-          setSelectedPlanned={setSelectedPlanned}
-          addPlannedPage={addPlannedPage}
-          deletePlannedPage={deletePlannedPage}
-          selectById={selectById}
-          generateFromPlanned={generateFromPlanned}
-          onTodoGenerate={(t, u) => {
-            setTopic(t);
-            setUserType(u);
-            setPendingPlannedId(null);
-            setPendingPageType("");
-            setTab("builder");
-            void generate({ topic: t, userType: u });
-          }}
-          unbuiltPlannedCount={unbuiltPlannedCount}
-          bulkPlannedRunning={bulkPlannedRunning}
-          bulkPlannedProgress={bulkPlannedProgress}
-          onBulkGenerateUnbuiltPlanned={() => void bulkGenerateUnbuiltPlanned()}
-          PlanDiagramComponent={PlanDiagram}
-          PlanSidebarComponent={PlanSidebar}
-          TodoPanelComponent={TodoPanel}
-        />
-      )}
-
-      {tab === "library" && (
+          ) : workspaceTab === "library" ? (
         <LibraryTab
           search={search}
           setSearch={setSearch}
@@ -1200,7 +1237,7 @@ export default function App() {
           deleteSelectedPages={deleteSelectedPages}
           onImport={handleImport}
           onDownloadText={handleDownload}
-          onSelectPage={(p) => { setSelected(p); setShowSuccess(false); setTab("builder"); }}
+          onSelectPage={(p) => { setSelected(p); setShowSuccess(false); setWorkspaceTab("generate"); }}
           onTogglePageSelection={togglePageSelection}
           onUpdateReviewStatus={handleUpdateReviewStatus}
           onOpenHistory={openHistory}
@@ -1208,7 +1245,40 @@ export default function App() {
           bulkSkeletonProgress={bulkSkeletonProgress}
           onBulkFirstDraftSkeletons={bulkFirstDraftSkeletons}
         />
-      )}
+          ) : (
+        <div className="app-studio-tab-pad">
+        <MapTab
+          mapMode={mapMode}
+          setMapMode={setMapMode}
+          pages={pages}
+          plannedPages={plannedPages}
+          plannedLoading={plannedLoading}
+          selectedPlanned={selectedPlanned}
+          setSelectedPlanned={setSelectedPlanned}
+          addPlannedPage={addPlannedPage}
+          deletePlannedPage={deletePlannedPage}
+          selectById={selectById}
+          generateFromPlanned={generateFromPlanned}
+          onTodoGenerate={(t, u) => {
+            setTopic(t);
+            setUserType(u);
+            setPendingPlannedId(null);
+            setPendingPageType("");
+            setWorkspaceTab("generate");
+            void generate({ topic: t, userType: u });
+          }}
+          unbuiltPlannedCount={unbuiltPlannedCount}
+          bulkPlannedRunning={bulkPlannedRunning}
+          bulkPlannedProgress={bulkPlannedProgress}
+          onBulkGenerateUnbuiltPlanned={() => void bulkGenerateUnbuiltPlanned()}
+          PlanDiagramComponent={PlanDiagram}
+          PlanSidebarComponent={PlanSidebar}
+          TodoPanelComponent={TodoPanel}
+        />
+        </div>
+          )
+        }
+      />
       {historyPageId && (
         <div className="app-history-overlay" onClick={() => setHistoryPageId(null)}>
           <div className="app-history-backdrop" />
