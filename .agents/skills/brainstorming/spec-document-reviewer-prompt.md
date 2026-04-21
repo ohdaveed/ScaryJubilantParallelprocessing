@@ -23,6 +23,7 @@ Task tool (general-purpose):
     | Clarity | Requirements ambiguous enough to cause someone to build the wrong thing |
     | Scope | Focused enough for a single plan — not covering multiple independent subsystems |
     | YAGNI | Unrequested features, over-engineering |
+    | SF.gov page copy (if spec includes drafts, titles, or user-facing strings) | Karl SF.gov Editor Help Center standards in repo AGENTS.md (section "SF.gov Karl editor writing standards") and linked Digital Services guides |
 
     ## Calibration
 

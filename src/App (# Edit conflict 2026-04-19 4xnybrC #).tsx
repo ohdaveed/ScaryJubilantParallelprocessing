@@ -1116,6 +1116,7 @@ export default function App() {
           onSelectPage={(p) => { setSelected(p); setShowSuccess(false); setTab("builder"); }}
           onTogglePageSelection={togglePageSelection}
           onUpdateReviewStatus={handleUpdateReviewStatus}
+          onOpenHistory={openHistory}
         />
       )}
       {historyPageId && (

@@ -1,4 +1,8 @@
-import { PEST_KW } from "./constants";
+import {
+  PEST_KW,
+  REPORT_TRANSACTION_BEFORE_311_BODY,
+  REPORT_TRANSACTION_POST_CTA_ROUTING_BODY
+} from "./constants";
 import { ParseStructuredResult, ParsedPageFields, RelMap, StructuredPageOutput } from "./types";
 
 const suggestionKey = (value?: string): string => clean(value).toLowerCase();
@@ -266,6 +270,21 @@ type DraftSection =
   | { type: "section"; title: string; lines: string[] }
   | { type: "summary"; title: string; text: string; lines: string[] };
 
+/** Replace the PAGE DRAFT body in a full raw page string; keeps INTEGRATION NOTES and all prior sections intact. */
+export const replacePageDraftInRaw = (raw: string, newDraft: string): string => {
+  const normalized = newDraft.replace(/\r\n/g, "\n").trimEnd();
+  const headerMatch = raw.match(/\bPAGE DRAFT\b(\s*\n+)/i);
+  if (!headerMatch || headerMatch.index === undefined) return raw;
+  const draftBodyStart = headerMatch.index + headerMatch[0].length;
+  const tail = raw.slice(draftBodyStart);
+  const integMatch = tail.match(/\n\s*INTEGRATION NOTES:/i);
+  if (integMatch && integMatch.index !== undefined) {
+    const draftBodyEnd = draftBodyStart + integMatch.index;
+    return `${raw.slice(0, draftBodyStart)}${normalized}${raw.slice(draftBodyEnd)}`;
+  }
+  return `${raw.slice(0, draftBodyStart)}${normalized}\n`;
+};
+
 export const parseDraftSections = (draft: string): DraftSection[] => {
   const lines = draft.split("\n");
   const sections: DraftSection[] = [];
@@ -300,7 +319,7 @@ export const pagesApi = {
     const data = await res.json();
     return data.pages || [];
   },
-  save: async (id: string, page: import("./types").PageDraft, version?: { notes: string; trigger: 'generate' | 'refine' | 'restore' }): Promise<void> => {
+  save: async (id: string, page: import("./types").PageDraft, version?: { notes: string; trigger: "generate" | "refine" | "restore" | "manual" }): Promise<void> => {
     const res = await fetch(`${API_BASE}/pages`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -535,12 +554,23 @@ export const skeletonToPageDraft = (tmpl: import("./types").SkeletonTemplate): i
     `Section heading: ${s.heading}\nSection body: ${s.body}`
   ).join("\n\n");
   const calloutBlocks = (tmpl.callouts || []).map(c => `Callout: ${c}`).join("\n\n");
+  const ctaLabel = tmpl.cta || "Report to 311";
   const ctaBlock = tmpl.cta ? `\nButton link: ${tmpl.cta}\n` : "";
-  const report311Block = isReportTransaction
-    ? "Action link: Report to 311 https://sf311.org\nPhone number: 311\n"
-    : "";
 
-  const raw = `PAGE NAME:\n${tmpl.name}\n\nPRIMARY USER:\n${tmpl.userType}\n\nUSER GOAL:\n[To be generated]\n\nPRIMARY PURPOSE:\n${tmpl.summary}\n\nPAGE TYPE:\n${tmpl.pageType}\n\nRECOMMENDED COMPONENTS:\n- Section\n- Callout\n- Text${tmpl.cta ? "\n- Button link" : ""}${isReportTransaction ? "\n- Action link\n- Phone number" : ""}\n\nSYSTEM RELATIONSHIPS:\n${parentLine}\nSiblings: [To be determined]\nChildren: [To be determined]\nEntry Points: [To be determined]\nNext Steps: [To be determined]\n\nDUPLICATION RISKS:\n- [To be checked during generation]\n\nENFORCEMENT CHECK:\n- What can be verified: [To be checked during generation]\n- What is unclear or not enforceable: [To be checked during generation]\n\nPAGE DRAFT\n\n# ${tmpl.serviceTitle}\n\nDescription: ${tmpl.summary}\n\n## What to know\n${sectionBlocks}\n\n${calloutBlocks ? calloutBlocks + "\n\n" : ""}## What to do\n${ctaBlock}${report311Block}\n## Related\n${relatedList}\n\nINTEGRATION NOTES:\n- Content Title: ${tmpl.contentTitle}\n- Hub: ${tmpl.hub}\n- This is a skeleton draft. Generate with AI to fill in the content.`;
+  const reportWhatToDoBlock = isReportTransaction
+    ? `Section heading: Before you report to 311
+Section body: ${REPORT_TRANSACTION_BEFORE_311_BODY}
+Button link: ${ctaLabel}
+Action link: Report to 311 https://sf311.org
+Phone number: 311
+
+Section heading: What happens after you use 311
+Section body: ${REPORT_TRANSACTION_POST_CTA_ROUTING_BODY}
+
+`
+    : ctaBlock;
+
+  const raw = `PAGE NAME:\n${tmpl.name}\n\nPRIMARY USER:\n${tmpl.userType}\n\nUSER GOAL:\n[To be generated]\n\nPRIMARY PURPOSE:\n${tmpl.summary}\n\nPAGE TYPE:\n${tmpl.pageType}\n\nRECOMMENDED COMPONENTS:\n- Section\n- Callout\n- Text${tmpl.cta || isReportTransaction ? "\n- Button link" : ""}${isReportTransaction ? "\n- Action link\n- Phone number" : ""}\n\nSYSTEM RELATIONSHIPS:\n${parentLine}\nSiblings: [To be determined]\nChildren: [To be determined]\nEntry Points: [To be determined]\nNext Steps: [To be determined]\n\nDUPLICATION RISKS:\n- [To be checked during generation]\n\nENFORCEMENT CHECK:\n- What can be verified: [To be checked during generation]\n- What is unclear or not enforceable: [To be checked during generation]\n\nPAGE DRAFT\n\n# ${tmpl.serviceTitle}\n\nDescription: ${tmpl.summary}\n\n## What to know\n${sectionBlocks}\n\n${calloutBlocks ? calloutBlocks + "\n\n" : ""}## What to do\n${reportWhatToDoBlock}## Related\n${relatedList}\n\nINTEGRATION NOTES:\n- Content Title: ${tmpl.contentTitle}\n- Hub: ${tmpl.hub}\n- This is a skeleton draft. Generate with AI to fill in the content.`;
 
   const parsed = parsePage(raw);
   return {

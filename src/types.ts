@@ -90,6 +90,8 @@ export interface PageDraft {
   karlEvaluation?: KarlEvaluation;
   skeleton?: boolean;
   imported?: boolean;
+  /** Latest snapshot number from page_versions (set by API on list; not persisted). */
+  currentVersionNumber?: number;
   version?: string;
   reviewStatus?: ReviewStatus;
   qualityGate?: {
@@ -181,6 +183,6 @@ export interface PageVersion {
   versionNumber: number;
   data?: PageDraft;
   notes: string | null;
-  trigger: 'generate' | 'refine' | 'restore';
+  trigger: "generate" | "refine" | "restore" | "manual";
   createdAt: string;
 }

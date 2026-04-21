@@ -28,6 +28,10 @@ type LibraryTabProps = {
   onSelectPage: (page: PageDraft) => void;
   onTogglePageSelection: (id: string, e: React.MouseEvent) => void;
   onUpdateReviewStatus: (id: string, status: ReviewStatus) => Promise<void>;
+  onOpenHistory: (pageId: string) => void;
+  bulkSkeletonRunning: boolean;
+  bulkSkeletonProgress: { current: number; total: number; name: string } | null;
+  onBulkFirstDraftSkeletons: () => Promise<unknown>;
 };
 
 export function LibraryTab(props: LibraryTabProps) {
@@ -53,7 +57,11 @@ export function LibraryTab(props: LibraryTabProps) {
     onDownloadText,
     onSelectPage,
     onTogglePageSelection,
-    onUpdateReviewStatus
+    onUpdateReviewStatus,
+    onOpenHistory,
+    bulkSkeletonRunning,
+    bulkSkeletonProgress,
+    onBulkFirstDraftSkeletons
   } = props;
 
   return (
@@ -66,7 +74,25 @@ export function LibraryTab(props: LibraryTabProps) {
         </select>
         <Btn onClick={() => setSortNewest((s) => !s)} variant="ghost" size="sm">{sortNewest ? "Newest first" : "Oldest first"}</Btn>
         {pages.length > 0 && <Btn onClick={() => onDownloadText(pages.map((p) => p.raw).join("\n\n---\n\n"), "hhvc-pages-export.txt")} variant="ghost" size="sm">Export all</Btn>}
-        {pages.some((p) => p.skeleton) && <Btn onClick={() => onDownloadText(pages.filter((p) => p.skeleton).map((p) => p.raw).join("\n\n---\n\n"), "hhvc-skeletons-export.txt")} variant="ghost" size="sm">Download skeletons</Btn>}
+        {pages.some((p) => p.skeleton) && (
+          <>
+            <Btn
+              onClick={() => void onBulkFirstDraftSkeletons()}
+              variant="primary"
+              size="sm"
+              disabled={bulkSkeletonRunning || importing || pagesLoading}
+            >
+              {bulkSkeletonRunning ? "Bulk AI drafts running…" : "AI first draft: all skeletons"}
+            </Btn>
+            {bulkSkeletonRunning && bulkSkeletonProgress && (
+              <span style={{ fontSize: 12, color: "#64748b", maxWidth: 280 }} title={bulkSkeletonProgress.name}>
+                {bulkSkeletonProgress.current}/{bulkSkeletonProgress.total}
+                {bulkSkeletonProgress.name ? ` — ${bulkSkeletonProgress.name}` : ""}
+              </span>
+            )}
+            <Btn onClick={() => onDownloadText(pages.filter((p) => p.skeleton).map((p) => p.raw).join("\n\n---\n\n"), "hhvc-skeletons-export.txt")} variant="ghost" size="sm">Download skeletons</Btn>
+          </>
+        )}
         <Btn onClick={onImport} variant="ghost" size="sm" disabled={importing}>{importing ? "Importing..." : "Import HHVC Pages"}</Btn>
         {importResult && (
           <span style={{
@@ -139,6 +165,9 @@ export function LibraryTab(props: LibraryTabProps) {
                 <Badge type={clean(p.pageType)} small />
                 {p.skeleton && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#F3E8FF", color: "#6B21A8", border: "1px dashed #6B21A866" }}>skeleton</span>}
                 {p.imported && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#F1EFE8", color: "#6B4C00", border: "0.5px solid #6B4C0033" }}>imported</span>}
+                {p.currentVersionNumber != null && p.currentVersionNumber > 0 && (
+                  <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#E8EFFA", color: "#185FA5", border: "0.5px solid #185FA533", fontWeight: 600 }}>v{p.currentVersionNumber}</span>
+                )}
                 <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4 }}>
                   {ev && <span style={{ fontSize: 10, fontWeight: 700, color: gradeColor[ev.grade] || "#888" }}>{ev.grade}</span>}
                   {!p.karlConnected && !p.skeleton && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#FAEEDA", color: "#854F0B" }}>no Karl</span>}
@@ -153,8 +182,20 @@ export function LibraryTab(props: LibraryTabProps) {
                   {ev.failed.length > 0 && <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 8, background: "#FCEBEB", color: "#A32D2D" }}>✗ {ev.failed.length}</span>}
                 </div>
               )}
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: "auto" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: "auto", flexWrap: "wrap" }}>
                 <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", margin: 0, flex: 1 }}>{new Date(p.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+                {!p.skeleton && (
+                  <Btn
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenHistory(p.id);
+                    }}
+                  >
+                    History
+                  </Btn>
+                )}
                 {p.imported && (
                   <select
                     aria-label="Review status"

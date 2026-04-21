@@ -43,6 +43,21 @@ This text explains the next step.
     expect(html).toContain(">Contact HHVC</span>");
   });
 
+  it("renders action link as a mock button when bullet-prefixed and strips trailing URL from the label", () => {
+    const draft = `# Test page
+
+## What to do
+Section body: Use 311 to report.
+- Action link: Report to 311 https://sf311.org
+Phone number: 311`;
+
+    const html = renderToStaticMarkup(<SfGovPagePreview draft={draft} pageType="Transaction" pageTitle="Test page" />);
+
+    expect(html).toContain('title="Karl CMS: What to do &gt; Action link"');
+    expect(html).toContain("Report to 311");
+    expect(html).not.toContain("sf311.org");
+  });
+
   it("renders a single inline markdown link as styled link text", () => {
     const draft = `# Contact HHVC
 

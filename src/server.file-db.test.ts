@@ -1,5 +1,6 @@
 import { rm } from "node:fs/promises";
 import { join } from "node:path";
+import { PAGE_VERSION_RETENTION } from "../lib/persistence.js";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -144,15 +145,23 @@ describe("page version tracking", () => {
     expect(after.body.versions[0].trigger).toBe("restore");
   });
 
-  it("enforces 10-version cap", async () => {
+  it("enforces version retention cap", async () => {
     const capPageId = "cap-test-page";
     const capData = { id: capPageId, name: "Cap test", raw: "body", createdAt: new Date().toISOString() };
-    for (let i = 0; i < 11; i++) {
+    const retention = PAGE_VERSION_RETENTION;
+    for (let i = 0; i < retention + 1; i++) {
       await request(app)
         .post("/api/pages")
         .send({ id: capPageId, data: { ...capData, name: `Version ${i}` }, versionNotes: `v${i}`, versionTrigger: "generate" });
     }
     const versions = await request(app).get(`/api/pages/${capPageId}/versions`);
-    expect(versions.body.versions).toHaveLength(10);
+    expect(versions.body.versions).toHaveLength(retention);
+  });
+
+  it("includes currentVersionNumber on list when versions exist", async () => {
+    const list = await request(app).get("/api/pages");
+    expect(list.status).toBe(200);
+    const cap = list.body.pages.find((p) => p.id === "cap-test-page");
+    expect(cap?.currentVersionNumber).toBe(PAGE_VERSION_RETENTION + 1);
   });
 });

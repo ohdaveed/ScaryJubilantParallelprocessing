@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildGenerationUserPrompt, PROMPT_CONTRACT_VERSION } from "./constants";
-import { evaluateQualityGate, filterEligibleSuggestedPages, parseStructuredPage, sampleSuggestedPages, structuredToRawPage } from "./utils";
+import { evaluateQualityGate, filterEligibleSuggestedPages, parsePage, parseStructuredPage, replacePageDraftInRaw, sampleSuggestedPages, structuredToRawPage } from "./utils";
 import type { PageDraft, StructuredPageOutput } from "./types";
 import goldenPages from "./fixtures/golden-pages.json";
 
@@ -57,6 +57,23 @@ describe("structuredToRawPage", () => {
     expect(raw).toContain("PAGE NAME:");
     expect(raw).toContain("INTEGRATION NOTES:");
     expect(raw).toContain("Get help with pests");
+  });
+});
+
+describe("replacePageDraftInRaw", () => {
+  it("replaces only the PAGE DRAFT body and keeps integration notes", () => {
+    const raw = structuredToRawPage(validStructured);
+    const newDraft = "# New title\n\nSummary: New summary line.\n\n## What to do\nSection body: Updated.";
+    const out = replacePageDraftInRaw(raw, newDraft);
+    const parsed = parsePage(out);
+    expect(parsed.draft.trim()).toBe(newDraft.trim());
+    expect(parsed.integration).toContain("Tag to HHVC");
+    expect(out).toMatch(/INTEGRATION NOTES:\s*\n/);
+  });
+
+  it("returns the original string when PAGE DRAFT is missing", () => {
+    const raw = "PAGE NAME:\nX\n\nPRIMARY USER:\nY";
+    expect(replacePageDraftInRaw(raw, "new")).toBe(raw);
   });
 });
 

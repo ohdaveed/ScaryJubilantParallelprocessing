@@ -1,5 +1,6 @@
 :root {
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* Rubik is loaded in index.html; reads clearer at UI sizes than ultra-light system UI. */
+  --font-sans: "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 
   --color-text-primary: #1A1916;
@@ -36,10 +37,12 @@ html, body {
   margin: 0;
   padding: 0;
   font-family: var(--font-sans);
+  font-weight: 500;
   background: var(--color-background-primary);
   color: var(--color-text-primary);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* auto/subpixel tends to render strokes a bit stronger than forced greyscale AA */
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
 }
 
 #root {

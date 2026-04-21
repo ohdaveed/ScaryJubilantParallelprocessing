@@ -41,7 +41,7 @@ export function usePlanMap(setPages: Dispatch<SetStateAction<PageDraft[]>>) {
           const skeletons = SITEMAP_SKELETON.map((tmpl) => skeletonToPageDraft(tmpl));
           for (const skel of skeletons) {
             try {
-              await pagesApi.save(skel.id, skel);
+              await pagesApi.save(skel.id, skel, { notes: "Site map skeleton", trigger: "generate" });
             } catch {
               // Keep seeding best-effort for existing items.
             }

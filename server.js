@@ -628,6 +628,7 @@ app.post("/api/pages/import", async (req, res) => {
       const now = new Date().toISOString();
       const fullPage = { ...page, id, createdAt: now, raw: page.raw || page.draft || "" };
       await db.insertImportedPage(id, fullPage, now);
+      await db.saveVersion(id, fullPage, "HHVC import", "generate");
       existingNames.add(pageName); // prevent within-batch duplicates
       inserted++;
     }

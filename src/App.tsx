@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { PageDraft, TodoItem, KarlEvaluation, PlannedPage, UserPreference, SuggestedPage, ReviewStatus } from "./types";
 import { USER_TYPES, PAGE_TYPES, SUGGESTED_PAGES, TYPE_META } from "./constants";
-import { clean, pagesApi, todosApi, preferencesApi, filterEligibleSuggestedPages, sampleSuggestedPages } from "./utils";
+import { clean, pagesApi, replacePageDraftInRaw, todosApi, preferencesApi, filterEligibleSuggestedPages, sampleSuggestedPages } from "./utils";
 import { Badge, Divider, Btn, Card, Field, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar } from "./components/ui";
 import { SfGovPagePreview } from "./components/SfGovPreview";
 import { toPng } from "html-to-image";
@@ -438,6 +438,10 @@ export default function App() {
   const [newPref, setNewPref] = useState("");
   const [screenshots, setScreenshots] = useState<ScreenshotAsset[]>([]);
   const [dropzoneDepth, setDropzoneDepth] = useState(0);
+  const [mockupEditOpen, setMockupEditOpen] = useState(false);
+  const [draftEditBuffer, setDraftEditBuffer] = useState("");
+  const [draftEditSaving, setDraftEditSaving] = useState(false);
+  const [draftEditError, setDraftEditError] = useState("");
   const screenshotRef = useRef<HTMLDivElement>(null);
 
   const { pages, setPages, pagesLoading, deletePage: deleteStoredPage, importing, importResult, importPages } = usePagesData();
@@ -494,7 +498,13 @@ export default function App() {
     justGenerated,
     generate,
     regenerate,
-    refine
+    refine,
+    bulkFirstDraftSkeletons,
+    bulkSkeletonRunning,
+    bulkSkeletonProgress,
+    bulkGenerateUnbuiltPlanned,
+    bulkPlannedRunning,
+    bulkPlannedProgress
   } = usePageGeneration({
     topic,
     userType,
@@ -529,6 +539,12 @@ export default function App() {
     preferencesApi.list(selected.id)
       .then(prefs => setPreferences(prefs))
       .catch(() => {});
+  }, [selected?.id]);
+
+  useEffect(() => {
+    setMockupEditOpen(false);
+    setDraftEditBuffer("");
+    setDraftEditError("");
   }, [selected?.id]);
 
   const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
@@ -594,6 +610,40 @@ export default function App() {
   const handleCopy = (text: string) => { navigator.clipboard.writeText(text).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); };
   const handleDownload = (text: string, name: string) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "text/plain" })); a.download = name; a.click(); };
 
+  const draftEditDirty = mockupEditOpen && selected && draftEditBuffer !== selected.draft;
+
+  const openMockupEditor = useCallback(() => {
+    if (!selected) return;
+    setDraftEditBuffer(selected.draft);
+    setDraftEditError("");
+    setMockupEditOpen(true);
+  }, [selected]);
+
+  const cancelMockupEditor = useCallback(() => {
+    setMockupEditOpen(false);
+    setDraftEditBuffer("");
+    setDraftEditError("");
+  }, []);
+
+  const saveMockupDraft = useCallback(async () => {
+    if (!selected || draftEditSaving) return;
+    setDraftEditSaving(true);
+    setDraftEditError("");
+    try {
+      const newRaw = replacePageDraftInRaw(selected.raw, draftEditBuffer);
+      const updated: PageDraft = { ...selected, draft: draftEditBuffer, raw: newRaw };
+      await pagesApi.save(selected.id, updated, { notes: "Manual draft edit", trigger: "manual" });
+      setPages(prev => prev.map(p => p.id === selected.id ? updated : p));
+      setSelected(updated);
+      setMockupEditOpen(false);
+      setDraftEditBuffer("");
+    } catch {
+      setDraftEditError("Could not save changes. Try again.");
+    } finally {
+      setDraftEditSaving(false);
+    }
+  }, [selected, draftEditBuffer, draftEditSaving, setPages, setSelected]);
+
   const handleExportScreenshot = async (pageName: string) => {
     if (!screenshotRef.current) return;
     await document.fonts.ready;
@@ -616,7 +666,19 @@ export default function App() {
     setPendingPlannedId(p.id);
     setPendingPageType(p.pageType);
     setTab("builder");
+    void generate({
+      topic: p.name,
+      userType: p.userType,
+      pageType: p.pageType,
+      plannedId: p.id
+    });
   };
+
+  const unbuiltPlannedCount = useMemo(
+    () =>
+      plannedPages.filter((pp) => !(pp.builtPageId && pages.some((pg) => pg.id === pp.builtPageId))).length,
+    [plannedPages, pages]
+  );
 
   const filtered = pages.filter(p => { const ms = !search || (clean(p.name) || "").toLowerCase().includes(search.toLowerCase()) || (p.draft || "").toLowerCase().includes(search.toLowerCase()); return ms && (filterType === "All" || clean(p.pageType) === filterType); });
   const sorted = sortNewest ? [...filtered].reverse() : filtered;
@@ -974,9 +1036,32 @@ export default function App() {
                 <div className="app-preview-wrap">
                   <div className="app-preview-toolbar">
                     <span className="app-preview-toolbar__label">SF.gov preview</span>
-                    <Btn onClick={() => handleExportScreenshot(selected.name)} variant="ghost" size="sm">Download preview</Btn>
+                    <div className="app-preview-toolbar__actions">
+                      {!mockupEditOpen ? (
+                        <Btn onClick={openMockupEditor} variant="ghost" size="sm" disabled={loading}>Edit content</Btn>
+                      ) : (
+                        <>
+                          <Btn onClick={saveMockupDraft} variant="primary" size="sm" disabled={draftEditSaving || !draftEditDirty}>Save changes</Btn>
+                          <Btn onClick={cancelMockupEditor} variant="ghost" size="sm" disabled={draftEditSaving}>Cancel</Btn>
+                        </>
+                      )}
+                      <Btn onClick={() => handleExportScreenshot(selected.name)} variant="ghost" size="sm">Download preview</Btn>
+                    </div>
                   </div>
-                  <SfGovPagePreview ref={screenshotRef} draft={selected.draft} pageType={selected.pageType} pageTitle={clean(selected.name)} />
+                  {mockupEditOpen && (
+                    <div className="app-draft-editor">
+                      <p className="app-draft-editor__hint">Edit the page draft below. The preview updates as you type. Use headings (# title, ## section), Summary:, Section heading:, Section body:, lists, and callouts as in generated pages.</p>
+                      {draftEditError && <p className="app-draft-editor__err" role="alert">{draftEditError}</p>}
+                      <textarea
+                        className="app-draft-editor__ta"
+                        aria-label="Page draft content"
+                        value={draftEditBuffer}
+                        onChange={e => setDraftEditBuffer(e.target.value)}
+                        spellCheck={true}
+                      />
+                    </div>
+                  )}
+                  <SfGovPagePreview ref={screenshotRef} draft={mockupEditOpen ? draftEditBuffer : selected.draft} pageType={selected.pageType} pageTitle={clean(selected.name)} />
                 </div>
 
                 {/* Enforcement & integration notes */}
@@ -1076,7 +1161,18 @@ export default function App() {
           deletePlannedPage={deletePlannedPage}
           selectById={selectById}
           generateFromPlanned={generateFromPlanned}
-          onTodoGenerate={(t, u) => { setTopic(t); setUserType(u); setTab("builder"); }}
+          onTodoGenerate={(t, u) => {
+            setTopic(t);
+            setUserType(u);
+            setPendingPlannedId(null);
+            setPendingPageType("");
+            setTab("builder");
+            void generate({ topic: t, userType: u });
+          }}
+          unbuiltPlannedCount={unbuiltPlannedCount}
+          bulkPlannedRunning={bulkPlannedRunning}
+          bulkPlannedProgress={bulkPlannedProgress}
+          onBulkGenerateUnbuiltPlanned={() => void bulkGenerateUnbuiltPlanned()}
           PlanDiagramComponent={PlanDiagram}
           PlanSidebarComponent={PlanSidebar}
           TodoPanelComponent={TodoPanel}
@@ -1107,6 +1203,10 @@ export default function App() {
           onSelectPage={(p) => { setSelected(p); setShowSuccess(false); setTab("builder"); }}
           onTogglePageSelection={togglePageSelection}
           onUpdateReviewStatus={handleUpdateReviewStatus}
+          onOpenHistory={openHistory}
+          bulkSkeletonRunning={bulkSkeletonRunning}
+          bulkSkeletonProgress={bulkSkeletonProgress}
+          onBulkFirstDraftSkeletons={bulkFirstDraftSkeletons}
         />
       )}
       {historyPageId && (

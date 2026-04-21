@@ -1,7 +1,7 @@
 import React from "react";
 import { PAGE_TYPES, TYPE_META } from "../../constants";
 import { PageDraft, PlannedPage } from "../../types";
-import { Card } from "../ui";
+import { Btn, Card } from "../ui";
 import IdealSiteMap from "../IdealSiteMap";
 
 type MapTabProps = {
@@ -17,6 +17,10 @@ type MapTabProps = {
   selectById: (id: string) => void;
   generateFromPlanned: (p: PlannedPage) => void;
   onTodoGenerate: (topic: string, userType: string) => void;
+  unbuiltPlannedCount: number;
+  bulkPlannedRunning: boolean;
+  bulkPlannedProgress: { current: number; total: number; name: string } | null;
+  onBulkGenerateUnbuiltPlanned: () => void;
   PlanDiagramComponent: React.ComponentType<{ planned: PlannedPage[]; pages: PageDraft[]; onSelectPlanned: (p: PlannedPage) => void }>;
   PlanSidebarComponent: React.ComponentType<{
     planned: PlannedPage[];
@@ -45,6 +49,10 @@ export function MapTab(props: MapTabProps) {
     selectById,
     generateFromPlanned,
     onTodoGenerate,
+    unbuiltPlannedCount,
+    bulkPlannedRunning,
+    bulkPlannedProgress,
+    onBulkGenerateUnbuiltPlanned,
     PlanDiagramComponent,
     PlanSidebarComponent,
     TodoPanelComponent
@@ -52,20 +60,40 @@ export function MapTab(props: MapTabProps) {
 
   return (
     <div style={{ marginTop: 20 }}>
-      <div style={{ display: "flex", gap: 2, marginBottom: 16, background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-md)", padding: 3, width: "fit-content" }}>
-        {(["plan", "view"] as const).map((m) => (
-          <button key={m} onClick={() => setMapMode(m)}
-            style={{
-              fontSize: 12, fontWeight: mapMode === m ? 500 : 400,
-              color: mapMode === m ? "var(--color-text-primary)" : "var(--color-text-tertiary)",
-              background: mapMode === m ? "var(--color-background-primary)" : "transparent",
-              border: mapMode === m ? "0.5px solid var(--color-border-tertiary)" : "0.5px solid transparent",
-              borderRadius: "var(--border-radius-sm, 4px)", padding: "5px 14px", cursor: "pointer",
-              transition: "all 0.15s"
-            }}>
-            {m === "plan" ? "Plan" : "View"}
-          </button>
-        ))}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginBottom: 16 }}>
+        <div style={{ display: "flex", gap: 2, background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-md)", padding: 3, width: "fit-content" }}>
+          {(["plan", "view"] as const).map((m) => (
+            <button key={m} onClick={() => setMapMode(m)}
+              style={{
+                fontSize: 12, fontWeight: mapMode === m ? 500 : 400,
+                color: mapMode === m ? "var(--color-text-primary)" : "var(--color-text-tertiary)",
+                background: mapMode === m ? "var(--color-background-primary)" : "transparent",
+                border: mapMode === m ? "0.5px solid var(--color-border-tertiary)" : "0.5px solid transparent",
+                borderRadius: "var(--border-radius-sm, 4px)", padding: "5px 14px", cursor: "pointer",
+                transition: "all 0.15s"
+              }}>
+              {m === "plan" ? "Plan" : "View"}
+            </button>
+          ))}
+        </div>
+        {mapMode === "plan" && unbuiltPlannedCount > 0 && (
+          <>
+            <Btn
+              onClick={onBulkGenerateUnbuiltPlanned}
+              variant="primary"
+              size="sm"
+              disabled={bulkPlannedRunning || plannedLoading}
+            >
+              {bulkPlannedRunning ? "Bulk generate running…" : `AI draft: all unbuilt planned (${unbuiltPlannedCount})`}
+            </Btn>
+            {bulkPlannedRunning && bulkPlannedProgress && (
+              <span style={{ fontSize: 12, color: "var(--color-text-tertiary)", maxWidth: 320 }} title={bulkPlannedProgress.name}>
+                {bulkPlannedProgress.current}/{bulkPlannedProgress.total}
+                {bulkPlannedProgress.name ? ` — ${bulkPlannedProgress.name}` : ""}
+              </span>
+            )}
+          </>
+        )}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 16, alignItems: "start" }}>
