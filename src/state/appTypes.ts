@@ -9,12 +9,6 @@ export type ChatImagePayload = {
   mimeType: string;
 };
 
-export type ImportResult = {
-  inserted: number;
-  skipped: number;
-  skippedPlaceholders: number;
-};
-
 export type GenerationInputSnapshot = {
   topic: string;
   userType: string;

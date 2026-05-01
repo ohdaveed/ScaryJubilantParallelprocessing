@@ -335,11 +335,6 @@ export const pagesApi = {
     const res = await fetch(`${API_BASE}/pages/${encodeURIComponent(id)}`, { method: "DELETE" });
     if (!res.ok) throw new Error(`Failed to delete page: ${res.status}`);
   },
-  import: async (): Promise<import("./state/appTypes").ImportResult> => {
-    const res = await fetch(`${API_BASE}/pages/import`, { method: "POST" });
-    if (!res.ok) throw new Error(`Import failed: ${res.status}`);
-    return res.json();
-  },
   updateReview: async (id: string, status: import("./types").ReviewStatus): Promise<void> => {
     const res = await fetch(`${API_BASE}/pages/${encodeURIComponent(id)}/review`, {
       method: "PATCH",

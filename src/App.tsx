@@ -486,7 +486,7 @@ export default function App() {
   const [draftEditError, setDraftEditError] = useState("");
   const screenshotRef = useRef<HTMLDivElement>(null);
 
-  const { pages, setPages, pagesLoading, deletePage: deleteStoredPage, importing, importResult, importPages } = usePagesData();
+  const { pages, setPages, pagesLoading, deletePage: deleteStoredPage } = usePagesData();
   const {
     plannedPages,
     plannedLoading,
@@ -726,10 +726,6 @@ export default function App() {
   const sorted = sortNewest ? [...filtered].reverse() : filtered;
   useEffect(() => { setSelectedPageIds(new Set()); }, [search, filterType]);
   const topicError = topicTouched && !topic.trim();
-
-  const handleImport = useCallback(async () => {
-    await importPages();
-  }, [importPages]);
 
   const handleUpdateReviewStatus = useCallback(async (id: string, status: ReviewStatus) => {
     try {
@@ -1224,8 +1220,6 @@ export default function App() {
           setFilterType={setFilterType}
           sortNewest={sortNewest}
           setSortNewest={setSortNewest}
-          importing={importing}
-          importResult={importResult}
           pagesLoading={pagesLoading}
           seeding={seeding}
           pages={pages}
@@ -1235,7 +1229,6 @@ export default function App() {
           selectAllPages={selectAllPages}
           clearPageSelection={clearPageSelection}
           deleteSelectedPages={deleteSelectedPages}
-          onImport={handleImport}
           onDownloadText={handleDownload}
           onSelectPage={(p) => { setSelected(p); setShowSuccess(false); setWorkspaceTab("generate"); }}
           onTogglePageSelection={togglePageSelection}
