@@ -46,3 +46,4 @@ attached_assets/
 
 # YoYo AI version control directory
 .yoyo/
+.worktrees/
