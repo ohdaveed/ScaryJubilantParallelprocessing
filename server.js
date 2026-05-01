@@ -3,21 +3,11 @@ import { createServer } from "http";
 import { createRequire } from "module";
 import { randomUUID } from "crypto";
 import mammoth from "mammoth";
-import {
-  getDrive,
-  listFilesInFolder,
-  getFileMetadata,
-  exportGoogleFile,
-  downloadFileMedia,
-  httpStatusFromDriveError
-} from "./lib/googleDrive.js";
 import { createPersistence, formatPersistenceError } from "./lib/persistence.js";
 import { withKarlCitations, enforceKarlCitationsOnEvaluation } from "./lib/karlCitations.js";
 
 const require = createRequire(import.meta.url);
 const pdfParse = require("pdf-parse");
-
-const DRIVE_FOLDER_ID = "1SrKB78oWGHhILjQxS7R-ZqCXkzuAlvKi";
 
 const app = express();
 app.use(express.json({ limit: "20mb" }));
@@ -72,107 +62,6 @@ const postAnthropic = async (body, timeoutMs = 45000, retries = 1) => {
   }
   throw new Error("Unreachable retry state");
 };
-
-app.get("/api/drive/files", async (req, res) => {
-  try {
-    const drive = await getDrive();
-    const files = await listFilesInFolder(drive, DRIVE_FOLDER_ID);
-    res.json({ files });
-  } catch (err) {
-    console.error("Drive list error:", err);
-    const status = httpStatusFromDriveError(err);
-    if (status) {
-      return res.status(status).json({ error: err.message || "Drive API error" });
-    }
-    if (err.message?.includes("Google Drive is not configured")) {
-      return res.status(503).json({ error: err.message });
-    }
-    res.status(500).json({ error: "Failed to list Drive files" });
-  }
-});
-
-app.get("/api/drive/files/:fileId", async (req, res) => {
-  const { fileId } = req.params;
-  try {
-    const drive = await getDrive();
-    let meta;
-    try {
-      meta = await getFileMetadata(drive, fileId);
-    } catch (e) {
-      const st = httpStatusFromDriveError(e);
-      if (st === 404) return res.status(404).json({ error: "File not found" });
-      throw e;
-    }
-
-    const parents = meta.parents || [];
-    if (!parents.includes(DRIVE_FOLDER_ID)) {
-      return res.status(403).json({ error: "File is not in the allowed HHVC folder" });
-    }
-
-    const mimeType = meta.mimeType || "";
-
-    let exportMime = "text/plain";
-    if (mimeType === "application/vnd.google-apps.document") exportMime = "text/plain";
-    else if (mimeType === "application/vnd.google-apps.spreadsheet") exportMime = "text/csv";
-    else if (mimeType === "application/vnd.google-apps.presentation") exportMime = "text/plain";
-
-    const isGoogleDoc = mimeType.startsWith("application/vnd.google-apps.");
-    const isPdf = mimeType === "application/pdf";
-    const isDocx = mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-    let contentText = "";
-
-    if (isGoogleDoc) {
-      try {
-        contentText = await exportGoogleFile(drive, fileId, exportMime);
-      } catch (e) {
-        const st = httpStatusFromDriveError(e);
-        return res.status(st || 500).json({ error: "Export failed" });
-      }
-    } else if (isPdf) {
-      let buf;
-      try {
-        buf = await downloadFileMedia(drive, fileId);
-      } catch (e) {
-        const st = httpStatusFromDriveError(e);
-        return res.status(st || 500).json({ error: "Download failed" });
-      }
-      try {
-        const parsed = await pdfParse(buf);
-        contentText = parsed.text;
-      } catch {
-        return res.status(422).json({ error: "Could not extract text from this PDF. It may be scanned or image-based." });
-      }
-    } else if (isDocx) {
-      let buf;
-      try {
-        buf = await downloadFileMedia(drive, fileId);
-      } catch (e) {
-        const st = httpStatusFromDriveError(e);
-        return res.status(st || 500).json({ error: "Download failed" });
-      }
-      try {
-        const { value } = await mammoth.extractRawText({ buffer: buf });
-        contentText = value;
-      } catch {
-        return res.status(422).json({ error: "Could not extract text from this DOCX file." });
-      }
-    } else {
-      return res.status(415).json({ error: `Unsupported file type (${mimeType}). Only Google Docs, PDFs, and DOCX files can be used as reference documents.` });
-    }
-
-    res.json({ id: fileId, name: meta.name, mimeType, content: contentText.slice(0, 20000) });
-  } catch (err) {
-    console.error("Drive read error:", err);
-    const status = httpStatusFromDriveError(err);
-    if (status) {
-      return res.status(status).json({ error: err.message || "Drive API error" });
-    }
-    if (err.message?.includes("Google Drive is not configured")) {
-      return res.status(503).json({ error: err.message });
-    }
-    res.status(500).json({ error: "Failed to read Drive file" });
-  }
-});
 
 app.post("/api/chat", async (req, res) => {
   if (!ANTHROPIC_API_KEY) {
