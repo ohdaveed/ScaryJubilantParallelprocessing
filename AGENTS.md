@@ -8,7 +8,7 @@ HHVC SF.gov Content Design Tool — a React 18 + Express.js application for crea
 
 ### Node.js
 
-Node.js v22 is required (uses `--env-file` flag). The binary lives at `/home/ubuntu/.nvm/versions/node/v22.22.2/bin/node`; make sure it is on `PATH`.
+Node.js v22 is required (uses --env-file flag). Make sure it is available on the system PATH.
 
 ### Environment variables
 
