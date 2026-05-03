@@ -40,5 +40,4 @@ The project does not configure ESLint; TypeScript is the primary static analysis
 
 ### Gotchas
 
-- No lockfile is committed; `npm install` resolves versions from `package.json` ranges each time.
-- The file `src/App (# Edit conflict 2026-04-19 4xnybrC #).tsx` is a merge conflict artifact that causes `tsc` errors; ignore these.
+- A lockfile (package-lock.json) should be committed to ensure consistent dependency resolution.
