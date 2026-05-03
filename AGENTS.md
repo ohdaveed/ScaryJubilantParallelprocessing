@@ -8,7 +8,7 @@ HHVC SF.gov Content Design Tool — a React 18 + Express.js application for crea
 
 ### Node.js
 
-Node.js v22 is required (uses --env-file flag). Make sure it is available on the system PATH.
+Do not document Node.js v22 as a hard requirement. The dependency tree supports Node `>=20.16.0`, and some packages may also express compatibility as `>=22.3.0` on the Node 22 line. Cursor Cloud may provide Node 22 by default, but that is an environment detail rather than the minimum supported version. The app uses the `--env-file` flag, so ensure a compatible `node` binary is available on the system PATH.
 
 ### Environment variables
 
