@@ -2,7 +2,6 @@ import React from "react";
 import { PAGE_TYPES, TYPE_META } from "../../constants";
 import { PageDraft, ReviewStatus } from "../../types";
 import { Badge, Btn, Card, UI_INPUT_CLASS } from "../ui";
-import { ImportResult } from "../../state/appTypes";
 import { clean } from "../../utils";
 
 type LibraryTabProps = {
@@ -12,8 +11,6 @@ type LibraryTabProps = {
   setFilterType: React.Dispatch<React.SetStateAction<string>>;
   sortNewest: boolean;
   setSortNewest: React.Dispatch<React.SetStateAction<boolean>>;
-  importing: boolean;
-  importResult: ImportResult | null;
   pagesLoading: boolean;
   seeding: boolean;
   pages: PageDraft[];
@@ -23,15 +20,11 @@ type LibraryTabProps = {
   selectAllPages: () => void;
   clearPageSelection: () => void;
   deleteSelectedPages: () => Promise<void>;
-  onImport: () => Promise<void>;
   onDownloadText: (text: string, name: string) => void;
   onSelectPage: (page: PageDraft) => void;
   onTogglePageSelection: (id: string, e: React.MouseEvent) => void;
   onUpdateReviewStatus: (id: string, status: ReviewStatus) => Promise<void>;
   onOpenHistory: (pageId: string) => void;
-  bulkSkeletonRunning: boolean;
-  bulkSkeletonProgress: { current: number; total: number; name: string } | null;
-  onBulkFirstDraftSkeletons: () => Promise<unknown>;
 };
 
 export function LibraryTab(props: LibraryTabProps) {
@@ -42,8 +35,6 @@ export function LibraryTab(props: LibraryTabProps) {
     setFilterType,
     sortNewest,
     setSortNewest,
-    importing,
-    importResult,
     pagesLoading,
     seeding,
     pages,
@@ -53,15 +44,11 @@ export function LibraryTab(props: LibraryTabProps) {
     selectAllPages,
     clearPageSelection,
     deleteSelectedPages,
-    onImport,
     onDownloadText,
     onSelectPage,
     onTogglePageSelection,
     onUpdateReviewStatus,
-    onOpenHistory,
-    bulkSkeletonRunning,
-    bulkSkeletonProgress,
-    onBulkFirstDraftSkeletons
+    onOpenHistory
   } = props;
 
   return (
@@ -75,38 +62,7 @@ export function LibraryTab(props: LibraryTabProps) {
         <Btn onClick={() => setSortNewest((s) => !s)} variant="ghost" size="sm">{sortNewest ? "Newest first" : "Oldest first"}</Btn>
         {pages.length > 0 && <Btn onClick={() => onDownloadText(pages.map((p) => p.raw).join("\n\n---\n\n"), "hhvc-pages-export.txt")} variant="ghost" size="sm">Export all</Btn>}
         {pages.some((p) => p.skeleton) && (
-          <>
-            <Btn
-              onClick={() => void onBulkFirstDraftSkeletons()}
-              variant="primary"
-              size="sm"
-              disabled={bulkSkeletonRunning || importing || pagesLoading}
-            >
-              {bulkSkeletonRunning ? "Bulk AI drafts running…" : "AI first draft: all skeletons"}
-            </Btn>
-            {bulkSkeletonRunning && bulkSkeletonProgress && (
-              <span style={{ fontSize: 12, color: "#64748b", maxWidth: 280 }} title={bulkSkeletonProgress.name}>
-                {bulkSkeletonProgress.current}/{bulkSkeletonProgress.total}
-                {bulkSkeletonProgress.name ? ` — ${bulkSkeletonProgress.name}` : ""}
-              </span>
-            )}
-            <Btn onClick={() => onDownloadText(pages.filter((p) => p.skeleton).map((p) => p.raw).join("\n\n---\n\n"), "hhvc-skeletons-export.txt")} variant="ghost" size="sm">Download skeletons</Btn>
-          </>
-        )}
-        <Btn onClick={onImport} variant="ghost" size="sm" disabled={importing}>{importing ? "Importing..." : "Import HHVC Pages"}</Btn>
-        {importResult && (
-          <span style={{
-            fontSize: 11,
-            padding: "3px 10px",
-            borderRadius: 20,
-            background: importResult.inserted >= 0 ? "#E1F5EE" : "#FCEBEB",
-            color: importResult.inserted >= 0 ? "#0F6E56" : "#A32D2D",
-            border: importResult.inserted >= 0 ? "0.5px solid #0F6E5630" : "0.5px solid #A32D2D30"
-          }}>
-            {importResult.inserted >= 0
-              ? `${importResult.inserted} imported · ${importResult.skipped} skipped${importResult.skippedPlaceholders > 0 ? ` (${importResult.skippedPlaceholders} placeholders)` : ""}`
-              : "Import failed"}
-          </span>
+          <Btn onClick={() => onDownloadText(pages.filter((p) => p.skeleton).map((p) => p.raw).join("\n\n---\n\n"), "hhvc-skeletons-export.txt")} variant="ghost" size="sm">Download skeletons</Btn>
         )}
       </div>
 

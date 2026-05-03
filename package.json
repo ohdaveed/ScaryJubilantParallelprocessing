@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "express": "^4.22.1",
-    "googleapis": "^169.0.0",
     "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",

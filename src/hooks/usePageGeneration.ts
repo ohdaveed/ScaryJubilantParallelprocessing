@@ -1,10 +1,10 @@
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from "react";
-import { PageDraft, PlannedPage, UserPreference, DriveFile } from "../types";
+import { PageDraft, PlannedPage, UserPreference } from "../types";
 import { SYSTEM_PROMPT, STRUCTURED_OUTPUT_RULES, buildGenerationUserPrompt, buildRefineUserPrompt } from "../constants";
 import { clean, evaluateQualityGate, improveStructure, isPest, pagesApi, parsePage, preferencesApi, runKarlEvaluation, versionsApi } from "../utils";
 import { streamModelText as streamModelTextService } from "../services/chatStream";
 import { repairAndParseStructured as repairAndParseStructuredService } from "../services/pageParser";
-import { ChatImagePayload, GenerationInputSnapshot, ScreenshotAsset } from "../state/appTypes";
+import { GenerationInputSnapshot } from "../state/appTypes";
 
 const REPAIR_PROMPT = `Your previous response did not match the required JSON schema.
 Return only ONE valid JSON object that matches the schema exactly.
@@ -34,10 +34,6 @@ type UsePageGenerationParams = {
   preferences: UserPreference[];
   pages: PageDraft[];
   selected: PageDraft | null;
-  screenshots: ScreenshotAsset[];
-  selectedDriveIds: Set<string>;
-  driveContents: Record<string, string>;
-  driveFiles: DriveFile[];
   plannedPages: PlannedPage[];
   refineInput: string;
   setPages: Dispatch<SetStateAction<PageDraft[]>>;
@@ -47,7 +43,6 @@ type UsePageGenerationParams = {
   setTopic: Dispatch<SetStateAction<string>>;
   setNotes: Dispatch<SetStateAction<string>>;
   setTopicTouched: Dispatch<SetStateAction<boolean>>;
-  setScreenshots: Dispatch<SetStateAction<ScreenshotAsset[]>>;
   setPreferences: Dispatch<SetStateAction<UserPreference[]>>;
   setRefineInput: Dispatch<SetStateAction<string>>;
   linkPlannedPage: (plannedId: number, builtPageId: string) => void | Promise<void>;
@@ -63,10 +58,6 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     preferences,
     pages,
     selected,
-    screenshots,
-    selectedDriveIds,
-    driveContents,
-    driveFiles,
     plannedPages,
     refineInput,
     setPages,
@@ -76,7 +67,6 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     setTopic,
     setNotes,
     setTopicTouched,
-    setScreenshots,
     setPreferences,
     setRefineInput,
     linkPlannedPage
@@ -93,14 +83,9 @@ export function usePageGeneration(params: UsePageGenerationParams) {
   const [error, setError] = useState("");
   const [parseWarn, setParseWarn] = useState(false);
   const [justGenerated, setJustGenerated] = useState<PageDraft | null>(null);
-  const [bulkSkeletonRunning, setBulkSkeletonRunning] = useState(false);
-  const [bulkSkeletonProgress, setBulkSkeletonProgress] = useState<{ current: number; total: number; name: string } | null>(null);
-  const [bulkPlannedRunning, setBulkPlannedRunning] = useState(false);
-  const [bulkPlannedProgress, setBulkPlannedProgress] = useState<{ current: number; total: number; name: string } | null>(null);
 
   const streamRef = useRef("");
   const lastInput = useRef<GenerationInputSnapshot>({ topic: "", userType: "", notes: "" });
-  const bulkRunLock = useRef(false);
 
   const adv = useCallback((pct: number, lbl: string) => {
     setProgress(pct);
@@ -109,20 +94,14 @@ export function usePageGeneration(params: UsePageGenerationParams) {
 
   const streamModelText = useCallback(async ({
     msg,
-    mode,
-    driveContext,
-    images
+    mode
   }: {
     msg: string;
     mode: "generate" | "refine";
-    driveContext?: string;
-    images?: ChatImagePayload[];
   }): Promise<{ karlHit: boolean }> => {
     return streamModelTextService({
       msg,
       mode,
-      driveContext,
-      images,
       systemPrompt: SYSTEM_PROMPT,
       onAdvance: adv,
       onTextDelta: (deltaText) => {
@@ -146,11 +125,11 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     });
   }, []);
 
-  const generate = useCallback(async (ov: GenerateOverrides = {}): Promise<boolean> => {
+  const generate = useCallback(async (ov: GenerateOverrides = {}): Promise<PageDraft | null> => {
     const t = ov.topic || topic;
     if (!t.trim()) {
       setTopicTouched(true);
-      return false;
+      return null;
     }
 
     setLoading(true);
@@ -185,23 +164,12 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     );
 
     let karlHit = false;
-
-    const driveContext = selectedDriveIds.size > 0
-      ? [...selectedDriveIds]
-          .filter((id) => driveContents[id])
-          .map((id) => {
-            const file = driveFiles.find((f) => f.id === id);
-            return `=== ${file?.name || id} ===\n${driveContents[id]}`;
-          })
-          .join("\n\n")
-      : undefined;
+    let page: PageDraft | null = null;
 
     try {
       const streamResult = await streamModelText({
         msg,
-        mode: "generate",
-        driveContext,
-        images: screenshots.length > 0 ? screenshots.map((s) => ({ base64: s.base64, mimeType: s.mimeType })) : undefined
+        mode: "generate"
       });
 
       karlHit = streamResult.karlHit;
@@ -230,7 +198,7 @@ export function usePageGeneration(params: UsePageGenerationParams) {
         }
       }
 
-      let page: PageDraft = {
+      page = {
         ...parsed,
         id,
         createdAt: new Date().toISOString(),
@@ -262,9 +230,9 @@ export function usePageGeneration(params: UsePageGenerationParams) {
       }
 
       if (ov.replaceSkeletonId) {
-        setPages((prev) => prev.map((p) => (p.id === ov.replaceSkeletonId ? page : p)));
+        setPages((prev) => prev.map((p) => (p.id === ov.replaceSkeletonId ? page! : p)));
       } else {
-        setPages((prev) => [...prev, page]);
+        setPages((prev) => [...prev, page!]);
       }
 
       if (!ov.quiet) {
@@ -290,7 +258,6 @@ export function usePageGeneration(params: UsePageGenerationParams) {
         setTopic("");
         setNotes("");
         setTopicTouched(false);
-        setScreenshots([]);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
@@ -299,11 +266,11 @@ export function usePageGeneration(params: UsePageGenerationParams) {
       setEvaluating(false);
       setKarlStatus("fallback");
       setLoading(false);
-      return false;
+      return null;
     }
 
     setLoading(false);
-    return true;
+    return page;
   }, [
     topic,
     userType,
@@ -311,10 +278,6 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     pendingPageType,
     preferences,
     pages,
-    selectedDriveIds,
-    driveContents,
-    driveFiles,
-    screenshots,
     pendingPlannedId,
     plannedPages,
     streamModelText,
@@ -327,8 +290,7 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     setPages,
     setTopic,
     setNotes,
-    setTopicTouched,
-    setScreenshots
+    setTopicTouched
   ]);
 
   const regenerate = useCallback((p: PageDraft) => {
@@ -336,109 +298,6 @@ export function usePageGeneration(params: UsePageGenerationParams) {
       void generate({ topic: p.inputs.topic, userType: p.inputs.userType, notes: p.inputs.notes });
     }
   }, [generate]);
-
-  const bulkFirstDraftSkeletons = useCallback(async () => {
-    if (bulkRunLock.current) {
-      return { attempted: 0, succeeded: 0, failed: 0, failedNames: [] as string[], cancelled: true };
-    }
-    const targets = pages.filter((p) => p.skeleton && p.inputs?.topic?.trim());
-    if (targets.length === 0) {
-      setError("No skeleton pages in the library. Seed the site map or add skeleton pages first.");
-      return { attempted: 0, succeeded: 0, failed: 0, failedNames: [] as string[], cancelled: false };
-    }
-    const ok = window.confirm(
-      `Generate AI first drafts for ${targets.length} skeleton page(s)? Each page calls the model (streaming), improve-structure, and Karl evaluation. This can take a long time and uses API quota.`
-    );
-    if (!ok) return { attempted: 0, succeeded: 0, failed: 0, failedNames: [], cancelled: true };
-
-    bulkRunLock.current = true;
-    setBulkSkeletonRunning(true);
-    setBulkSkeletonProgress({ current: 0, total: targets.length, name: "" });
-    setError("");
-    setShowSuccess(false);
-    const failedNames: string[] = [];
-    let succeeded = 0;
-
-    try {
-      for (let i = 0; i < targets.length; i++) {
-        const p = targets[i];
-        const label = clean(p.name) || p.inputs.topic;
-        setBulkSkeletonProgress({ current: i + 1, total: targets.length, name: label });
-        const genOk = await generate({
-          topic: p.inputs.topic,
-          userType: p.inputs.userType,
-          notes: p.inputs.notes || "",
-          pageType: p.pageType,
-          replaceSkeletonId: p.id,
-          quiet: true
-        });
-        if (genOk) succeeded += 1;
-        else failedNames.push(label);
-      }
-      if (failedNames.length > 0) {
-        setError(
-          `Bulk run finished: ${succeeded} ok, ${failedNames.length} failed. First failures: ${failedNames.slice(0, 4).join("; ")}${failedNames.length > 4 ? "…" : ""}`
-        );
-      }
-    } finally {
-      setBulkSkeletonProgress(null);
-      setBulkSkeletonRunning(false);
-      bulkRunLock.current = false;
-    }
-    return { attempted: targets.length, succeeded, failed: failedNames.length, failedNames, cancelled: false };
-  }, [pages, generate]);
-
-  const bulkGenerateUnbuiltPlanned = useCallback(async () => {
-    if (bulkRunLock.current) {
-      return { attempted: 0, succeeded: 0, failed: 0, failedNames: [] as string[], cancelled: true };
-    }
-    const isPlannedBuilt = (pp: PlannedPage) =>
-      !!(pp.builtPageId && pages.some((pg) => pg.id === pp.builtPageId));
-    const targets = plannedPages.filter((p) => !isPlannedBuilt(p));
-    if (targets.length === 0) {
-      setError("Every planned page already has a matching page in the library.");
-      return { attempted: 0, succeeded: 0, failed: 0, failedNames: [] as string[], cancelled: false };
-    }
-    const ok = window.confirm(
-      `Generate AI drafts for ${targets.length} unbuilt planned page(s)? Each page calls the model, improve-structure, and Karl evaluation. This can take a long time and uses API quota.`
-    );
-    if (!ok) return { attempted: 0, succeeded: 0, failed: 0, failedNames: [], cancelled: true };
-
-    bulkRunLock.current = true;
-    setBulkPlannedRunning(true);
-    setBulkPlannedProgress({ current: 0, total: targets.length, name: "" });
-    setError("");
-    setShowSuccess(false);
-    const failedNames: string[] = [];
-    let succeeded = 0;
-
-    try {
-      for (let i = 0; i < targets.length; i++) {
-        const p = targets[i];
-        const label = clean(p.name) || p.name;
-        setBulkPlannedProgress({ current: i + 1, total: targets.length, name: label });
-        const genOk = await generate({
-          topic: p.name,
-          userType: p.userType,
-          pageType: p.pageType,
-          plannedId: p.id,
-          quiet: true
-        });
-        if (genOk) succeeded += 1;
-        else failedNames.push(label);
-      }
-      if (failedNames.length > 0) {
-        setError(
-          `Planned bulk run finished: ${succeeded} ok, ${failedNames.length} failed. First failures: ${failedNames.slice(0, 4).join("; ")}${failedNames.length > 4 ? "…" : ""}`
-        );
-      }
-    } finally {
-      setBulkPlannedProgress(null);
-      setBulkPlannedRunning(false);
-      bulkRunLock.current = false;
-    }
-    return { attempted: targets.length, succeeded, failed: failedNames.length, failedNames, cancelled: false };
-  }, [pages, plannedPages, generate]);
 
   const refine = useCallback(async () => {
     if (!selected || !refineInput.trim()) return;
@@ -553,12 +412,6 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     justGenerated,
     generate,
     regenerate,
-    refine,
-    bulkFirstDraftSkeletons,
-    bulkSkeletonRunning,
-    bulkSkeletonProgress,
-    bulkGenerateUnbuiltPlanned,
-    bulkPlannedRunning,
-    bulkPlannedProgress
+    refine
   };
 }

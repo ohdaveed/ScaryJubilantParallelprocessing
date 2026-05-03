@@ -3,21 +3,11 @@ import { createServer } from "http";
 import { createRequire } from "module";
 import { randomUUID } from "crypto";
 import mammoth from "mammoth";
-import {
-  getDrive,
-  listFilesInFolder,
-  getFileMetadata,
-  exportGoogleFile,
-  downloadFileMedia,
-  httpStatusFromDriveError
-} from "./lib/googleDrive.js";
 import { createPersistence, formatPersistenceError } from "./lib/persistence.js";
 import { withKarlCitations, enforceKarlCitationsOnEvaluation } from "./lib/karlCitations.js";
 
 const require = createRequire(import.meta.url);
 const pdfParse = require("pdf-parse");
-
-const DRIVE_FOLDER_ID = "1SrKB78oWGHhILjQxS7R-ZqCXkzuAlvKi";
 
 const app = express();
 app.use(express.json({ limit: "20mb" }));
@@ -39,26 +29,6 @@ const logWithRequest = (reqOrRes, stage, message, extra = {}) => {
 };
 
 const isObject = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
-
-const BRACKETED_IMPORT_PLACEHOLDER_PATTERNS = [
-  "link to",
-  "url to be confirmed",
-  "content to be confirmed",
-];
-const STANDALONE_IMPORT_PLACEHOLDER_PATTERNS = [
-  "url\\s+tbd",
-  "tbd",
-];
-const IMPORT_PLACEHOLDER_RE = new RegExp(
-  `\\[(?:${BRACKETED_IMPORT_PLACEHOLDER_PATTERNS.join("|")})[^\\]]*\\]|\\b(?:${STANDALONE_IMPORT_PLACEHOLDER_PATTERNS.join("|")})\\b`,
-  "i"
-);
-
-const hasImportPlaceholders = (page) => {
-  if (!page || typeof page !== "object") return false;
-  const fieldsToCheck = [page.draft, page.integration, page.enforcement, page.duplication, page.relationships, page.components];
-  return fieldsToCheck.some((value) => typeof value === "string" && IMPORT_PLACEHOLDER_RE.test(value));
-};
 
 const withTimeout = async (promiseFactory, timeoutMs = 45000) => {
   const timeout = new Promise((_, reject) => {
@@ -92,107 +62,6 @@ const postAnthropic = async (body, timeoutMs = 45000, retries = 1) => {
   }
   throw new Error("Unreachable retry state");
 };
-
-app.get("/api/drive/files", async (req, res) => {
-  try {
-    const drive = await getDrive();
-    const files = await listFilesInFolder(drive, DRIVE_FOLDER_ID);
-    res.json({ files });
-  } catch (err) {
-    console.error("Drive list error:", err);
-    const status = httpStatusFromDriveError(err);
-    if (status) {
-      return res.status(status).json({ error: err.message || "Drive API error" });
-    }
-    if (err.message?.includes("Google Drive is not configured")) {
-      return res.status(503).json({ error: err.message });
-    }
-    res.status(500).json({ error: "Failed to list Drive files" });
-  }
-});
-
-app.get("/api/drive/files/:fileId", async (req, res) => {
-  const { fileId } = req.params;
-  try {
-    const drive = await getDrive();
-    let meta;
-    try {
-      meta = await getFileMetadata(drive, fileId);
-    } catch (e) {
-      const st = httpStatusFromDriveError(e);
-      if (st === 404) return res.status(404).json({ error: "File not found" });
-      throw e;
-    }
-
-    const parents = meta.parents || [];
-    if (!parents.includes(DRIVE_FOLDER_ID)) {
-      return res.status(403).json({ error: "File is not in the allowed HHVC folder" });
-    }
-
-    const mimeType = meta.mimeType || "";
-
-    let exportMime = "text/plain";
-    if (mimeType === "application/vnd.google-apps.document") exportMime = "text/plain";
-    else if (mimeType === "application/vnd.google-apps.spreadsheet") exportMime = "text/csv";
-    else if (mimeType === "application/vnd.google-apps.presentation") exportMime = "text/plain";
-
-    const isGoogleDoc = mimeType.startsWith("application/vnd.google-apps.");
-    const isPdf = mimeType === "application/pdf";
-    const isDocx = mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-    let contentText = "";
-
-    if (isGoogleDoc) {
-      try {
-        contentText = await exportGoogleFile(drive, fileId, exportMime);
-      } catch (e) {
-        const st = httpStatusFromDriveError(e);
-        return res.status(st || 500).json({ error: "Export failed" });
-      }
-    } else if (isPdf) {
-      let buf;
-      try {
-        buf = await downloadFileMedia(drive, fileId);
-      } catch (e) {
-        const st = httpStatusFromDriveError(e);
-        return res.status(st || 500).json({ error: "Download failed" });
-      }
-      try {
-        const parsed = await pdfParse(buf);
-        contentText = parsed.text;
-      } catch {
-        return res.status(422).json({ error: "Could not extract text from this PDF. It may be scanned or image-based." });
-      }
-    } else if (isDocx) {
-      let buf;
-      try {
-        buf = await downloadFileMedia(drive, fileId);
-      } catch (e) {
-        const st = httpStatusFromDriveError(e);
-        return res.status(st || 500).json({ error: "Download failed" });
-      }
-      try {
-        const { value } = await mammoth.extractRawText({ buffer: buf });
-        contentText = value;
-      } catch {
-        return res.status(422).json({ error: "Could not extract text from this DOCX file." });
-      }
-    } else {
-      return res.status(415).json({ error: `Unsupported file type (${mimeType}). Only Google Docs, PDFs, and DOCX files can be used as reference documents.` });
-    }
-
-    res.json({ id: fileId, name: meta.name, mimeType, content: contentText.slice(0, 20000) });
-  } catch (err) {
-    console.error("Drive read error:", err);
-    const status = httpStatusFromDriveError(err);
-    if (status) {
-      return res.status(status).json({ error: err.message || "Drive API error" });
-    }
-    if (err.message?.includes("Google Drive is not configured")) {
-      return res.status(503).json({ error: err.message });
-    }
-    res.status(500).json({ error: "Failed to read Drive file" });
-  }
-});
 
 app.post("/api/chat", async (req, res) => {
   if (!ANTHROPIC_API_KEY) {
@@ -598,48 +467,6 @@ app.delete("/api/pages/:id", async (req, res) => {
   }
 });
 
-app.post("/api/pages/import", async (req, res) => {
-  try {
-    const importData = require("./src/data/hhvc-pages-import.json");
-
-    // Get existing page names (case-insensitive dedup)
-    const existing = await db.listPageNames();
-    const existingNames = new Set(existing.map((row) => (row.name || "").toLowerCase().trim()));
-
-    let inserted = 0;
-    let skipped = 0;
-    let skippedPlaceholders = 0;
-
-    for (const page of importData) {
-      if (!page || typeof page.name !== "string") {
-        skipped++;
-        continue;
-      }
-      if (hasImportPlaceholders(page)) {
-        skipped++;
-        skippedPlaceholders++;
-        continue;
-      }
-      const pageName = (page.name || "").toLowerCase().trim();
-      if (existingNames.has(pageName)) {
-        skipped++;
-        continue;
-      }
-      const id = randomUUID();
-      const now = new Date().toISOString();
-      const fullPage = { ...page, id, createdAt: now, raw: page.raw || page.draft || "" };
-      await db.insertImportedPage(id, fullPage, now);
-      await db.saveVersion(id, fullPage, "HHVC import", "generate");
-      existingNames.add(pageName); // prevent within-batch duplicates
-      inserted++;
-    }
-
-    res.json({ inserted, skipped, skippedPlaceholders });
-  } catch (err) {
-    console.error("POST /api/pages/import error:", getErrorMessage(err));
-    res.status(500).json({ error: getErrorMessage(err) });
-  }
-});
 
 app.patch("/api/pages/:id/review", async (req, res) => {
   const { status } = req.body;
@@ -718,10 +545,15 @@ app.post("/api/todos", async (req, res) => {
 });
 
 app.patch("/api/todos/:id", async (req, res) => {
-  const { done } = req.body;
+  const { done, status, errorMessage, builtPageId, karlGrade } = req.body;
   try {
-    const todo = await db.updateTodo(req.params.id, done);
-    if (!todo) return res.status(404).json({ error: "Not found" });
+    let todo;
+    if (done !== undefined) {
+      todo = await db.updateTodo(req.params.id, done);
+    } else {
+      todo = await db.updateTodoQueue(req.params.id, { status, errorMessage, builtPageId, karlGrade });
+    }
+    if (!todo) return res.status(404).json({ error: "Todo not found" });
     res.json(todo);
   } catch (err) {
     console.error("PATCH /api/todos error:", getErrorMessage(err));

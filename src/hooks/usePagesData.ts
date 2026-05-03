@@ -1,14 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { PageDraft, TodoItem } from "../types";
 import { lsLegacy, pagesApi, todosApi } from "../utils";
-import { ImportResult } from "../state/appTypes";
 
 export function usePagesData() {
   const [pages, setPages] = useState<PageDraft[]>([]);
   const [pagesLoading, setPagesLoading] = useState(true);
-  const [importing, setImporting] = useState(false);
-  const [importResult, setImportResult] = useState<ImportResult | null>(null);
-
   useEffect(() => {
     const loadAndMigrate = async () => {
       try {
@@ -70,30 +66,11 @@ export function usePagesData() {
     setPages((prev) => prev.filter((x) => x.id !== id));
   }, []);
 
-  const importPages = useCallback(async () => {
-    setImporting(true);
-    setImportResult(null);
-    try {
-      const result = await pagesApi.import();
-      setImportResult(result);
-      const updated = await pagesApi.list();
-      setPages(updated);
-    } catch (err) {
-      console.error("Import error:", err);
-      setImportResult({ inserted: -1, skipped: 0, skippedPlaceholders: 0 });
-    } finally {
-      setImporting(false);
-    }
-  }, []);
-
   return {
     pages,
     setPages,
     pagesLoading,
     refreshPages,
-    deletePage,
-    importing,
-    importResult,
-    importPages
+    deletePage
   };
 }

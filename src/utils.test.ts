@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildGenerationUserPrompt, PROMPT_CONTRACT_VERSION } from "./constants";
-import { evaluateQualityGate, filterEligibleSuggestedPages, parsePage, parseStructuredPage, replacePageDraftInRaw, sampleSuggestedPages, structuredToRawPage } from "./utils";
+import { evaluateQualityGate, parsePage, parseStructuredPage, replacePageDraftInRaw, structuredToRawPage } from "./utils";
 import type { PageDraft, StructuredPageOutput } from "./types";
 import goldenPages from "./fixtures/golden-pages.json";
 
@@ -143,45 +143,3 @@ describe("golden fixtures", () => {
   });
 });
 
-describe("suggested pages", () => {
-  it("filters out already-created pages and queued todos", () => {
-    const suggested = [
-      { topic: "Help with pests and bugs", userType: "Resident / tenant", pageType: "Information" },
-      { topic: "Contact HHVC", userType: "General public", pageType: "Information" },
-      { topic: "Report overgrown plants or weeds that attract pests", userType: "General public", pageType: "Transaction" }
-    ];
-    const pages = [{ name: "**Help with pests and bugs**" }];
-    const todos = [{ topic: "contact hhvc" }];
-
-    const eligible = filterEligibleSuggestedPages(suggested, pages, todos);
-
-    expect(eligible).toEqual([
-      { topic: "Report overgrown plants or weeds that attract pests", userType: "General public", pageType: "Transaction" }
-    ]);
-  });
-
-  it("samples a different random subset when alternatives are available", () => {
-    const suggested = [
-      { topic: "One", userType: "u", pageType: "Information" },
-      { topic: "Two", userType: "u", pageType: "Information" },
-      { topic: "Three", userType: "u", pageType: "Information" },
-      { topic: "Four", userType: "u", pageType: "Information" },
-      { topic: "Five", userType: "u", pageType: "Information" },
-      { topic: "Six", userType: "u", pageType: "Information" }
-    ];
-
-    let randomCalls = 0;
-    const randomFn = () => {
-      randomCalls += 1;
-      return 0.999;
-    };
-
-    const sampled = sampleSuggestedPages(suggested, 5, ["One", "Two", "Three", "Four", "Five"], randomFn);
-    const topics = sampled.map((entry) => entry.topic);
-
-    expect(topics.some((topic) => !["One", "Two", "Three", "Four", "Five"].includes(topic))).toBe(true);
-    expect(sampled).toHaveLength(5);
-    expect(new Set(topics).size).toBe(5);
-    expect(randomCalls).toBeGreaterThan(0);
-  });
-});

@@ -1,5 +1,3 @@
-import { ChatImagePayload } from "../state/appTypes";
-
 type StreamMode = "generate" | "refine";
 
 type StreamEvent = {
@@ -12,8 +10,6 @@ export type StreamModelTextOptions = {
   msg: string;
   mode: StreamMode;
   systemPrompt: string;
-  driveContext?: string;
-  images?: ChatImagePayload[];
   onAdvance: (pct: number, label: string) => void;
   onTextDelta: (deltaText: string) => void;
   onKarlToolUse: (toolName: string) => void;
@@ -25,8 +21,6 @@ export async function streamModelText(options: StreamModelTextOptions): Promise<
     msg,
     mode,
     systemPrompt,
-    driveContext,
-    images,
     onAdvance,
     onTextDelta,
     onKarlToolUse,
@@ -41,9 +35,7 @@ export async function streamModelText(options: StreamModelTextOptions): Promise<
       max_tokens: 4000,
       stream: true,
       system: systemPrompt,
-      messages: [{ role: "user", content: msg }],
-      ...(driveContext ? { driveContext } : {}),
-      ...(images && images.length > 0 ? { images } : {})
+      messages: [{ role: "user", content: msg }]
     })
   });
 

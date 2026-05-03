@@ -5,8 +5,6 @@ import {
 } from "./constants";
 import { ParseStructuredResult, ParsedPageFields, RelMap, StructuredPageOutput } from "./types";
 
-const suggestionKey = (value?: string): string => clean(value).toLowerCase();
-
 export const isPest = (t: string): boolean => {
   return PEST_KW.some(k => t.toLowerCase().includes(k));
 };
@@ -226,45 +224,6 @@ export const parseRel = (rel: string): RelMap => {
   };
 };
 
-export const filterEligibleSuggestedPages = (
-  suggestedPages: Array<{ topic: string; userType: string; pageType: string }>,
-  pages: Array<{ name: string }>,
-  todos: Array<{ topic: string }>
-) => {
-  const createdNames = new Set(pages.map((page) => suggestionKey(page.name)).filter(Boolean));
-  const queuedTopics = new Set(todos.map((todo) => suggestionKey(todo.topic)).filter(Boolean));
-
-  return suggestedPages.filter((suggestion) => {
-    const key = suggestionKey(suggestion.topic);
-    return key && !createdNames.has(key) && !queuedTopics.has(key);
-  });
-};
-
-export const sampleSuggestedPages = (
-  suggestedPages: Array<{ topic: string; userType: string; pageType: string }>,
-  count = 5,
-  previousTopics: string[] = [],
-  randomFn: () => number = Math.random
-) => {
-  if (!Array.isArray(suggestedPages) || suggestedPages.length === 0 || count <= 0) return [];
-
-  if (suggestedPages.length <= count) return [...suggestedPages];
-
-  const previous = new Set(previousTopics.map((topic) => suggestionKey(topic)).filter(Boolean));
-  const unseen = suggestedPages.filter((suggestion) => !previous.has(suggestionKey(suggestion.topic)));
-  const pool = unseen.length >= count ? unseen : [...suggestedPages];
-  const next = [...pool];
-  const picked: Array<{ topic: string; userType: string; pageType: string }> = [];
-
-  while (picked.length < count && next.length > 0) {
-    const index = Math.floor(randomFn() * next.length);
-    picked.push(next[index]);
-    next.splice(index, 1);
-  }
-
-  return picked;
-};
-
 type DraftSection =
   | { type: "title"; title: string; lines: string[] }
   | { type: "section"; title: string; lines: string[] }
@@ -335,11 +294,6 @@ export const pagesApi = {
     const res = await fetch(`${API_BASE}/pages/${encodeURIComponent(id)}`, { method: "DELETE" });
     if (!res.ok) throw new Error(`Failed to delete page: ${res.status}`);
   },
-  import: async (): Promise<import("./state/appTypes").ImportResult> => {
-    const res = await fetch(`${API_BASE}/pages/import`, { method: "POST" });
-    if (!res.ok) throw new Error(`Import failed: ${res.status}`);
-    return res.json();
-  },
   updateReview: async (id: string, status: import("./types").ReviewStatus): Promise<void> => {
     const res = await fetch(`${API_BASE}/pages/${encodeURIComponent(id)}/review`, {
       method: "PATCH",
@@ -373,6 +327,19 @@ export const todosApi = {
       body: JSON.stringify({ done })
     });
     if (!res.ok) throw new Error(`Failed to update todo: ${res.status}`);
+  },
+  updateQueue: async (id: number, fields: {
+    status: import("./types").TodoStatus;
+    errorMessage?: string | null;
+    builtPageId?: string | null;
+    karlGrade?: string | null;
+  }): Promise<void> => {
+    const res = await fetch(`${API_BASE}/todos/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(fields)
+    });
+    if (!res.ok) throw new Error(`Failed to update todo queue status: ${res.status}`);
   },
   delete: async (id: number): Promise<void> => {
     const res = await fetch(`${API_BASE}/todos/${id}`, { method: "DELETE" });
@@ -581,20 +548,6 @@ Section body: ${REPORT_TRANSACTION_POST_CTA_ROUTING_BODY}
     skeleton: true,
     inputs: { topic: tmpl.name, userType: tmpl.userType, notes: `Hub: ${tmpl.hub}` }
   } as import("./types").PageDraft;
-};
-
-export const driveApi = {
-  listFiles: async (): Promise<import("./types").DriveFile[]> => {
-    const res = await fetch(`${API_BASE}/drive/files`);
-    if (!res.ok) throw new Error(`Drive list failed: ${res.status}`);
-    const data = await res.json();
-    return data.files || [];
-  },
-  readFile: async (fileId: string): Promise<{ id: string; name: string; mimeType: string; content: string }> => {
-    const res = await fetch(`${API_BASE}/drive/files/${encodeURIComponent(fileId)}`);
-    if (!res.ok) throw new Error(`Drive read failed: ${res.status}`);
-    return res.json();
-  }
 };
 
 export const lsLegacy = {

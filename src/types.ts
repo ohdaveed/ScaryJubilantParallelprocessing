@@ -120,12 +120,6 @@ export interface SkeletonTemplate {
   related?: string[];
 }
 
-export interface SuggestedPage {
-  topic: string;
-  userType: string;
-  pageType: string;
-}
-
 export interface Milestone {
   pct: number;
   label: string;
@@ -145,18 +139,17 @@ export interface RelMap {
   next: string;
 }
 
+export type TodoStatus = "pending" | "generating" | "done" | "failed";
+
 export interface TodoItem {
   id: number;
   topic: string;
   userType: string;
   done: boolean;
-}
-
-export interface DriveFile {
-  id: string;
-  name: string;
-  mimeType: string;
-  modifiedTime?: string;
+  status: TodoStatus;
+  errorMessage: string | null;
+  builtPageId: string | null;
+  karlGrade: string | null;
 }
 
 export interface UserPreference {

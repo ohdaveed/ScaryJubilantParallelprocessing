@@ -1,19 +1,17 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { PageDraft, TodoItem, KarlEvaluation, PlannedPage, UserPreference, SuggestedPage, ReviewStatus } from "./types";
-import { USER_TYPES, PAGE_TYPES, SUGGESTED_PAGES, TYPE_META } from "./constants";
-import { clean, pagesApi, replacePageDraftInRaw, todosApi, preferencesApi, filterEligibleSuggestedPages, sampleSuggestedPages } from "./utils";
+import { PageDraft, TodoItem, KarlEvaluation, PlannedPage, UserPreference, ReviewStatus } from "./types";
+import { USER_TYPES, PAGE_TYPES, TYPE_META } from "./constants";
+import { clean, pagesApi, replacePageDraftInRaw, todosApi, preferencesApi } from "./utils";
 import { Badge, Divider, Btn, Card, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar } from "./components/ui";
 import { SfGovPagePreview } from "./components/SfGovPreview";
 import { toPng } from "html-to-image";
 import { usePagesData } from "./hooks/usePagesData";
-import { useDriveContext } from "./hooks/useDriveContext";
 import { usePlanMap } from "./hooks/usePlanMap";
 import { useVersionHistory } from "./hooks/useVersionHistory";
 import { usePageGeneration } from "./hooks/usePageGeneration";
 import { MapTab } from "./components/tabs/MapTab";
 import { LibraryTab } from "./components/tabs/LibraryTab";
 import { SfGovContentDesignTool, type ContentDesignTab, type KarlEvaluationView } from "./components/SfGovContentDesignTool";
-import { ScreenshotAsset } from "./state/appTypes";
 import "./App.css";
 
 
@@ -267,13 +265,12 @@ function PlanSidebar({ planned, pages, selectedPlanned, onSelectPlanned, onAdd, 
   );
 }
 
-function TodoPanel({ pages, onGenerate }: { pages: PageDraft[]; onGenerate: (topic: string, userType: string) => void }) {
+function TodoPanel({ onGenerate }: { onGenerate: (topic: string, userType: string) => void }) {
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [newTopic, setNewTopic] = useState("");
   const [newUT, setNewUT] = useState(USER_TYPES[0]);
   const [adding, setAdding] = useState(false);
   const [loadingTodos, setLoadingTodos] = useState(true);
-  const [visibleSuggested, setVisibleSuggested] = useState<SuggestedPage[]>([]);
 
   useEffect(() => {
     todosApi.list()
@@ -282,26 +279,6 @@ function TodoPanel({ pages, onGenerate }: { pages: PageDraft[]; onGenerate: (top
       .finally(() => setLoadingTodos(false));
   }, []);
 
-  const suggested = useMemo(
-    () => filterEligibleSuggestedPages(SUGGESTED_PAGES, pages, todos),
-    [pages, todos]
-  );
-
-  const suggestedKey = useMemo(
-    () => suggested.map((entry) => entry.topic).join("|"),
-    [suggested]
-  );
-
-  useEffect(() => {
-    setVisibleSuggested((previous) => {
-      const nextSample = sampleSuggestedPages(suggested, 5, previous.map((entry) => entry.topic));
-      const hasSameTopics =
-        previous.length === nextSample.length &&
-        previous.every((entry, index) => entry.topic === nextSample[index]?.topic);
-
-      return hasSameTopics ? previous : nextSample;
-    });
-  }, [suggested, suggestedKey]);
   const addTodo = async () => {
     if (!newTopic.trim()) return;
     try {
@@ -321,19 +298,6 @@ function TodoPanel({ pages, onGenerate }: { pages: PageDraft[]; onGenerate: (top
     try { await todosApi.delete(id); } catch {}
   };
 
-  const addSug = async (s: { topic: string; userType: string; pageType: string }) => {
-    try {
-      const created = await todosApi.create(s.topic, s.userType);
-      setTodos(prev => [...prev, created]);
-    } catch {}
-  };
-
-  const refreshSuggestions = () => {
-    setVisibleSuggested((previous) =>
-      sampleSuggestedPages(suggested, 5, previous.map((entry) => entry.topic))
-    );
-  };
-
   const pending = todos.filter(t => !t.done), done = todos.filter(t => t.done);
 
   return (
@@ -348,7 +312,7 @@ function TodoPanel({ pages, onGenerate }: { pages: PageDraft[]; onGenerate: (top
       {!loadingTodos && pending.length === 0 && done.length === 0 && (
         <div className="app-todo-empty">
           <p className="app-todo-empty__t">No pages queued</p>
-          <p className="app-todo-empty__s">Add topics below or pick from suggestions</p>
+          <p className="app-todo-empty__s">Add topics below to build your queue</p>
         </div>
       )}
 
@@ -388,33 +352,9 @@ function TodoPanel({ pages, onGenerate }: { pages: PageDraft[]; onGenerate: (top
           </div>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={suggested.length === 1 ? undefined : suggested.length > 0 ? refreshSuggestions : () => setAdding(true)}
-          disabled={suggested.length === 1}
-          className={`app-todo-dash${suggested.length === 1 ? " app-todo-dash--disabled" : ""}`}
-        >
-          {suggested.length > 0 ? "Refresh choices" : "+ Add page"}
+        <button type="button" className="app-todo-dash" onClick={() => setAdding(true)}>
+          + Add page
         </button>
-      )}
-
-      {suggested.length > 0 && (
-        <>
-          <Divider variant="suggested" />
-          <div className="app-sug-head">
-            <p className="app-up-label app-up-label--flush">Suggested</p>
-            <Btn onClick={refreshSuggestions} variant="ghost" size="sm" disabled={suggested.length <= 1}>Refresh choices</Btn>
-          </div>
-          {visibleSuggested.map((s, i) => (
-            <div key={i} className="app-sug-row">
-              <div className="app-sug-body">
-                <p className="app-sug-topic">{s.topic}</p>
-                <span className="app-sug-type" data-page-type={s.pageType}>{s.pageType}</span>
-              </div>
-              <Btn onClick={() => addSug(s)} variant="ghost" size="sm">+ Add</Btn>
-            </div>
-          ))}
-        </>
       )}
     </Card>
   );
@@ -478,15 +418,13 @@ export default function App() {
   const [preferences, setPreferences] = useState<UserPreference[]>([]);
   const [selectedPageIds, setSelectedPageIds] = useState<Set<string>>(new Set());
   const [newPref, setNewPref] = useState("");
-  const [screenshots, setScreenshots] = useState<ScreenshotAsset[]>([]);
-  const [dropzoneDepth, setDropzoneDepth] = useState(0);
   const [mockupEditOpen, setMockupEditOpen] = useState(false);
   const [draftEditBuffer, setDraftEditBuffer] = useState("");
   const [draftEditSaving, setDraftEditSaving] = useState(false);
   const [draftEditError, setDraftEditError] = useState("");
   const screenshotRef = useRef<HTMLDivElement>(null);
 
-  const { pages, setPages, pagesLoading, deletePage: deleteStoredPage, importing, importResult, importPages } = usePagesData();
+  const { pages, setPages, pagesLoading, deletePage: deleteStoredPage } = usePagesData();
   const {
     plannedPages,
     plannedLoading,
@@ -503,19 +441,6 @@ export default function App() {
     addPlannedPage,
     deletePlannedPage
   } = usePlanMap(setPages);
-  const {
-    driveFiles,
-    driveLoading,
-    driveError,
-    driveOpen,
-    setDriveOpen,
-    selectedDriveIds,
-    setSelectedDriveIds,
-    driveContents,
-    driveLoadingIds,
-    toggleDriveFile,
-    clearSelectedDriveFiles
-  } = useDriveContext();
   const {
     historyPageId,
     setHistoryPageId,
@@ -540,13 +465,7 @@ export default function App() {
     justGenerated,
     generate,
     regenerate,
-    refine,
-    bulkFirstDraftSkeletons,
-    bulkSkeletonRunning,
-    bulkSkeletonProgress,
-    bulkGenerateUnbuiltPlanned,
-    bulkPlannedRunning,
-    bulkPlannedProgress
+    refine
   } = usePageGeneration({
     topic,
     userType,
@@ -556,10 +475,6 @@ export default function App() {
     preferences,
     pages,
     selected,
-    screenshots,
-    selectedDriveIds,
-    driveContents,
-    driveFiles,
     plannedPages,
     refineInput,
     setPages,
@@ -569,7 +484,6 @@ export default function App() {
     setTopic,
     setNotes,
     setTopicTouched,
-    setScreenshots,
     setPreferences,
     setRefineInput,
     linkPlannedPage
@@ -588,37 +502,6 @@ export default function App() {
     setDraftEditBuffer("");
     setDraftEditError("");
   }, [selected?.id]);
-
-  const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
-  const MAX_IMAGE_SIZE = 4 * 1024 * 1024;
-  const MAX_SCREENSHOTS = 3;
-
-  const handleImageFiles = useCallback((fileList: File[]) => {
-    const valid = fileList.filter(f => ALLOWED_IMAGE_TYPES.includes(f.type) && f.size <= MAX_IMAGE_SIZE);
-    setScreenshots(prev => {
-      const remaining = MAX_SCREENSHOTS - prev.length;
-      if (remaining <= 0) return prev;
-      valid.slice(0, remaining).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          const base64 = result.split(",")[1];
-          setScreenshots(p => p.length < MAX_SCREENSHOTS ? [...p, { name: file.name, base64, mimeType: file.type }] : p);
-        };
-        reader.readAsDataURL(file);
-      });
-      return prev;
-    });
-  }, []);
-
-  const browseForImages = useCallback(() => {
-    const inp = document.createElement("input");
-    inp.type = "file";
-    inp.accept = ALLOWED_IMAGE_TYPES.join(",");
-    inp.multiple = true;
-    inp.onchange = () => handleImageFiles(Array.from(inp.files || []));
-    inp.click();
-  }, [handleImageFiles]);
 
   const deletePage = useCallback(async (id: string) => {
     await deleteStoredPage(id);
@@ -716,20 +599,10 @@ export default function App() {
     });
   };
 
-  const unbuiltPlannedCount = useMemo(
-    () =>
-      plannedPages.filter((pp) => !(pp.builtPageId && pages.some((pg) => pg.id === pp.builtPageId))).length,
-    [plannedPages, pages]
-  );
-
   const filtered = pages.filter(p => { const ms = !search || (clean(p.name) || "").toLowerCase().includes(search.toLowerCase()) || (p.draft || "").toLowerCase().includes(search.toLowerCase()); return ms && (filterType === "All" || clean(p.pageType) === filterType); });
   const sorted = sortNewest ? [...filtered].reverse() : filtered;
   useEffect(() => { setSelectedPageIds(new Set()); }, [search, filterType]);
   const topicError = topicTouched && !topic.trim();
-
-  const handleImport = useCallback(async () => {
-    await importPages();
-  }, [importPages]);
 
   const handleUpdateReviewStatus = useCallback(async (id: string, status: ReviewStatus) => {
     try {
@@ -818,7 +691,7 @@ export default function App() {
         onAdditionalContextChange={setNotes}
         onGenerateClick={() => void generate({ pageType: pendingPageType || studioPageTypes()[0] })}
         generateLabel={
-          loading ? (streaming ? "Generating…" : evaluating ? "Evaluating…" : "Working…") : `Generate page${selectedDriveIds.size > 0 || screenshots.length > 0 ? ` (${[selectedDriveIds.size > 0 ? `${selectedDriveIds.size} doc${selectedDriveIds.size !== 1 ? "s" : ""}` : "", screenshots.length > 0 ? `${screenshots.length} image${screenshots.length !== 1 ? "s" : ""}` : ""].filter(Boolean).join(", ")})` : ""}`
+          loading ? (streaming ? "Generating…" : evaluating ? "Evaluating…" : "Working…") : "Generate page"
         }
         generateDisabled={loading || topicError}
         karlEvaluation={studioKarlView}
@@ -839,123 +712,11 @@ export default function App() {
             <Card className="app-card-pad--18-20">
               <KarlStatus status={karlStatus} />
               {topicError && <p className="app-topic-err">Enter a topic in the left panel to continue</p>}
-              <div className="app-field-mb8">
-                <p className="app-shot-label">Screenshots <span>(optional, up to 3)</span></p>
-                <div
-                  className={`app-dropzone${screenshots.length > 0 ? " app-dropzone--compact" : ""}${screenshots.length >= 3 ? " app-dropzone--disabled" : ""}${dropzoneDepth > 0 && screenshots.length < MAX_SCREENSHOTS ? " app-dropzone--drag" : ""}`}
-                  onDragEnter={e => { e.preventDefault(); e.stopPropagation(); setDropzoneDepth(d => d + 1); }}
-                  onDragLeave={e => { e.preventDefault(); e.stopPropagation(); setDropzoneDepth(d => Math.max(0, d - 1)); }}
-                  onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
-                  onDrop={e => {
-                    e.preventDefault(); e.stopPropagation();
-                    setDropzoneDepth(0);
-                    handleImageFiles(Array.from(e.dataTransfer.files));
-                  }}
-                  onClick={() => { if (screenshots.length < MAX_SCREENSHOTS) browseForImages(); }}
-                >
-                  {screenshots.length === 0 && (
-                    <div>
-                      <svg className="app-dropzone__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                        <circle cx="8.5" cy="8.5" r="1.5" />
-                        <polyline points="21 15 16 10 5 21" />
-                      </svg>
-                      <p className="app-dropzone__p1">Drop images here or click to browse</p>
-                      <p className="app-dropzone__p2">PNG, JPG, WEBP &middot; max 4MB each</p>
-                    </div>
-                  )}
-                  {screenshots.length > 0 && (
-                    <div className="app-shot-grid" onClick={e => e.stopPropagation()}>
-                      {screenshots.map((s, i) => (
-                        <div key={i} className="app-shot-thumb">
-                          <img src={`data:${s.mimeType};base64,${s.base64}`} alt={s.name} />
-                          <button
-                            type="button"
-                            className="app-shot-remove"
-                            onClick={e => { e.stopPropagation(); setScreenshots(prev => prev.filter((_, idx) => idx !== i)); }}
-                          >&#10005;</button>
-                        </div>
-                      ))}
-                      {screenshots.length < MAX_SCREENSHOTS && (
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          className="app-shot-add"
-                          onClick={() => browseForImages()}
-                          onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); browseForImages(); } }}
-                        >+</div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
               {pendingPageType && (
                 <div className="app-pending-type-banner">
                   <Badge type={pendingPageType} small />
                   <span>from plan</span>
                   <button type="button" className="app-icon-btn" onClick={() => { setPendingPageType(""); setPendingPlannedId(null); }}>&#10005;</button>
-                </div>
-              )}
-            </Card>
-
-            <Card className="app-card-pad--14-16-mb">
-              <button
-                type="button"
-                onClick={() => setDriveOpen(o => !o)}
-                className="app-drive-toggle"
-              >
-                <div className="app-drive-toggle__left">
-                  <svg className="app-drive-toggle__icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" /></svg>
-                  <p className="app-up-label app-up-label--flush app-drive-toggle__label">Reference documents</p>
-                  {selectedDriveIds.size > 0 && (
-                    <span className="app-drive-count">{selectedDriveIds.size}</span>
-                  )}
-                </div>
-                <svg className={`app-drive-toggle__chev${driveOpen ? " app-drive-toggle__chev--open" : ""}`} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
-              </button>
-
-              {driveOpen && (
-                <div className="app-drive-body">
-                  {driveLoading && <p className="app-drive-p">Loading Drive files…</p>}
-                  {driveError && !driveLoading && (
-                    <p className="app-drive-err">Could not load Drive files: {driveError}</p>
-                  )}
-                  {!driveLoading && !driveError && driveFiles.length === 0 && (
-                    <p className="app-drive-p">No files found in folder.</p>
-                  )}
-                  {!driveLoading && driveFiles.map(file => {
-                    const rowSelected = selectedDriveIds.has(file.id);
-                    const loading = driveLoadingIds.has(file.id);
-                    const isDoc = file.mimeType.includes("google-apps") || file.mimeType.includes("text") || file.mimeType.includes("pdf") || file.mimeType.includes("word");
-                    return (
-                      <button
-                        type="button"
-                        key={file.id}
-                        onClick={() => !loading && toggleDriveFile(file)}
-                        disabled={loading}
-                        className={`app-drive-row${rowSelected ? " app-drive-row--selected" : ""}`}
-                      >
-                        <div className="app-drive-check">
-                          {rowSelected && <svg width="9" height="9" viewBox="0 0 10 10"><path d="M1.5 5l3 3 4-5" stroke="#fff" strokeWidth="1.5" fill="none" strokeLinecap="round" /></svg>}
-                        </div>
-                        <span className="app-drive-name">{file.name}</span>
-                        {loading && <span className="app-drive-meta">…</span>}
-                        {!isDoc && !loading && <span className="app-drive-meta">binary</span>}
-                      </button>
-                    );
-                  })}
-                  {selectedDriveIds.size > 0 && (
-                    <button
-                      type="button"
-                      onClick={clearSelectedDriveFiles}
-                      className="app-drive-clear"
-                    >
-                      Clear selection
-                    </button>
-                  )}
-                  <p className="app-drive-foot">
-                    Selected documents are included as context when generating pages.
-                  </p>
                 </div>
               )}
             </Card>
@@ -1224,8 +985,6 @@ export default function App() {
           setFilterType={setFilterType}
           sortNewest={sortNewest}
           setSortNewest={setSortNewest}
-          importing={importing}
-          importResult={importResult}
           pagesLoading={pagesLoading}
           seeding={seeding}
           pages={pages}
@@ -1235,15 +994,11 @@ export default function App() {
           selectAllPages={selectAllPages}
           clearPageSelection={clearPageSelection}
           deleteSelectedPages={deleteSelectedPages}
-          onImport={handleImport}
           onDownloadText={handleDownload}
           onSelectPage={(p) => { setSelected(p); setShowSuccess(false); setWorkspaceTab("generate"); }}
           onTogglePageSelection={togglePageSelection}
           onUpdateReviewStatus={handleUpdateReviewStatus}
           onOpenHistory={openHistory}
-          bulkSkeletonRunning={bulkSkeletonRunning}
-          bulkSkeletonProgress={bulkSkeletonProgress}
-          onBulkFirstDraftSkeletons={bulkFirstDraftSkeletons}
         />
           ) : (
         <div className="app-studio-tab-pad">
@@ -1267,10 +1022,6 @@ export default function App() {
             setWorkspaceTab("generate");
             void generate({ topic: t, userType: u });
           }}
-          unbuiltPlannedCount={unbuiltPlannedCount}
-          bulkPlannedRunning={bulkPlannedRunning}
-          bulkPlannedProgress={bulkPlannedProgress}
-          onBulkGenerateUnbuiltPlanned={() => void bulkGenerateUnbuiltPlanned()}
           PlanDiagramComponent={PlanDiagram}
           PlanSidebarComponent={PlanSidebar}
           TodoPanelComponent={TodoPanel}
