@@ -26,29 +26,34 @@ type GenerateOverrides = Partial<{
 }>;
 
 type UsePageGenerationParams = {
-  topic: string;
-  userType: string;
-  notes: string;
-  pendingPageType: string;
-  pendingPlannedId: number | null;
-  preferences: UserPreference[];
-  pages: PageDraft[];
-  selected: PageDraft | null;
-  plannedPages: PlannedPage[];
-  refineInput: string;
-  setPages: Dispatch<SetStateAction<PageDraft[]>>;
-  setSelected: Dispatch<SetStateAction<PageDraft | null>>;
-  setPendingPlannedId: Dispatch<SetStateAction<number | null>>;
-  setPendingPageType: Dispatch<SetStateAction<string>>;
-  setTopic: Dispatch<SetStateAction<string>>;
-  setNotes: Dispatch<SetStateAction<string>>;
-  setTopicTouched: Dispatch<SetStateAction<boolean>>;
-  setPreferences: Dispatch<SetStateAction<UserPreference[]>>;
-  setRefineInput: Dispatch<SetStateAction<string>>;
-  linkPlannedPage: (plannedId: number, builtPageId: string) => void | Promise<void>;
+  state: {
+    topic: string;
+    userType: string;
+    notes: string;
+    pendingPageType: string;
+    pendingPlannedId: number | null;
+    preferences: UserPreference[];
+    pages: PageDraft[];
+    selected: PageDraft | null;
+    plannedPages: PlannedPage[];
+    refineInput: string;
+  };
+  actions: {
+    setPages: Dispatch<SetStateAction<PageDraft[]>>;
+    setSelected: Dispatch<SetStateAction<PageDraft | null>>;
+    setPendingPlannedId: Dispatch<SetStateAction<number | null>>;
+    setPendingPageType: Dispatch<SetStateAction<string>>;
+    setTopic: Dispatch<SetStateAction<string>>;
+    setNotes: Dispatch<SetStateAction<string>>;
+    setTopicTouched: Dispatch<SetStateAction<boolean>>;
+    setPreferences: Dispatch<SetStateAction<UserPreference[]>>;
+    setRefineInput: Dispatch<SetStateAction<string>>;
+    linkPlannedPage: (plannedId: number, builtPageId: string) => void | Promise<void>;
+  };
 };
 
 export function usePageGeneration(params: UsePageGenerationParams) {
+  const { state, actions } = params;
   const {
     topic,
     userType,
@@ -59,7 +64,9 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     pages,
     selected,
     plannedPages,
-    refineInput,
+    refineInput
+  } = state;
+  const {
     setPages,
     setSelected,
     setPendingPlannedId,
@@ -70,7 +77,7 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     setPreferences,
     setRefineInput,
     linkPlannedPage
-  } = params;
+  } = actions;
 
   const [loading, setLoading] = useState(false);
   const [streaming, setStreaming] = useState(false);

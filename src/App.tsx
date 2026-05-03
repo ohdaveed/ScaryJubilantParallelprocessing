@@ -467,26 +467,30 @@ export default function App() {
     regenerate,
     refine
   } = usePageGeneration({
-    topic,
-    userType,
-    notes,
-    pendingPageType,
-    pendingPlannedId,
-    preferences,
-    pages,
-    selected,
-    plannedPages,
-    refineInput,
-    setPages,
-    setSelected,
-    setPendingPlannedId,
-    setPendingPageType,
-    setTopic,
-    setNotes,
-    setTopicTouched,
-    setPreferences,
-    setRefineInput,
-    linkPlannedPage
+    state: {
+      topic,
+      userType,
+      notes,
+      pendingPageType,
+      pendingPlannedId,
+      preferences,
+      pages,
+      selected,
+      plannedPages,
+      refineInput
+    },
+    actions: {
+      setPages,
+      setSelected,
+      setPendingPlannedId,
+      setPendingPageType,
+      setTopic,
+      setNotes,
+      setTopicTouched,
+      setPreferences,
+      setRefineInput,
+      linkPlannedPage
+    }
   });
 
   useEffect(() => {
