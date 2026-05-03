@@ -87,6 +87,30 @@ describe("file-backed fallback persistence", () => {
     expect(preferences.body.preferences).toHaveLength(1);
     expect(preferences.body.preferences[0].pageId).toBe("page-1");
   });
+
+  it("updates todo queue status via PATCH", async () => {
+    // create a todo
+    const createRes = await request(app)
+      .post("/api/todos")
+      .send({ topic: "Queue test page", userType: "General public" });
+    expect(createRes.status).toBe(200);
+    const id = createRes.body.id;
+
+    // patch with queue fields
+    const patchRes = await request(app)
+      .patch(`/api/todos/${id}`)
+      .send({ status: "failed", errorMessage: "Model timeout" });
+    expect(patchRes.status).toBe(200);
+    expect(patchRes.body.status).toBe("failed");
+    expect(patchRes.body.errorMessage).toBe("Model timeout");
+
+    // list and verify
+    const listRes = await request(app).get("/api/todos");
+    expect(listRes.status).toBe(200);
+    const todo = listRes.body.todos.find((t: { id: number }) => t.id === id);
+    expect(todo.status).toBe("failed");
+    expect(todo.errorMessage).toBe("Model timeout");
+  });
 });
 
 describe("page version tracking", () => {

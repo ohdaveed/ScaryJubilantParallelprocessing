@@ -139,11 +139,17 @@ export interface RelMap {
   next: string;
 }
 
+export type TodoStatus = "pending" | "generating" | "done" | "failed";
+
 export interface TodoItem {
   id: number;
   topic: string;
   userType: string;
   done: boolean;
+  status: TodoStatus;
+  errorMessage: string | null;
+  builtPageId: string | null;
+  karlGrade: string | null;
 }
 
 export interface UserPreference {

@@ -544,10 +544,15 @@ app.post("/api/todos", async (req, res) => {
 });
 
 app.patch("/api/todos/:id", async (req, res) => {
-  const { done } = req.body;
+  const { done, status, errorMessage, builtPageId, karlGrade } = req.body;
   try {
-    const todo = await db.updateTodo(req.params.id, done);
-    if (!todo) return res.status(404).json({ error: "Not found" });
+    let todo;
+    if (done !== undefined) {
+      todo = await db.updateTodo(req.params.id, done);
+    } else {
+      todo = await db.updateTodoQueue(req.params.id, { status, errorMessage, builtPageId, karlGrade });
+    }
+    if (!todo) return res.status(404).json({ error: "Todo not found" });
     res.json(todo);
   } catch (err) {
     console.error("PATCH /api/todos error:", getErrorMessage(err));

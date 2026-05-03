@@ -328,6 +328,19 @@ export const todosApi = {
     });
     if (!res.ok) throw new Error(`Failed to update todo: ${res.status}`);
   },
+  updateQueue: async (id: number, fields: {
+    status: import("./types").TodoStatus;
+    errorMessage?: string | null;
+    builtPageId?: string | null;
+    karlGrade?: string | null;
+  }): Promise<void> => {
+    const res = await fetch(`${API_BASE}/todos/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(fields)
+    });
+    if (!res.ok) throw new Error(`Failed to update todo queue status: ${res.status}`);
+  },
   delete: async (id: number): Promise<void> => {
     const res = await fetch(`${API_BASE}/todos/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error(`Failed to delete todo: ${res.status}`);
