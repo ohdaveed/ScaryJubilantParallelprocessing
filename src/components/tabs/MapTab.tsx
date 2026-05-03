@@ -1,7 +1,7 @@
 import React from "react";
 import { PAGE_TYPES, TYPE_META } from "../../constants";
 import { PageDraft, PlannedPage } from "../../types";
-import { Btn, Card } from "../ui";
+import { Card } from "../ui";
 import IdealSiteMap from "../IdealSiteMap";
 
 type MapTabProps = {
@@ -17,10 +17,6 @@ type MapTabProps = {
   selectById: (id: string) => void;
   generateFromPlanned: (p: PlannedPage) => void;
   onTodoGenerate: (topic: string, userType: string) => void;
-  unbuiltPlannedCount: number;
-  bulkPlannedRunning: boolean;
-  bulkPlannedProgress: { current: number; total: number; name: string } | null;
-  onBulkGenerateUnbuiltPlanned: () => void;
   PlanDiagramComponent: React.ComponentType<{ planned: PlannedPage[]; pages: PageDraft[]; onSelectPlanned: (p: PlannedPage) => void }>;
   PlanSidebarComponent: React.ComponentType<{
     planned: PlannedPage[];
@@ -49,10 +45,6 @@ export function MapTab(props: MapTabProps) {
     selectById,
     generateFromPlanned,
     onTodoGenerate,
-    unbuiltPlannedCount,
-    bulkPlannedRunning,
-    bulkPlannedProgress,
-    onBulkGenerateUnbuiltPlanned,
     PlanDiagramComponent,
     PlanSidebarComponent,
     TodoPanelComponent
@@ -76,24 +68,6 @@ export function MapTab(props: MapTabProps) {
             </button>
           ))}
         </div>
-        {mapMode === "plan" && unbuiltPlannedCount > 0 && (
-          <>
-            <Btn
-              onClick={onBulkGenerateUnbuiltPlanned}
-              variant="primary"
-              size="sm"
-              disabled={bulkPlannedRunning || plannedLoading}
-            >
-              {bulkPlannedRunning ? "Bulk generate running…" : `AI draft: all unbuilt planned (${unbuiltPlannedCount})`}
-            </Btn>
-            {bulkPlannedRunning && bulkPlannedProgress && (
-              <span style={{ fontSize: 12, color: "var(--color-text-tertiary)", maxWidth: 320 }} title={bulkPlannedProgress.name}>
-                {bulkPlannedProgress.current}/{bulkPlannedProgress.total}
-                {bulkPlannedProgress.name ? ` — ${bulkPlannedProgress.name}` : ""}
-              </span>
-            )}
-          </>
-        )}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 16, alignItems: "start" }}>

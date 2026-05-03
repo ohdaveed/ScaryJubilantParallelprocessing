@@ -83,14 +83,9 @@ export function usePageGeneration(params: UsePageGenerationParams) {
   const [error, setError] = useState("");
   const [parseWarn, setParseWarn] = useState(false);
   const [justGenerated, setJustGenerated] = useState<PageDraft | null>(null);
-  const [bulkSkeletonRunning, setBulkSkeletonRunning] = useState(false);
-  const [bulkSkeletonProgress, setBulkSkeletonProgress] = useState<{ current: number; total: number; name: string } | null>(null);
-  const [bulkPlannedRunning, setBulkPlannedRunning] = useState(false);
-  const [bulkPlannedProgress, setBulkPlannedProgress] = useState<{ current: number; total: number; name: string } | null>(null);
 
   const streamRef = useRef("");
   const lastInput = useRef<GenerationInputSnapshot>({ topic: "", userType: "", notes: "" });
-  const bulkRunLock = useRef(false);
 
   const adv = useCallback((pct: number, lbl: string) => {
     setProgress(pct);
@@ -130,11 +125,11 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     });
   }, []);
 
-  const generate = useCallback(async (ov: GenerateOverrides = {}): Promise<boolean> => {
+  const generate = useCallback(async (ov: GenerateOverrides = {}): Promise<PageDraft | null> => {
     const t = ov.topic || topic;
     if (!t.trim()) {
       setTopicTouched(true);
-      return false;
+      return null;
     }
 
     setLoading(true);
@@ -169,6 +164,7 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     );
 
     let karlHit = false;
+    let page: PageDraft | null = null;
 
     try {
       const streamResult = await streamModelText({
@@ -202,7 +198,7 @@ export function usePageGeneration(params: UsePageGenerationParams) {
         }
       }
 
-      let page: PageDraft = {
+      page = {
         ...parsed,
         id,
         createdAt: new Date().toISOString(),
@@ -234,9 +230,9 @@ export function usePageGeneration(params: UsePageGenerationParams) {
       }
 
       if (ov.replaceSkeletonId) {
-        setPages((prev) => prev.map((p) => (p.id === ov.replaceSkeletonId ? page : p)));
+        setPages((prev) => prev.map((p) => (p.id === ov.replaceSkeletonId ? page! : p)));
       } else {
-        setPages((prev) => [...prev, page]);
+        setPages((prev) => [...prev, page!]);
       }
 
       if (!ov.quiet) {
@@ -270,11 +266,11 @@ export function usePageGeneration(params: UsePageGenerationParams) {
       setEvaluating(false);
       setKarlStatus("fallback");
       setLoading(false);
-      return false;
+      return null;
     }
 
     setLoading(false);
-    return true;
+    return page;
   }, [
     topic,
     userType,
@@ -302,109 +298,6 @@ export function usePageGeneration(params: UsePageGenerationParams) {
       void generate({ topic: p.inputs.topic, userType: p.inputs.userType, notes: p.inputs.notes });
     }
   }, [generate]);
-
-  const bulkFirstDraftSkeletons = useCallback(async () => {
-    if (bulkRunLock.current) {
-      return { attempted: 0, succeeded: 0, failed: 0, failedNames: [] as string[], cancelled: true };
-    }
-    const targets = pages.filter((p) => p.skeleton && p.inputs?.topic?.trim());
-    if (targets.length === 0) {
-      setError("No skeleton pages in the library. Seed the site map or add skeleton pages first.");
-      return { attempted: 0, succeeded: 0, failed: 0, failedNames: [] as string[], cancelled: false };
-    }
-    const ok = window.confirm(
-      `Generate AI first drafts for ${targets.length} skeleton page(s)? Each page calls the model (streaming), improve-structure, and Karl evaluation. This can take a long time and uses API quota.`
-    );
-    if (!ok) return { attempted: 0, succeeded: 0, failed: 0, failedNames: [], cancelled: true };
-
-    bulkRunLock.current = true;
-    setBulkSkeletonRunning(true);
-    setBulkSkeletonProgress({ current: 0, total: targets.length, name: "" });
-    setError("");
-    setShowSuccess(false);
-    const failedNames: string[] = [];
-    let succeeded = 0;
-
-    try {
-      for (let i = 0; i < targets.length; i++) {
-        const p = targets[i];
-        const label = clean(p.name) || p.inputs.topic;
-        setBulkSkeletonProgress({ current: i + 1, total: targets.length, name: label });
-        const genOk = await generate({
-          topic: p.inputs.topic,
-          userType: p.inputs.userType,
-          notes: p.inputs.notes || "",
-          pageType: p.pageType,
-          replaceSkeletonId: p.id,
-          quiet: true
-        });
-        if (genOk) succeeded += 1;
-        else failedNames.push(label);
-      }
-      if (failedNames.length > 0) {
-        setError(
-          `Bulk run finished: ${succeeded} ok, ${failedNames.length} failed. First failures: ${failedNames.slice(0, 4).join("; ")}${failedNames.length > 4 ? "…" : ""}`
-        );
-      }
-    } finally {
-      setBulkSkeletonProgress(null);
-      setBulkSkeletonRunning(false);
-      bulkRunLock.current = false;
-    }
-    return { attempted: targets.length, succeeded, failed: failedNames.length, failedNames, cancelled: false };
-  }, [pages, generate]);
-
-  const bulkGenerateUnbuiltPlanned = useCallback(async () => {
-    if (bulkRunLock.current) {
-      return { attempted: 0, succeeded: 0, failed: 0, failedNames: [] as string[], cancelled: true };
-    }
-    const isPlannedBuilt = (pp: PlannedPage) =>
-      !!(pp.builtPageId && pages.some((pg) => pg.id === pp.builtPageId));
-    const targets = plannedPages.filter((p) => !isPlannedBuilt(p));
-    if (targets.length === 0) {
-      setError("Every planned page already has a matching page in the library.");
-      return { attempted: 0, succeeded: 0, failed: 0, failedNames: [] as string[], cancelled: false };
-    }
-    const ok = window.confirm(
-      `Generate AI drafts for ${targets.length} unbuilt planned page(s)? Each page calls the model, improve-structure, and Karl evaluation. This can take a long time and uses API quota.`
-    );
-    if (!ok) return { attempted: 0, succeeded: 0, failed: 0, failedNames: [], cancelled: true };
-
-    bulkRunLock.current = true;
-    setBulkPlannedRunning(true);
-    setBulkPlannedProgress({ current: 0, total: targets.length, name: "" });
-    setError("");
-    setShowSuccess(false);
-    const failedNames: string[] = [];
-    let succeeded = 0;
-
-    try {
-      for (let i = 0; i < targets.length; i++) {
-        const p = targets[i];
-        const label = clean(p.name) || p.name;
-        setBulkPlannedProgress({ current: i + 1, total: targets.length, name: label });
-        const genOk = await generate({
-          topic: p.name,
-          userType: p.userType,
-          pageType: p.pageType,
-          plannedId: p.id,
-          quiet: true
-        });
-        if (genOk) succeeded += 1;
-        else failedNames.push(label);
-      }
-      if (failedNames.length > 0) {
-        setError(
-          `Planned bulk run finished: ${succeeded} ok, ${failedNames.length} failed. First failures: ${failedNames.slice(0, 4).join("; ")}${failedNames.length > 4 ? "…" : ""}`
-        );
-      }
-    } finally {
-      setBulkPlannedProgress(null);
-      setBulkPlannedRunning(false);
-      bulkRunLock.current = false;
-    }
-    return { attempted: targets.length, succeeded, failed: failedNames.length, failedNames, cancelled: false };
-  }, [pages, plannedPages, generate]);
 
   const refine = useCallback(async () => {
     if (!selected || !refineInput.trim()) return;
@@ -519,12 +412,6 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     justGenerated,
     generate,
     regenerate,
-    refine,
-    bulkFirstDraftSkeletons,
-    bulkSkeletonRunning,
-    bulkSkeletonProgress,
-    bulkGenerateUnbuiltPlanned,
-    bulkPlannedRunning,
-    bulkPlannedProgress
+    refine
   };
 }

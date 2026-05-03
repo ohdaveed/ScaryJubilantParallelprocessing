@@ -465,13 +465,7 @@ export default function App() {
     justGenerated,
     generate,
     regenerate,
-    refine,
-    bulkFirstDraftSkeletons,
-    bulkSkeletonRunning,
-    bulkSkeletonProgress,
-    bulkGenerateUnbuiltPlanned,
-    bulkPlannedRunning,
-    bulkPlannedProgress
+    refine
   } = usePageGeneration({
     topic,
     userType,
@@ -604,12 +598,6 @@ export default function App() {
       plannedId: p.id
     });
   };
-
-  const unbuiltPlannedCount = useMemo(
-    () =>
-      plannedPages.filter((pp) => !(pp.builtPageId && pages.some((pg) => pg.id === pp.builtPageId))).length,
-    [plannedPages, pages]
-  );
 
   const filtered = pages.filter(p => { const ms = !search || (clean(p.name) || "").toLowerCase().includes(search.toLowerCase()) || (p.draft || "").toLowerCase().includes(search.toLowerCase()); return ms && (filterType === "All" || clean(p.pageType) === filterType); });
   const sorted = sortNewest ? [...filtered].reverse() : filtered;
@@ -1011,9 +999,6 @@ export default function App() {
           onTogglePageSelection={togglePageSelection}
           onUpdateReviewStatus={handleUpdateReviewStatus}
           onOpenHistory={openHistory}
-          bulkSkeletonRunning={bulkSkeletonRunning}
-          bulkSkeletonProgress={bulkSkeletonProgress}
-          onBulkFirstDraftSkeletons={bulkFirstDraftSkeletons}
         />
           ) : (
         <div className="app-studio-tab-pad">
@@ -1037,10 +1022,6 @@ export default function App() {
             setWorkspaceTab("generate");
             void generate({ topic: t, userType: u });
           }}
-          unbuiltPlannedCount={unbuiltPlannedCount}
-          bulkPlannedRunning={bulkPlannedRunning}
-          bulkPlannedProgress={bulkPlannedProgress}
-          onBulkGenerateUnbuiltPlanned={() => void bulkGenerateUnbuiltPlanned()}
           PlanDiagramComponent={PlanDiagram}
           PlanSidebarComponent={PlanSidebar}
           TodoPanelComponent={TodoPanel}

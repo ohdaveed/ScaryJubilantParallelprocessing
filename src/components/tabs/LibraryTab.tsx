@@ -25,9 +25,6 @@ type LibraryTabProps = {
   onTogglePageSelection: (id: string, e: React.MouseEvent) => void;
   onUpdateReviewStatus: (id: string, status: ReviewStatus) => Promise<void>;
   onOpenHistory: (pageId: string) => void;
-  bulkSkeletonRunning: boolean;
-  bulkSkeletonProgress: { current: number; total: number; name: string } | null;
-  onBulkFirstDraftSkeletons: () => Promise<unknown>;
 };
 
 export function LibraryTab(props: LibraryTabProps) {
@@ -51,10 +48,7 @@ export function LibraryTab(props: LibraryTabProps) {
     onSelectPage,
     onTogglePageSelection,
     onUpdateReviewStatus,
-    onOpenHistory,
-    bulkSkeletonRunning,
-    bulkSkeletonProgress,
-    onBulkFirstDraftSkeletons
+    onOpenHistory
   } = props;
 
   return (
@@ -68,23 +62,7 @@ export function LibraryTab(props: LibraryTabProps) {
         <Btn onClick={() => setSortNewest((s) => !s)} variant="ghost" size="sm">{sortNewest ? "Newest first" : "Oldest first"}</Btn>
         {pages.length > 0 && <Btn onClick={() => onDownloadText(pages.map((p) => p.raw).join("\n\n---\n\n"), "hhvc-pages-export.txt")} variant="ghost" size="sm">Export all</Btn>}
         {pages.some((p) => p.skeleton) && (
-          <>
-            <Btn
-              onClick={() => void onBulkFirstDraftSkeletons()}
-              variant="primary"
-              size="sm"
-              disabled={bulkSkeletonRunning || pagesLoading}
-            >
-              {bulkSkeletonRunning ? "Bulk AI drafts running…" : "AI first draft: all skeletons"}
-            </Btn>
-            {bulkSkeletonRunning && bulkSkeletonProgress && (
-              <span style={{ fontSize: 12, color: "#64748b", maxWidth: 280 }} title={bulkSkeletonProgress.name}>
-                {bulkSkeletonProgress.current}/{bulkSkeletonProgress.total}
-                {bulkSkeletonProgress.name ? ` — ${bulkSkeletonProgress.name}` : ""}
-              </span>
-            )}
-            <Btn onClick={() => onDownloadText(pages.filter((p) => p.skeleton).map((p) => p.raw).join("\n\n---\n\n"), "hhvc-skeletons-export.txt")} variant="ghost" size="sm">Download skeletons</Btn>
-          </>
+          <Btn onClick={() => onDownloadText(pages.filter((p) => p.skeleton).map((p) => p.raw).join("\n\n---\n\n"), "hhvc-skeletons-export.txt")} variant="ghost" size="sm">Download skeletons</Btn>
         )}
       </div>
 
