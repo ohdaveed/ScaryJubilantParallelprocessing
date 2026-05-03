@@ -6,7 +6,6 @@ import { Badge, Divider, Btn, Card, ComponentChips, RelPanel, KarlStatus, KarlEv
 import { SfGovPagePreview } from "./components/SfGovPreview";
 import { toPng } from "html-to-image";
 import { usePagesData } from "./hooks/usePagesData";
-import { useDriveContext } from "./hooks/useDriveContext";
 import { usePlanMap } from "./hooks/usePlanMap";
 import { useVersionHistory } from "./hooks/useVersionHistory";
 import { usePageGeneration } from "./hooks/usePageGeneration";
@@ -504,19 +503,6 @@ export default function App() {
     deletePlannedPage
   } = usePlanMap(setPages);
   const {
-    driveFiles,
-    driveLoading,
-    driveError,
-    driveOpen,
-    setDriveOpen,
-    selectedDriveIds,
-    setSelectedDriveIds,
-    driveContents,
-    driveLoadingIds,
-    toggleDriveFile,
-    clearSelectedDriveFiles
-  } = useDriveContext();
-  const {
     historyPageId,
     setHistoryPageId,
     historyVersions,
@@ -557,9 +543,6 @@ export default function App() {
     pages,
     selected,
     screenshots,
-    selectedDriveIds,
-    driveContents,
-    driveFiles,
     plannedPages,
     refineInput,
     setPages,
@@ -814,7 +797,7 @@ export default function App() {
         onAdditionalContextChange={setNotes}
         onGenerateClick={() => void generate({ pageType: pendingPageType || studioPageTypes()[0] })}
         generateLabel={
-          loading ? (streaming ? "Generating…" : evaluating ? "Evaluating…" : "Working…") : `Generate page${selectedDriveIds.size > 0 || screenshots.length > 0 ? ` (${[selectedDriveIds.size > 0 ? `${selectedDriveIds.size} doc${selectedDriveIds.size !== 1 ? "s" : ""}` : "", screenshots.length > 0 ? `${screenshots.length} image${screenshots.length !== 1 ? "s" : ""}` : ""].filter(Boolean).join(", ")})` : ""}`
+          loading ? (streaming ? "Generating…" : evaluating ? "Evaluating…" : "Working…") : screenshots.length > 0 ? `Generate page (${screenshots.length} image${screenshots.length !== 1 ? "s" : ""})` : "Generate page"
         }
         generateDisabled={loading || topicError}
         karlEvaluation={studioKarlView}
@@ -890,68 +873,6 @@ export default function App() {
                   <Badge type={pendingPageType} small />
                   <span>from plan</span>
                   <button type="button" className="app-icon-btn" onClick={() => { setPendingPageType(""); setPendingPlannedId(null); }}>&#10005;</button>
-                </div>
-              )}
-            </Card>
-
-            <Card className="app-card-pad--14-16-mb">
-              <button
-                type="button"
-                onClick={() => setDriveOpen(o => !o)}
-                className="app-drive-toggle"
-              >
-                <div className="app-drive-toggle__left">
-                  <svg className="app-drive-toggle__icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" /></svg>
-                  <p className="app-up-label app-up-label--flush app-drive-toggle__label">Reference documents</p>
-                  {selectedDriveIds.size > 0 && (
-                    <span className="app-drive-count">{selectedDriveIds.size}</span>
-                  )}
-                </div>
-                <svg className={`app-drive-toggle__chev${driveOpen ? " app-drive-toggle__chev--open" : ""}`} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
-              </button>
-
-              {driveOpen && (
-                <div className="app-drive-body">
-                  {driveLoading && <p className="app-drive-p">Loading Drive files…</p>}
-                  {driveError && !driveLoading && (
-                    <p className="app-drive-err">Could not load Drive files: {driveError}</p>
-                  )}
-                  {!driveLoading && !driveError && driveFiles.length === 0 && (
-                    <p className="app-drive-p">No files found in folder.</p>
-                  )}
-                  {!driveLoading && driveFiles.map(file => {
-                    const rowSelected = selectedDriveIds.has(file.id);
-                    const loading = driveLoadingIds.has(file.id);
-                    const isDoc = file.mimeType.includes("google-apps") || file.mimeType.includes("text") || file.mimeType.includes("pdf") || file.mimeType.includes("word");
-                    return (
-                      <button
-                        type="button"
-                        key={file.id}
-                        onClick={() => !loading && toggleDriveFile(file)}
-                        disabled={loading}
-                        className={`app-drive-row${rowSelected ? " app-drive-row--selected" : ""}`}
-                      >
-                        <div className="app-drive-check">
-                          {rowSelected && <svg width="9" height="9" viewBox="0 0 10 10"><path d="M1.5 5l3 3 4-5" stroke="#fff" strokeWidth="1.5" fill="none" strokeLinecap="round" /></svg>}
-                        </div>
-                        <span className="app-drive-name">{file.name}</span>
-                        {loading && <span className="app-drive-meta">…</span>}
-                        {!isDoc && !loading && <span className="app-drive-meta">binary</span>}
-                      </button>
-                    );
-                  })}
-                  {selectedDriveIds.size > 0 && (
-                    <button
-                      type="button"
-                      onClick={clearSelectedDriveFiles}
-                      className="app-drive-clear"
-                    >
-                      Clear selection
-                    </button>
-                  )}
-                  <p className="app-drive-foot">
-                    Selected documents are included as context when generating pages.
-                  </p>
                 </div>
               )}
             </Card>

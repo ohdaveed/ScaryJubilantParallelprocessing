@@ -152,13 +152,6 @@ export interface TodoItem {
   done: boolean;
 }
 
-export interface DriveFile {
-  id: string;
-  name: string;
-  mimeType: string;
-  modifiedTime?: string;
-}
-
 export interface UserPreference {
   id: number;
   preference: string;

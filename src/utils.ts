@@ -578,20 +578,6 @@ Section body: ${REPORT_TRANSACTION_POST_CTA_ROUTING_BODY}
   } as import("./types").PageDraft;
 };
 
-export const driveApi = {
-  listFiles: async (): Promise<import("./types").DriveFile[]> => {
-    const res = await fetch(`${API_BASE}/drive/files`);
-    if (!res.ok) throw new Error(`Drive list failed: ${res.status}`);
-    const data = await res.json();
-    return data.files || [];
-  },
-  readFile: async (fileId: string): Promise<{ id: string; name: string; mimeType: string; content: string }> => {
-    const res = await fetch(`${API_BASE}/drive/files/${encodeURIComponent(fileId)}`);
-    if (!res.ok) throw new Error(`Drive read failed: ${res.status}`);
-    return res.json();
-  }
-};
-
 export const lsLegacy = {
   listPageKeys: (): string[] =>
     Object.keys(localStorage).filter(k => k.startsWith("hhvc:") && k !== "hhvc:todos"),

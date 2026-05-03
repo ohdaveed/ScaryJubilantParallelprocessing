@@ -12,7 +12,6 @@ export type StreamModelTextOptions = {
   msg: string;
   mode: StreamMode;
   systemPrompt: string;
-  driveContext?: string;
   images?: ChatImagePayload[];
   onAdvance: (pct: number, label: string) => void;
   onTextDelta: (deltaText: string) => void;
@@ -25,7 +24,6 @@ export async function streamModelText(options: StreamModelTextOptions): Promise<
     msg,
     mode,
     systemPrompt,
-    driveContext,
     images,
     onAdvance,
     onTextDelta,
@@ -42,7 +40,6 @@ export async function streamModelText(options: StreamModelTextOptions): Promise<
       stream: true,
       system: systemPrompt,
       messages: [{ role: "user", content: msg }],
-      ...(driveContext ? { driveContext } : {}),
       ...(images && images.length > 0 ? { images } : {})
     })
   });

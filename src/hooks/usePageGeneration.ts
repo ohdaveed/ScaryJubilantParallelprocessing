@@ -1,5 +1,5 @@
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from "react";
-import { PageDraft, PlannedPage, UserPreference, DriveFile } from "../types";
+import { PageDraft, PlannedPage, UserPreference } from "../types";
 import { SYSTEM_PROMPT, STRUCTURED_OUTPUT_RULES, buildGenerationUserPrompt, buildRefineUserPrompt } from "../constants";
 import { clean, evaluateQualityGate, improveStructure, isPest, pagesApi, parsePage, preferencesApi, runKarlEvaluation, versionsApi } from "../utils";
 import { streamModelText as streamModelTextService } from "../services/chatStream";
@@ -35,9 +35,6 @@ type UsePageGenerationParams = {
   pages: PageDraft[];
   selected: PageDraft | null;
   screenshots: ScreenshotAsset[];
-  selectedDriveIds: Set<string>;
-  driveContents: Record<string, string>;
-  driveFiles: DriveFile[];
   plannedPages: PlannedPage[];
   refineInput: string;
   setPages: Dispatch<SetStateAction<PageDraft[]>>;
@@ -64,9 +61,6 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     pages,
     selected,
     screenshots,
-    selectedDriveIds,
-    driveContents,
-    driveFiles,
     plannedPages,
     refineInput,
     setPages,
@@ -110,18 +104,15 @@ export function usePageGeneration(params: UsePageGenerationParams) {
   const streamModelText = useCallback(async ({
     msg,
     mode,
-    driveContext,
     images
   }: {
     msg: string;
     mode: "generate" | "refine";
-    driveContext?: string;
     images?: ChatImagePayload[];
   }): Promise<{ karlHit: boolean }> => {
     return streamModelTextService({
       msg,
       mode,
-      driveContext,
       images,
       systemPrompt: SYSTEM_PROMPT,
       onAdvance: adv,
@@ -186,21 +177,10 @@ export function usePageGeneration(params: UsePageGenerationParams) {
 
     let karlHit = false;
 
-    const driveContext = selectedDriveIds.size > 0
-      ? [...selectedDriveIds]
-          .filter((id) => driveContents[id])
-          .map((id) => {
-            const file = driveFiles.find((f) => f.id === id);
-            return `=== ${file?.name || id} ===\n${driveContents[id]}`;
-          })
-          .join("\n\n")
-      : undefined;
-
     try {
       const streamResult = await streamModelText({
         msg,
         mode: "generate",
-        driveContext,
         images: screenshots.length > 0 ? screenshots.map((s) => ({ base64: s.base64, mimeType: s.mimeType })) : undefined
       });
 
@@ -311,9 +291,6 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     pendingPageType,
     preferences,
     pages,
-    selectedDriveIds,
-    driveContents,
-    driveFiles,
     screenshots,
     pendingPlannedId,
     plannedPages,
