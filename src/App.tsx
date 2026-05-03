@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { PageDraft, TodoItem, KarlEvaluation, PlannedPage, UserPreference, SuggestedPage, ReviewStatus } from "./types";
-import { USER_TYPES, PAGE_TYPES, SUGGESTED_PAGES, TYPE_META } from "./constants";
-import { clean, pagesApi, replacePageDraftInRaw, todosApi, preferencesApi, filterEligibleSuggestedPages, sampleSuggestedPages } from "./utils";
+import { PageDraft, TodoItem, KarlEvaluation, PlannedPage, UserPreference, ReviewStatus } from "./types";
+import { USER_TYPES, PAGE_TYPES, TYPE_META } from "./constants";
+import { clean, pagesApi, replacePageDraftInRaw, todosApi, preferencesApi } from "./utils";
 import { Badge, Divider, Btn, Card, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar } from "./components/ui";
 import { SfGovPagePreview } from "./components/SfGovPreview";
 import { toPng } from "html-to-image";
@@ -265,13 +265,12 @@ function PlanSidebar({ planned, pages, selectedPlanned, onSelectPlanned, onAdd, 
   );
 }
 
-function TodoPanel({ pages, onGenerate }: { pages: PageDraft[]; onGenerate: (topic: string, userType: string) => void }) {
+function TodoPanel({ onGenerate }: { onGenerate: (topic: string, userType: string) => void }) {
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [newTopic, setNewTopic] = useState("");
   const [newUT, setNewUT] = useState(USER_TYPES[0]);
   const [adding, setAdding] = useState(false);
   const [loadingTodos, setLoadingTodos] = useState(true);
-  const [visibleSuggested, setVisibleSuggested] = useState<SuggestedPage[]>([]);
 
   useEffect(() => {
     todosApi.list()
@@ -280,26 +279,6 @@ function TodoPanel({ pages, onGenerate }: { pages: PageDraft[]; onGenerate: (top
       .finally(() => setLoadingTodos(false));
   }, []);
 
-  const suggested = useMemo(
-    () => filterEligibleSuggestedPages(SUGGESTED_PAGES, pages, todos),
-    [pages, todos]
-  );
-
-  const suggestedKey = useMemo(
-    () => suggested.map((entry) => entry.topic).join("|"),
-    [suggested]
-  );
-
-  useEffect(() => {
-    setVisibleSuggested((previous) => {
-      const nextSample = sampleSuggestedPages(suggested, 5, previous.map((entry) => entry.topic));
-      const hasSameTopics =
-        previous.length === nextSample.length &&
-        previous.every((entry, index) => entry.topic === nextSample[index]?.topic);
-
-      return hasSameTopics ? previous : nextSample;
-    });
-  }, [suggested, suggestedKey]);
   const addTodo = async () => {
     if (!newTopic.trim()) return;
     try {
@@ -319,19 +298,6 @@ function TodoPanel({ pages, onGenerate }: { pages: PageDraft[]; onGenerate: (top
     try { await todosApi.delete(id); } catch {}
   };
 
-  const addSug = async (s: { topic: string; userType: string; pageType: string }) => {
-    try {
-      const created = await todosApi.create(s.topic, s.userType);
-      setTodos(prev => [...prev, created]);
-    } catch {}
-  };
-
-  const refreshSuggestions = () => {
-    setVisibleSuggested((previous) =>
-      sampleSuggestedPages(suggested, 5, previous.map((entry) => entry.topic))
-    );
-  };
-
   const pending = todos.filter(t => !t.done), done = todos.filter(t => t.done);
 
   return (
@@ -346,7 +312,7 @@ function TodoPanel({ pages, onGenerate }: { pages: PageDraft[]; onGenerate: (top
       {!loadingTodos && pending.length === 0 && done.length === 0 && (
         <div className="app-todo-empty">
           <p className="app-todo-empty__t">No pages queued</p>
-          <p className="app-todo-empty__s">Add topics below or pick from suggestions</p>
+          <p className="app-todo-empty__s">Add topics below to build your queue</p>
         </div>
       )}
 
@@ -386,33 +352,9 @@ function TodoPanel({ pages, onGenerate }: { pages: PageDraft[]; onGenerate: (top
           </div>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={suggested.length === 1 ? undefined : suggested.length > 0 ? refreshSuggestions : () => setAdding(true)}
-          disabled={suggested.length === 1}
-          className={`app-todo-dash${suggested.length === 1 ? " app-todo-dash--disabled" : ""}`}
-        >
-          {suggested.length > 0 ? "Refresh choices" : "+ Add page"}
+        <button type="button" className="app-todo-dash" onClick={() => setAdding(true)}>
+          + Add page
         </button>
-      )}
-
-      {suggested.length > 0 && (
-        <>
-          <Divider variant="suggested" />
-          <div className="app-sug-head">
-            <p className="app-up-label app-up-label--flush">Suggested</p>
-            <Btn onClick={refreshSuggestions} variant="ghost" size="sm" disabled={suggested.length <= 1}>Refresh choices</Btn>
-          </div>
-          {visibleSuggested.map((s, i) => (
-            <div key={i} className="app-sug-row">
-              <div className="app-sug-body">
-                <p className="app-sug-topic">{s.topic}</p>
-                <span className="app-sug-type" data-page-type={s.pageType}>{s.pageType}</span>
-              </div>
-              <Btn onClick={() => addSug(s)} variant="ghost" size="sm">+ Add</Btn>
-            </div>
-          ))}
-        </>
       )}
     </Card>
   );

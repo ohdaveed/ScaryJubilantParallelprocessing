@@ -120,12 +120,6 @@ export interface SkeletonTemplate {
   related?: string[];
 }
 
-export interface SuggestedPage {
-  topic: string;
-  userType: string;
-  pageType: string;
-}
-
 export interface Milestone {
   pct: number;
   label: string;

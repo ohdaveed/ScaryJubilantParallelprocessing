@@ -1,4 +1,4 @@
-import { SuggestedPage, Milestone, ComponentStyle, SkeletonTemplate } from "./types";
+import { Milestone, ComponentStyle, SkeletonTemplate } from "./types";
 
 export const KARL_PAGE_TYPES = [
   "Transaction",
@@ -389,52 +389,6 @@ export const SECTION_STYLES: Record<string, ComponentStyle> = {
   "action link":         { accent: "#0F6E56", bg: "#E1F5EE", icon: "arrow" },
   "campaign":            { accent: "#6B21A8", bg: "#F3E8FF", icon: "info" },
 };
-
-export const SUGGESTED_PAGES: SuggestedPage[] = [
-  { topic: "Healthy housing and pests", userType: "General public", pageType: "Topic" },
-  { topic: "Report a housing or pest problem", userType: "General public", pageType: "Information" },
-  { topic: "Report rats or mice or fix a rat or mouse problem", userType: "Resident / tenant", pageType: "Transaction" },
-  { topic: "Report cockroaches or fix a cockroach problem", userType: "Resident / tenant", pageType: "Transaction" },
-  { topic: "Report bed bugs or fix a bed bug problem", userType: "Resident / tenant", pageType: "Transaction" },
-  { topic: "Report pigeons or fix a pigeon problem", userType: "General public", pageType: "Transaction" },
-  { topic: "Report mosquitoes in your home or yard", userType: "General public", pageType: "Transaction" },
-  { topic: "Report garbage or dirty conditions", userType: "Resident / tenant", pageType: "Transaction" },
-  { topic: "Report animal waste, flies, or things that attract pests", userType: "General public", pageType: "Transaction" },
-  { topic: "Report too much clutter or materials causing health problems", userType: "Resident / tenant", pageType: "Transaction" },
-  { topic: "Report overgrown plants or weeds that attract pests", userType: "General public", pageType: "Transaction" },
-  { topic: "Report indoor moisture problems like water on walls or windows (not leaks)", userType: "Resident / tenant", pageType: "Transaction" },
-  { topic: "Fix a problem in your building", userType: "General public", pageType: "Information" },
-  { topic: "Get ready for a housing inspection after you report a problem", userType: "Resident / tenant", pageType: "Step by step" },
-  { topic: "Get ready for a follow-up inspection", userType: "Resident / tenant", pageType: "Step by step" },
-  { topic: "What tenants need to do after getting a notice of violation", userType: "Resident / tenant", pageType: "Information" },
-  { topic: "What owners need to do after getting a notice of violation", userType: "Property owner / landlord", pageType: "Information" },
-  { topic: "What happens if problems are not fixed", userType: "General public", pageType: "Information" },
-  { topic: "Understand inspections and follow-up visits", userType: "General public", pageType: "Information" },
-  { topic: "Learn about reinspection fees", userType: "Property owner / landlord", pageType: "Information" },
-  { topic: "Prevent pests and health problems", userType: "General public", pageType: "Information" },
-  { topic: "Prevent rats or mice in your home", userType: "Resident / tenant", pageType: "Information" },
-  { topic: "Prevent cockroaches and other pests", userType: "Resident / tenant", pageType: "Information" },
-  { topic: "Prevent bed bugs in your home", userType: "Resident / tenant", pageType: "Information" },
-  { topic: "Prevent mosquitoes by removing standing water", userType: "General public", pageType: "Information" },
-  { topic: "Keep your home clean and free of pests", userType: "Resident / tenant", pageType: "Information" },
-  { topic: "Store food, trash, and materials to prevent pests", userType: "Resident / tenant", pageType: "Information" },
-  { topic: "Reduce indoor moisture and prevent mold (not leaks)", userType: "Resident / tenant", pageType: "Information" },
-  { topic: "Programs and services", userType: "General public", pageType: "Information" },
-  { topic: "Request a mosquito education workshop for students", userType: "General public", pageType: "Transaction" },
-  { topic: "Report a dead bird for West Nile Virus testing", userType: "General public", pageType: "Information" },
-  { topic: "About the healthy housing program and inspections", userType: "General public", pageType: "Information" },
-  { topic: "Learn what we inspect in homes and buildings", userType: "General public", pageType: "Information" },
-  { topic: "Learn how we respond to complaints", userType: "General public", pageType: "Information" },
-  { topic: "Tools and lookup", userType: "General public", pageType: "Information" },
-  { topic: "Look up healthy housing violations for a property", userType: "General public", pageType: "Information" },
-  { topic: "Find your healthy housing inspector by neighborhood", userType: "General public", pageType: "Information" },
-  { topic: "Fees and payments", userType: "Property owner / landlord", pageType: "Information" },
-  { topic: "Pay your healthy housing fee for buildings with 3 or more units", userType: "Property owner / landlord", pageType: "Transaction" },
-  { topic: "Resources and help", userType: "General public", pageType: "Information" },
-  { topic: "Healthy housing guides and resources", userType: "General public", pageType: "Information" },
-  { topic: "Contact healthy housing and vector control", userType: "General public", pageType: "Information" },
-  { topic: "Get help with a housing or pest problem", userType: "General public", pageType: "Information" }
-];
 
 export const MILESTONE_DOTS: Milestone[] = [
   { pct: 15, label: "Connecting" },

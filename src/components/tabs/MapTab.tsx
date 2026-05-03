@@ -32,7 +32,7 @@ type MapTabProps = {
     onGenerate: (p: PlannedPage) => void;
     onViewPage: (pageId: string) => void;
   }>;
-  TodoPanelComponent: React.ComponentType<{ pages: PageDraft[]; onGenerate: (topic: string, userType: string) => void }>;
+  TodoPanelComponent: React.ComponentType<{ onGenerate: (topic: string, userType: string) => void }>;
 };
 
 export function MapTab(props: MapTabProps) {
@@ -108,7 +108,7 @@ export function MapTab(props: MapTabProps) {
                 <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "var(--color-background-secondary)", color: "var(--color-text-tertiary)", border: "0.5px dashed var(--color-border-secondary)" }}>orphan</span>
               </div>
             </div>
-            <TodoPanelComponent pages={pages} onGenerate={onTodoGenerate} />
+            <TodoPanelComponent onGenerate={onTodoGenerate} />
           </>
         ) : (
           <>
