@@ -29,7 +29,6 @@ export async function runQueue(
     if (shouldStop()) break;
 
     onUpdate(todo.id, { status: "generating" });
-    shouldStop(); // check after setting generating state (allows stop signal to be observed mid-loop)
 
     try {
       const page = await generate(todo.topic, todo.userType);

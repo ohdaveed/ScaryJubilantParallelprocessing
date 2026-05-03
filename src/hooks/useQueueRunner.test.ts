@@ -48,11 +48,13 @@ describe("runQueue", () => {
 
   it("stops after current item when shouldStop returns true", async () => {
     const todos = [makeTodo(1), makeTodo(2), makeTodo(3)];
-    let callCount = 0;
-    const generate = vi.fn().mockResolvedValue({ id: "p", name: "P", karlEvaluation: null } as any);
+    let stopped = false;
+    const generate = vi.fn().mockImplementation(async () => {
+      stopped = true;
+      return { id: "p", name: "P", karlEvaluation: null } as any;
+    });
     const onUpdate = vi.fn();
-    // stop after first item completes
-    const shouldStop = () => { callCount++; return callCount > 2; };
+    const shouldStop = () => stopped;
 
     const result = await runQueue(todos, generate, onUpdate, shouldStop);
 
