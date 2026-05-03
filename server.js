@@ -260,7 +260,8 @@ ${existingContent}`
   }
 
   body = { ...anthropicBody, messages: msgs };
-  body.system = typeof body.system === "string" ? withKarlCitations(body.system) : withKarlCitations("");
+  const systemText = typeof body.system === "string" ? withKarlCitations(body.system) : withKarlCitations("");
+  body.system = [{ type: "text", text: systemText, cache_control: { type: "ephemeral" } }];
 
   try {
     logWithRequest(res, "generate", "forwarding request to anthropic");
@@ -370,9 +371,9 @@ If any passed, warnings, or failed item discusses Karl CMS page types, Related p
   try {
     logWithRequest(res, "evaluate", "running evaluator");
     const upstream = await postAnthropic({
-        model: "claude-haiku-4-20250514",
+        model: "claude-haiku-4-5",
         max_tokens: 1024,
-        system: evalSystem,
+        system: [{ type: "text", text: evalSystem, cache_control: { type: "ephemeral" } }],
         messages: [{ role: "user", content: evalPrompt }]
       }, 45000, 1);
 
@@ -400,9 +401,9 @@ Do not include markdown or extra text.
 INVALID RESPONSE:
 ${textContent}`;
       const repairUpstream = await postAnthropic({
-          model: "claude-haiku-4-20250514",
+          model: "claude-haiku-4-5",
           max_tokens: 1024,
-          system: evalSystem,
+          system: [{ type: "text", text: evalSystem, cache_control: { type: "ephemeral" } }],
           messages: [{ role: "user", content: repairPrompt }]
         }, 30000, 0);
       if (repairUpstream.ok) {
@@ -509,9 +510,9 @@ Return the COMPLETE improved page in exactly the same format. Change structure a
   try {
     logWithRequest(res, "improve", "running structure improvement");
     const upstream = await postAnthropic({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 4000,
-        system: "You are an SF.gov content structure editor. Improve page structure and readability without changing facts.",
+        system: [{ type: "text", text: "You are an SF.gov content structure editor. Improve page structure and readability without changing facts.", cache_control: { type: "ephemeral" } }],
         messages: [{ role: "user", content: improvePrompt }],
       }, 45000, 1);
 
