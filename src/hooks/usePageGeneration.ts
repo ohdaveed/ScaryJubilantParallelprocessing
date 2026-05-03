@@ -4,7 +4,7 @@ import { SYSTEM_PROMPT, STRUCTURED_OUTPUT_RULES, buildGenerationUserPrompt, buil
 import { clean, evaluateQualityGate, improveStructure, isPest, pagesApi, parsePage, preferencesApi, runKarlEvaluation, versionsApi } from "../utils";
 import { streamModelText as streamModelTextService } from "../services/chatStream";
 import { repairAndParseStructured as repairAndParseStructuredService } from "../services/pageParser";
-import { ChatImagePayload, GenerationInputSnapshot, ScreenshotAsset } from "../state/appTypes";
+import { GenerationInputSnapshot } from "../state/appTypes";
 
 const REPAIR_PROMPT = `Your previous response did not match the required JSON schema.
 Return only ONE valid JSON object that matches the schema exactly.
@@ -34,7 +34,6 @@ type UsePageGenerationParams = {
   preferences: UserPreference[];
   pages: PageDraft[];
   selected: PageDraft | null;
-  screenshots: ScreenshotAsset[];
   plannedPages: PlannedPage[];
   refineInput: string;
   setPages: Dispatch<SetStateAction<PageDraft[]>>;
@@ -44,7 +43,6 @@ type UsePageGenerationParams = {
   setTopic: Dispatch<SetStateAction<string>>;
   setNotes: Dispatch<SetStateAction<string>>;
   setTopicTouched: Dispatch<SetStateAction<boolean>>;
-  setScreenshots: Dispatch<SetStateAction<ScreenshotAsset[]>>;
   setPreferences: Dispatch<SetStateAction<UserPreference[]>>;
   setRefineInput: Dispatch<SetStateAction<string>>;
   linkPlannedPage: (plannedId: number, builtPageId: string) => void | Promise<void>;
@@ -60,7 +58,6 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     preferences,
     pages,
     selected,
-    screenshots,
     plannedPages,
     refineInput,
     setPages,
@@ -70,7 +67,6 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     setTopic,
     setNotes,
     setTopicTouched,
-    setScreenshots,
     setPreferences,
     setRefineInput,
     linkPlannedPage
@@ -103,17 +99,14 @@ export function usePageGeneration(params: UsePageGenerationParams) {
 
   const streamModelText = useCallback(async ({
     msg,
-    mode,
-    images
+    mode
   }: {
     msg: string;
     mode: "generate" | "refine";
-    images?: ChatImagePayload[];
   }): Promise<{ karlHit: boolean }> => {
     return streamModelTextService({
       msg,
       mode,
-      images,
       systemPrompt: SYSTEM_PROMPT,
       onAdvance: adv,
       onTextDelta: (deltaText) => {
@@ -180,8 +173,7 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     try {
       const streamResult = await streamModelText({
         msg,
-        mode: "generate",
-        images: screenshots.length > 0 ? screenshots.map((s) => ({ base64: s.base64, mimeType: s.mimeType })) : undefined
+        mode: "generate"
       });
 
       karlHit = streamResult.karlHit;
@@ -270,7 +262,6 @@ export function usePageGeneration(params: UsePageGenerationParams) {
         setTopic("");
         setNotes("");
         setTopicTouched(false);
-        setScreenshots([]);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
@@ -291,7 +282,6 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     pendingPageType,
     preferences,
     pages,
-    screenshots,
     pendingPlannedId,
     plannedPages,
     streamModelText,
@@ -304,8 +294,7 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     setPages,
     setTopic,
     setNotes,
-    setTopicTouched,
-    setScreenshots
+    setTopicTouched
   ]);
 
   const regenerate = useCallback((p: PageDraft) => {

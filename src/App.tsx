@@ -12,7 +12,6 @@ import { usePageGeneration } from "./hooks/usePageGeneration";
 import { MapTab } from "./components/tabs/MapTab";
 import { LibraryTab } from "./components/tabs/LibraryTab";
 import { SfGovContentDesignTool, type ContentDesignTab, type KarlEvaluationView } from "./components/SfGovContentDesignTool";
-import { ScreenshotAsset } from "./state/appTypes";
 import "./App.css";
 
 
@@ -477,8 +476,6 @@ export default function App() {
   const [preferences, setPreferences] = useState<UserPreference[]>([]);
   const [selectedPageIds, setSelectedPageIds] = useState<Set<string>>(new Set());
   const [newPref, setNewPref] = useState("");
-  const [screenshots, setScreenshots] = useState<ScreenshotAsset[]>([]);
-  const [dropzoneDepth, setDropzoneDepth] = useState(0);
   const [mockupEditOpen, setMockupEditOpen] = useState(false);
   const [draftEditBuffer, setDraftEditBuffer] = useState("");
   const [draftEditSaving, setDraftEditSaving] = useState(false);
@@ -542,7 +539,6 @@ export default function App() {
     preferences,
     pages,
     selected,
-    screenshots,
     plannedPages,
     refineInput,
     setPages,
@@ -552,7 +548,6 @@ export default function App() {
     setTopic,
     setNotes,
     setTopicTouched,
-    setScreenshots,
     setPreferences,
     setRefineInput,
     linkPlannedPage
@@ -571,37 +566,6 @@ export default function App() {
     setDraftEditBuffer("");
     setDraftEditError("");
   }, [selected?.id]);
-
-  const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
-  const MAX_IMAGE_SIZE = 4 * 1024 * 1024;
-  const MAX_SCREENSHOTS = 3;
-
-  const handleImageFiles = useCallback((fileList: File[]) => {
-    const valid = fileList.filter(f => ALLOWED_IMAGE_TYPES.includes(f.type) && f.size <= MAX_IMAGE_SIZE);
-    setScreenshots(prev => {
-      const remaining = MAX_SCREENSHOTS - prev.length;
-      if (remaining <= 0) return prev;
-      valid.slice(0, remaining).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          const base64 = result.split(",")[1];
-          setScreenshots(p => p.length < MAX_SCREENSHOTS ? [...p, { name: file.name, base64, mimeType: file.type }] : p);
-        };
-        reader.readAsDataURL(file);
-      });
-      return prev;
-    });
-  }, []);
-
-  const browseForImages = useCallback(() => {
-    const inp = document.createElement("input");
-    inp.type = "file";
-    inp.accept = ALLOWED_IMAGE_TYPES.join(",");
-    inp.multiple = true;
-    inp.onchange = () => handleImageFiles(Array.from(inp.files || []));
-    inp.click();
-  }, [handleImageFiles]);
 
   const deletePage = useCallback(async (id: string) => {
     await deleteStoredPage(id);
@@ -797,7 +761,7 @@ export default function App() {
         onAdditionalContextChange={setNotes}
         onGenerateClick={() => void generate({ pageType: pendingPageType || studioPageTypes()[0] })}
         generateLabel={
-          loading ? (streaming ? "Generating…" : evaluating ? "Evaluating…" : "Working…") : screenshots.length > 0 ? `Generate page (${screenshots.length} image${screenshots.length !== 1 ? "s" : ""})` : "Generate page"
+          loading ? (streaming ? "Generating…" : evaluating ? "Evaluating…" : "Working…") : "Generate page"
         }
         generateDisabled={loading || topicError}
         karlEvaluation={studioKarlView}
@@ -818,56 +782,6 @@ export default function App() {
             <Card className="app-card-pad--18-20">
               <KarlStatus status={karlStatus} />
               {topicError && <p className="app-topic-err">Enter a topic in the left panel to continue</p>}
-              <div className="app-field-mb8">
-                <p className="app-shot-label">Screenshots <span>(optional, up to 3)</span></p>
-                <div
-                  className={`app-dropzone${screenshots.length > 0 ? " app-dropzone--compact" : ""}${screenshots.length >= 3 ? " app-dropzone--disabled" : ""}${dropzoneDepth > 0 && screenshots.length < MAX_SCREENSHOTS ? " app-dropzone--drag" : ""}`}
-                  onDragEnter={e => { e.preventDefault(); e.stopPropagation(); setDropzoneDepth(d => d + 1); }}
-                  onDragLeave={e => { e.preventDefault(); e.stopPropagation(); setDropzoneDepth(d => Math.max(0, d - 1)); }}
-                  onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
-                  onDrop={e => {
-                    e.preventDefault(); e.stopPropagation();
-                    setDropzoneDepth(0);
-                    handleImageFiles(Array.from(e.dataTransfer.files));
-                  }}
-                  onClick={() => { if (screenshots.length < MAX_SCREENSHOTS) browseForImages(); }}
-                >
-                  {screenshots.length === 0 && (
-                    <div>
-                      <svg className="app-dropzone__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                        <circle cx="8.5" cy="8.5" r="1.5" />
-                        <polyline points="21 15 16 10 5 21" />
-                      </svg>
-                      <p className="app-dropzone__p1">Drop images here or click to browse</p>
-                      <p className="app-dropzone__p2">PNG, JPG, WEBP &middot; max 4MB each</p>
-                    </div>
-                  )}
-                  {screenshots.length > 0 && (
-                    <div className="app-shot-grid" onClick={e => e.stopPropagation()}>
-                      {screenshots.map((s, i) => (
-                        <div key={i} className="app-shot-thumb">
-                          <img src={`data:${s.mimeType};base64,${s.base64}`} alt={s.name} />
-                          <button
-                            type="button"
-                            className="app-shot-remove"
-                            onClick={e => { e.stopPropagation(); setScreenshots(prev => prev.filter((_, idx) => idx !== i)); }}
-                          >&#10005;</button>
-                        </div>
-                      ))}
-                      {screenshots.length < MAX_SCREENSHOTS && (
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          className="app-shot-add"
-                          onClick={() => browseForImages()}
-                          onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); browseForImages(); } }}
-                        >+</div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
               {pendingPageType && (
                 <div className="app-pending-type-banner">
                   <Badge type={pendingPageType} small />
