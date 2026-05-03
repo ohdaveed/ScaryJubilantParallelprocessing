@@ -38,6 +38,25 @@ npx tsc --noEmit type-checks the src/ directory.
 
 The project does not configure ESLint; TypeScript is the primary static analysis tool.
 
+### Starting the .env file
+
+Before running `npm run dev`, create a `.env` in the workspace root with at least:
+
+```
+ANTHROPIC_API_KEY=<your key>
+DB_FALLBACK_MODE=file
+```
+
+The `ANTHROPIC_API_KEY` env var is injected automatically in Cloud Agent VMs via secrets. Write it into `.env` so the server picks it up via `--env-file=.env`:
+
+```sh
+printf 'ANTHROPIC_API_KEY=%s\nDB_FALLBACK_MODE=file\n' "$ANTHROPIC_API_KEY" > .env
+```
+
 ### Gotchas
 
-- A lockfile (package-lock.json) should be committed to ensure consistent dependency resolution.
+- A lockfile (`package-lock.json`) should be committed to ensure consistent dependency resolution.
+- The file `src/App (# Edit conflict 2026-04-19 4xnybrC #).tsx` is a merge conflict artifact that causes `tsc` errors; ignore these.
+- The server must be restarted after `.env` changes; Vite HMR does not reload the Express backend.
+- AI page generation (the core feature) takes ~10-30 seconds per page. The evaluation endpoint uses Claude Haiku and is faster (~5 s).
+- When the "Karl citations" service is unreachable (external dependency), the app logs a warning and falls back to base standards. This does not block page generation.
