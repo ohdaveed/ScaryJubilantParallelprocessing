@@ -32,7 +32,7 @@ The server reads `.env` at startup via `--env-file=.env`. Key variables:
 
 ### TypeScript
 
-`npx tsc --noEmit` type-checks the `src/` directory. There is an existing conflict file `src/App (# Edit conflict ...).tsx` with known TS errors — this is a pre-existing artifact, not a regression.
+npx tsc --noEmit type-checks the src/ directory.
 
 ### No ESLint
 
