@@ -655,7 +655,9 @@ export function SfGovContentDesignTool({
             <div className="status-dot" aria-hidden />
             <span>{streamStatus}</span>
           </div>
-          <div className="stream-text">{streamMessage}</div>
+          <div className="stream-text" title={streamMessage}>
+            {streamMessage}
+          </div>
           {streamFooterMeta ? <div className="stream-footer-meta">{streamFooterMeta}</div> : null}
         </footer>
       </div>
