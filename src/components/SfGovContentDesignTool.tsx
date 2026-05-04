@@ -141,6 +141,15 @@ function IconTrash() {
   );
 }
 
+function IconChevron({ direction }: { direction: "left" | "right" }) {
+  const points = direction === "left" ? "14 6 8 12 14 18" : "10 6 16 12 10 18";
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" aria-hidden>
+      <polyline points={points} />
+    </svg>
+  );
+}
+
 type LibraryRowProps = {
   page: LibraryPageRow;
   active: boolean;
@@ -262,6 +271,7 @@ export function SfGovContentDesignTool({
   const [splitterDragging, setSplitterDragging] = useState(false);
   const [dismissConfirm, setDismissConfirm] = useState(0);
   const [pageTypesExpanded, setPageTypesExpanded] = useState(false);
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
 
   const activeTabMeta = useMemo(() => tabs.find((t) => t.id === activeTabId), [tabs, activeTabId]);
 
@@ -325,7 +335,15 @@ export function SfGovContentDesignTool({
     return () => document.removeEventListener("click", onDocClick);
   }, []);
 
-  const rootClass = ["sf-cdt", !showLeftPanel ? "sf-cdt--preview-only" : "", className].filter(Boolean).join(" ");
+  const leftPanelHidden = !showLeftPanel || leftPanelCollapsed;
+  const rootClass = [
+    "sf-cdt",
+    !showLeftPanel ? "sf-cdt--preview-only" : "",
+    leftPanelCollapsed ? "sf-cdt--left-collapsed" : "",
+    className
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div ref={shellRef} id={`${baseId}-shell`} className={rootClass} style={shellStyle}>
@@ -398,7 +416,7 @@ export function SfGovContentDesignTool({
         ) : null}
 
         <div className="main editorial-main" role="tabpanel" aria-label="Editor and preview" aria-labelledby={`${baseId}-tab-${activeTabId}`}>
-          {showLeftPanel ? (
+          {!leftPanelHidden ? (
           <aside className="left-panel authoring-rail" aria-label="Editor controls">
             <section className="panel-section panel-band">
               <div className="panel-band__kicker">Who this is for</div>
@@ -544,7 +562,7 @@ export function SfGovContentDesignTool({
           </aside>
           ) : null}
 
-          {showLeftPanel ? (
+          {!leftPanelHidden ? (
           <div
             className={`drag-handle${splitterDragging ? " is-dragging" : ""}`}
             role="separator"
@@ -570,6 +588,17 @@ export function SfGovContentDesignTool({
 
           <section className="right-panel preview-workbench" aria-label="Preview">
             <div className="preview-topbar workbench-chrome">
+              {showLeftPanel ? (
+                <button
+                  type="button"
+                  className="panel-collapse-btn"
+                  aria-label={leftPanelCollapsed ? "Expand left column" : "Collapse left column"}
+                  title={leftPanelCollapsed ? "Expand left column" : "Collapse left column"}
+                  onClick={() => setLeftPanelCollapsed((collapsed) => !collapsed)}
+                >
+                  <IconChevron direction={leftPanelCollapsed ? "right" : "left"} />
+                </button>
+              ) : null}
               <div className="browser-dots" aria-hidden>
                 <div className="bdot bdot-r" />
                 <div className="bdot bdot-y" />

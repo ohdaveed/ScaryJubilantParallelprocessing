@@ -514,6 +514,9 @@ export default function App() {
   const [selectedPageIds, setSelectedPageIds] = useState<Set<string>>(new Set());
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+  const [showDeleteCurrentPageModal, setShowDeleteCurrentPageModal] = useState(false);
+  const [singlePageDeleteLoading, setSinglePageDeleteLoading] = useState(false);
+  const [showRegenerateConfirmModal, setShowRegenerateConfirmModal] = useState(false);
   const [newPref, setNewPref] = useState("");
   const [mockupEditOpen, setMockupEditOpen] = useState(false);
   const [draftEditBuffer, setDraftEditBuffer] = useState("");
@@ -521,7 +524,7 @@ export default function App() {
   const [draftEditError, setDraftEditError] = useState("");
   const screenshotRef = useRef<HTMLDivElement>(null);
 
-  const { pages, setPages, pagesLoading, deletePage: deleteStoredPage } = usePagesData();
+  const { pages, setPages, pagesLoading, hydratePage, deletePage: deleteStoredPage } = usePagesData();
   const {
     plannedPages,
     plannedLoading,
@@ -639,6 +642,23 @@ export default function App() {
     setIsDeleteLoading(false);
     setShowDeleteModal(false);
   };
+
+  const handleConfirmDeleteCurrentPage = async () => {
+    if (!selected) return;
+    setSinglePageDeleteLoading(true);
+    try {
+      await deletePage(selected.id);
+    } finally {
+      setSinglePageDeleteLoading(false);
+      setShowDeleteCurrentPageModal(false);
+    }
+  };
+
+  const handleConfirmRegenerate = () => {
+    if (!selected) return;
+    void regenerate(selected);
+    setShowRegenerateConfirmModal(false);
+  };
   const exportSelectedPagesAsZip = async (format: "png" | "pdf") => {
     const selectedPages = pages.filter(p => p.id && selectedPageIds.has(p.id));
     const files: Array<{ blob: Blob; filename: string }> = [];
@@ -688,7 +708,13 @@ export default function App() {
   const handleDownloadPDF = async () => {
     await exportSelectedPagesAsZip("pdf");
   };
-  const selectById = (id: string) => { const p = pages.find(x => x.id === id); if (p) { setSelected(p); setShowSuccess(false); setWorkspaceTab("generate"); } };
+  const openPageById = useCallback(async (id: string) => {
+    const full = await hydratePage(id).catch(() => null);
+    if (!full) return;
+    setSelected(full);
+    setShowSuccess(false);
+    setWorkspaceTab("generate");
+  }, [hydratePage, setSelected, setShowSuccess, setWorkspaceTab]);
 
   const generateForQueue = useCallback(
     async (todo: TodoItem) => {
@@ -838,13 +864,21 @@ export default function App() {
   }, [selected?.name, topic]);
 
   const previewSummaryLine = useMemo(() => {
+    const max = 72;
+    if (selected) {
+      const pt = clean(selected.pageType) || pendingPageType || studioPageTypes()[0] || "Transaction";
+      const name = clean(selected.name) || "Untitled";
+      const display = name.length > max ? `${name.slice(0, max)}…` : name;
+      const ev = selected.karlEvaluation;
+      if (ev) return `${pt} · ${display} · Grade ${ev.grade} · ${ev.score}/100`;
+      return `${pt} · ${display}`;
+    }
     const pt = pendingPageType || studioPageTypes()[0] || "Transaction";
     const goal = topic.trim();
-    const max = 72;
     if (!goal) return `${pt} · Add a page goal in the left panel`;
     const trunc = goal.length > max ? `${goal.slice(0, max)}…` : goal;
     return `${pt} · ${trunc}`;
-  }, [pendingPageType, topic]);
+  }, [selected, pendingPageType, topic]);
 
   const libraryRows = useMemo(
     () =>
@@ -908,7 +942,7 @@ export default function App() {
         generateDisabled={loading || topicError}
         libraryPages={libraryRows}
         selectedLibraryPageId={selected?.id ?? null}
-        onLibraryPageSelect={(id) => selectById(id)}
+          onLibraryPageSelect={(id) => { void openPageById(id); }}
         onLibraryPageDelete={(id) => void deletePage(id)}
         previewUrlText={previewUrlSlug}
         previewSummaryLine={workspaceTab === "generate" ? previewSummaryLine : undefined}
@@ -1030,7 +1064,11 @@ export default function App() {
                       {selected.skeleton && (
                         <Btn onClick={() => { if (selected.inputs) generate({ topic: selected.inputs.topic, userType: selected.inputs.userType, notes: selected.inputs.notes, replaceSkeletonId: selected.id }); }} variant="primary" size="sm">Generate with AI</Btn>
                       )}
-                      {!selected.skeleton && <Btn onClick={() => regenerate(selected)} variant="primary" size="sm">Regenerate</Btn>}
+                      {!selected.skeleton && (
+                        <Btn onClick={() => setShowRegenerateConfirmModal(true)} variant="primary" size="sm">
+                          Regenerate
+                        </Btn>
+                      )}
                     </div>
                     <div className="app-page-actions__group app-page-actions__group--secondary">
                       <Btn onClick={() => handleCopy(selected.raw)} variant="ghost" size="sm">{copied ? "Copied!" : "Copy"}</Btn>
@@ -1038,7 +1076,9 @@ export default function App() {
                       {!selected.skeleton && <Btn onClick={() => openHistory(selected.id)} variant="ghost" size="sm">History</Btn>}
                     </div>
                     <div className="app-page-actions__group app-page-actions__group--danger">
-                      <Btn onClick={() => deletePage(selected.id)} variant="danger" size="sm">Delete</Btn>
+                      <Btn onClick={() => setShowDeleteCurrentPageModal(true)} variant="danger" size="sm">
+                        Delete
+                      </Btn>
                     </div>
                   </div>
                 </div>
@@ -1227,7 +1267,7 @@ export default function App() {
           onDownloadPNG={() => void handleDownloadPNG()}
           onDownloadPDF={() => void handleDownloadPDF()}
           onDownloadText={handleDownload}
-          onSelectPage={(p) => { setSelected(p); setShowSuccess(false); setWorkspaceTab("generate"); }}
+          onSelectPage={(p) => { void openPageById(p.id); }}
           onTogglePageSelection={togglePageSelection}
           onUpdateReviewStatus={handleUpdateReviewStatus}
           onOpenHistory={openHistory}
@@ -1246,13 +1286,13 @@ export default function App() {
           setSelectedPlanned={setSelectedPlanned}
           addPlannedPage={addPlannedPage}
           deletePlannedPage={deletePlannedPage}
-          selectById={selectById}
+          selectById={(id) => { void openPageById(id); }}
           generateFromPlanned={generateFromPlanned}
           generateForQueue={generateForQueue}
           PlanDiagramComponent={PlanDiagram}
           PlanSidebarComponent={PlanSidebar}
           TodoPanelComponent={TodoPanel}
-          onOpenQueuedPage={selectById}
+          onOpenQueuedPage={(id) => { void openPageById(id); }}
         />
         </Suspense>
         </div>
@@ -1302,6 +1342,27 @@ export default function App() {
         onConfirm={handleConfirmDelete}
         onCancel={() => setShowDeleteModal(false)}
         isLoading={isDeleteLoading}
+      />
+      <DeleteConfirmationModal
+        isOpen={showDeleteCurrentPageModal && !!selected}
+        title="Delete this page?"
+        message={
+          selected
+            ? `Remove "${clean(selected.name) || "Untitled"}" from your library? This cannot be undone.`
+            : ""
+        }
+        onConfirm={handleConfirmDeleteCurrentPage}
+        onCancel={() => !singlePageDeleteLoading && setShowDeleteCurrentPageModal(false)}
+        isLoading={singlePageDeleteLoading}
+      />
+      <DeleteConfirmationModal
+        isOpen={showRegenerateConfirmModal && !!selected}
+        title="Regenerate page?"
+        message="This replaces the current draft with a newly generated page using your page goal and settings. Unsaved changes in the editor or draft may be lost."
+        confirmLabel="Regenerate"
+        confirmVariant="primary"
+        onConfirm={handleConfirmRegenerate}
+        onCancel={() => setShowRegenerateConfirmModal(false)}
       />
       {/* Hidden page previews for bulk PNG/PDF export */}
       <div style={{ position: "absolute", top: 0, left: 0, width: 800, visibility: "hidden", pointerEvents: "none", zIndex: -1 }}>

@@ -95,6 +95,7 @@ export interface PageDraft {
   duplication: string;
   enforcement: string;
   draft: string;
+  draftPreview?: string;
   integration: string;
   valid: boolean;
   raw: string;
@@ -105,6 +106,8 @@ export interface PageDraft {
   imported?: boolean;
   /** Latest snapshot number from page_versions (set by API on list; not persisted). */
   currentVersionNumber?: number;
+  /** True when the record includes full draft/raw payloads from detail API. */
+  contentHydrated?: boolean;
   version?: string;
   reviewStatus?: ReviewStatus;
   qualityGate?: {

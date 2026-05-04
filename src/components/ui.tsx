@@ -273,34 +273,54 @@ export const Checkbox: React.FC<CheckboxProps> = ({
 
 interface DeleteConfirmationModalProps {
   isOpen: boolean;
-  count: number;
+  /** Used for bulk Library delete when `message` is omitted */
+  count?: number;
   onConfirm: () => void;
   onCancel: () => void;
   isLoading?: boolean;
+  title?: string;
+  message?: string;
+  confirmLabel?: string;
+  confirmVariant?: "primary" | "danger";
+  loadingConfirmLabel?: string;
 }
 
 export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
   isOpen,
-  count,
+  count = 0,
   onConfirm,
   onCancel,
-  isLoading = false
+  isLoading = false,
+  title,
+  message,
+  confirmLabel,
+  confirmVariant = "danger",
+  loadingConfirmLabel
 }) => {
   if (!isOpen) return null;
+
+  const modalTitle = title ?? "Confirm Delete";
+  const modalMessage =
+    message ??
+    `Delete ${count} selected page${count !== 1 ? "s" : ""}? This cannot be undone.`;
+  const btnLabel = confirmLabel ?? "Delete";
+  const loadingText =
+    loadingConfirmLabel ?? (confirmVariant === "danger" ? "Deleting…" : "Working…");
+  const confirmBtnVariant = confirmVariant === "primary" ? "primary" : "danger";
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200 }}>
       <div style={{ background: "var(--color-background-primary)", borderRadius: "var(--border-radius-lg)", padding: 24, maxWidth: 360, width: "100%", margin: "0 16px", border: "0.5px solid var(--color-border-secondary)" }}>
-        <h2 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 10px", color: "var(--color-text-primary)", fontFamily: "var(--font-sans)" }}>Confirm Delete</h2>
+        <h2 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 10px", color: "var(--color-text-primary)", fontFamily: "var(--font-sans)" }}>{modalTitle}</h2>
         <p style={{ fontSize: 13, color: "var(--color-text-secondary)", margin: "0 0 20px", lineHeight: 1.55 }}>
-          Delete {count} selected page{count !== 1 ? "s" : ""}? This cannot be undone.
+          {modalMessage}
         </p>
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           <Btn variant="ghost" size="md" onClick={onCancel} disabled={isLoading}>
             Cancel
           </Btn>
-          <Btn variant="danger" size="md" onClick={onConfirm} disabled={isLoading}>
-            {isLoading ? "Deleting…" : "Delete"}
+          <Btn variant={confirmBtnVariant} size="md" onClick={onConfirm} disabled={isLoading}>
+            {isLoading ? loadingText : btnLabel}
           </Btn>
         </div>
       </div>

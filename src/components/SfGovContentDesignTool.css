@@ -1105,6 +1105,29 @@
     color: var(--action-blue-strong);
   }
 
+  .panel-collapse-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 43, 72, 0.12);
+    background: rgba(255, 253, 248, 0.8);
+    color: var(--slate-l4);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition:
+      border-color 0.15s ease,
+      background 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .panel-collapse-btn:hover {
+    border-color: rgba(0, 43, 72, 0.25);
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--action-blue-strong);
+  }
+
   .preview-scroll {
     flex: 1;
     min-height: 0;
@@ -1506,6 +1529,12 @@
   .sf-cdt .preview-topbar {
     padding: 0 12px;
     gap: 8px;
+  }
+
+  .sf-cdt .panel-collapse-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
   }
 
   .sf-cdt .browser-dots {

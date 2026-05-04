@@ -61,6 +61,22 @@ export function usePagesData() {
     setPages(updated);
   }, []);
 
+  const hydratePage = useCallback(async (id: string): Promise<PageDraft | null> => {
+    const existing = pages.find((p) => p.id === id);
+    if (existing?.contentHydrated && existing.raw) return existing;
+    try {
+      const full = await pagesApi.get(id);
+      setPages((prev) => prev.map((p) => (p.id === id ? { ...p, ...full, contentHydrated: true } : p)));
+      return full;
+    } catch (err) {
+      const status = typeof err === "object" && err !== null && "httpStatus" in err ? (err as { httpStatus?: number }).httpStatus : undefined;
+      if (status === 404) {
+        setPages((prev) => prev.filter((p) => p.id !== id));
+      }
+      return null;
+    }
+  }, [pages]);
+
   const deletePage = useCallback(async (id: string) => {
     await pagesApi.delete(id).catch(() => {});
     setPages((prev) => prev.filter((x) => x.id !== id));
@@ -71,6 +87,7 @@ export function usePagesData() {
     setPages,
     pagesLoading,
     refreshPages,
+    hydratePage,
     deletePage
   };
 }

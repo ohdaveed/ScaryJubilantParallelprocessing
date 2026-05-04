@@ -73,4 +73,23 @@ Section body: [Contact HHVC](https://sf.gov)`;
     expect(html).toContain(">Contact HHVC</span>");
     expect(html).toContain("text-decoration:underline");
   });
+
+  it("renders three or more plain peer lines as a list for scannability", () => {
+    const draft = `# Keep your home pest-free
+
+## What to do
+Start with these prevention steps:
+Seal food containers
+Clean under appliances weekly
+Report leaks quickly`;
+
+    const html = renderToStaticMarkup(
+      <SfGovPagePreview draft={draft} pageType="Information" pageTitle="Keep your home pest-free" />
+    );
+
+    expect(html).toContain("<ul");
+    expect(html).toContain("Seal food containers</li>");
+    expect(html).toContain("Clean under appliances weekly</li>");
+    expect(html).toContain("Report leaks quickly</li>");
+  });
 });

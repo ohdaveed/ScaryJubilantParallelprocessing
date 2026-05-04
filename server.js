@@ -1,4 +1,5 @@
 import express from "express";
+import compression from "compression";
 import { createServer } from "http";
 import { createRequire } from "module";
 import { randomUUID } from "crypto";
@@ -17,6 +18,19 @@ const require = createRequire(import.meta.url);
 const pdfParse = require("pdf-parse");
 
 const app = express();
+const API_READ_CACHE_CONTROL = "private, no-cache, must-revalidate";
+
+const shouldCompressApiJson = (req, res) => {
+  if (!compression.filter(req, res)) return false;
+  const acceptHeader = req.headers.accept;
+  return typeof acceptHeader === "string" && acceptHeader.includes("application/json");
+};
+
+const applyShortReadCache = (res) => {
+  res.setHeader("Cache-Control", API_READ_CACHE_CONTROL);
+};
+
+app.use(compression({ threshold: 1024, filter: shouldCompressApiJson }));
 app.use(express.json({ limit: "20mb" }));
 app.use((req, res, next) => {
   const requestId = randomUUID();
@@ -36,6 +50,51 @@ const logWithRequest = (reqOrRes, stage, message, extra = {}) => {
 };
 
 const isObject = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+const ALLOWED_PAGE_FIELDS = new Set([
+  "id",
+  "name",
+  "pageType",
+  "userType",
+  "createdAt",
+  "reviewStatus",
+  "currentVersionNumber",
+  "draftPreview",
+  "draft",
+  "raw"
+]);
+const DEFAULT_PAGE_LIST_LIMIT = 100;
+const MAX_PAGE_LIST_LIMIT = 500;
+const MAX_PAGE_LIST_OFFSET = 100000;
+const DEFAULT_DRAFT_PREVIEW_CHARS = 280;
+const MAX_DRAFT_PREVIEW_CHARS = 4000;
+
+const parseBooleanQuery = (value, defaultValue) => {
+  if (value == null || value === "") return { value: defaultValue };
+  if (value === "true") return { value: true };
+  if (value === "false") return { value: false };
+  return { error: "must be true or false" };
+};
+
+const parseNonNegativeIntQuery = (value, defaultValue, maxValue) => {
+  if (value == null || value === "") return { value: defaultValue };
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isInteger(parsed) || parsed < 0) return { error: "must be a non-negative integer" };
+  return { value: Math.min(parsed, maxValue) };
+};
+
+const parsePageListFields = (value) => {
+  if (value == null || value === "") return { value: undefined };
+  const fields = value
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  if (fields.length === 0) return { value: undefined };
+  const invalid = fields.filter((entry) => !ALLOWED_PAGE_FIELDS.has(entry));
+  if (invalid.length > 0) {
+    return { error: `invalid fields: ${invalid.join(", ")}` };
+  }
+  return { value: [...new Set(fields)] };
+};
 
 const withTimeout = async (promiseFactory, timeoutMs = 45000) => {
   const timeout = new Promise((_, reject) => {
@@ -505,11 +564,65 @@ app.delete("/api/preferences/:id", async (req, res) => {
 });
 
 app.get("/api/pages", async (req, res) => {
+  const fieldsResult = parsePageListFields(typeof req.query.fields === "string" ? req.query.fields : "");
+  if (fieldsResult.error) {
+    return res.status(400).json({ error: `Invalid fields query: ${fieldsResult.error}` });
+  }
+  const includeDraftResult = parseBooleanQuery(req.query.includeDraft, true);
+  if (includeDraftResult.error) {
+    return res.status(400).json({ error: `Invalid includeDraft query: ${includeDraftResult.error}` });
+  }
+  const includeRawResult = parseBooleanQuery(req.query.includeRaw, true);
+  if (includeRawResult.error) {
+    return res.status(400).json({ error: `Invalid includeRaw query: ${includeRawResult.error}` });
+  }
+  const includeDraftPreviewResult = parseBooleanQuery(req.query.includeDraftPreview, true);
+  if (includeDraftPreviewResult.error) {
+    return res.status(400).json({ error: `Invalid includeDraftPreview query: ${includeDraftPreviewResult.error}` });
+  }
+  const draftPreviewCharsResult = parseNonNegativeIntQuery(
+    req.query.draftPreviewChars,
+    DEFAULT_DRAFT_PREVIEW_CHARS,
+    MAX_DRAFT_PREVIEW_CHARS
+  );
+  if (draftPreviewCharsResult.error) {
+    return res.status(400).json({ error: `Invalid draftPreviewChars query: ${draftPreviewCharsResult.error}` });
+  }
+  const limitResult = parseNonNegativeIntQuery(req.query.limit, DEFAULT_PAGE_LIST_LIMIT, MAX_PAGE_LIST_LIMIT);
+  if (limitResult.error) {
+    return res.status(400).json({ error: `Invalid limit query: ${limitResult.error}` });
+  }
+  const offsetResult = parseNonNegativeIntQuery(req.query.offset, 0, MAX_PAGE_LIST_OFFSET);
+  if (offsetResult.error) {
+    return res.status(400).json({ error: `Invalid offset query: ${offsetResult.error}` });
+  }
+
   try {
-    const pages = await db.listPages();
+    applyShortReadCache(res);
+    const pages = await db.listPages({
+      fields: fieldsResult.value,
+      includeDraft: includeDraftResult.value,
+      includeRaw: includeRawResult.value,
+      includeDraftPreview: includeDraftPreviewResult.value,
+      draftPreviewChars: draftPreviewCharsResult.value,
+      limit: limitResult.value,
+      offset: offsetResult.value
+    });
     res.json({ pages });
   } catch (err) {
     console.error("GET /api/pages error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
+  }
+});
+
+app.get("/api/pages/:id", async (req, res) => {
+  try {
+    applyShortReadCache(res);
+    const page = await db.getPage(req.params.id);
+    if (!page) return res.status(404).json({ error: "Page not found" });
+    res.json(page);
+  } catch (err) {
+    console.error("GET /api/pages/:id error:", getErrorMessage(err));
     res.status(500).json({ error: getErrorMessage(err) });
   }
 });
@@ -654,6 +767,7 @@ app.delete("/api/todos/:id", async (req, res) => {
 
 app.get("/api/planned-pages", async (req, res) => {
   try {
+    applyShortReadCache(res);
     const plannedPages = await db.listPlannedPages();
     res.json({ plannedPages });
   } catch (err) {

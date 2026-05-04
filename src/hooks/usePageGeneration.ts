@@ -127,7 +127,7 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     evaluation: PageDraft["karlEvaluation"] | null;
     qualityGate: PageDraft["qualityGate"];
   }> => {
-    const initialQualityGate = evaluateQualityGate(parsed.pageType, evaluation);
+    const initialQualityGate = evaluateQualityGate(parsed.pageType, evaluation ?? null);
     if (!evaluation || evaluation.parseError || initialQualityGate.status !== "review_required") {
       return {
         parsed,
@@ -304,7 +304,7 @@ export function usePageGeneration(params: UsePageGenerationParams) {
       const feedbackResult = await improveFromEvaluationFeedback({
         parsed,
         preferenceTexts: prefTexts,
-        evaluation
+        evaluation: evaluation ?? null
       });
       parsed = feedbackResult.parsed;
       page = {
@@ -321,6 +321,7 @@ export function usePageGeneration(params: UsePageGenerationParams) {
         await pagesApi.save(id, page, { notes: lastInput.current.notes || "", trigger: "generate" });
       } catch {
         setError("Page generated but could not be saved to the database. Refresh to retry.");
+        return null;
       }
 
       if (ov.replaceSkeletonId) {
@@ -449,7 +450,7 @@ export function usePageGeneration(params: UsePageGenerationParams) {
       const feedbackResult = await improveFromEvaluationFeedback({
         parsed,
         preferenceTexts: [],
-        evaluation
+        evaluation: evaluation ?? null
       });
       parsed = feedbackResult.parsed;
 
@@ -470,6 +471,7 @@ export function usePageGeneration(params: UsePageGenerationParams) {
         await pagesApi.save(selected.id, updated, { notes: instruction, trigger: "refine" });
       } catch {
         setError("Revised but could not save.");
+        return;
       }
 
       setPages((prev) => prev.map((p) => (p.id === selected.id ? updated : p)));

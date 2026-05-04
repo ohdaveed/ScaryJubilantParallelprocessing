@@ -271,12 +271,71 @@ export const parseDraftSections = (draft: string): DraftSection[] => {
 
 const API_BASE = "/api";
 
+const toPageSummary = (page: Partial<import("./types").PageDraft>): import("./types").PageDraft => {
+  const fallbackDraft = typeof page.draft === "string" && page.draft.length > 0
+    ? page.draft
+    : (typeof page.draftPreview === "string" ? page.draftPreview : "");
+  return {
+    id: page.id || "",
+    name: page.name || "",
+    userType: page.userType || "",
+    userGoal: page.userGoal || "",
+    purpose: page.purpose || "",
+    pageType: page.pageType || "",
+    components: page.components || "",
+    relationships: page.relationships || "",
+    duplication: page.duplication || "",
+    enforcement: page.enforcement || "",
+    draft: fallbackDraft,
+    draftPreview: typeof page.draftPreview === "string" ? page.draftPreview : fallbackDraft,
+    integration: page.integration || "",
+    valid: page.valid ?? true,
+    raw: page.raw || "",
+    createdAt: page.createdAt || "",
+    karlConnected: page.karlConnected ?? false,
+    karlEvaluation: page.karlEvaluation,
+    skeleton: page.skeleton,
+    imported: page.imported,
+    currentVersionNumber: page.currentVersionNumber,
+    version: page.version,
+    reviewStatus: page.reviewStatus,
+    qualityGate: page.qualityGate,
+    inputs: page.inputs || { topic: page.name || "", userType: page.userType || "", notes: "" },
+    contentHydrated: page.contentHydrated ?? false
+  };
+};
+
 export const pagesApi = {
   list: async (): Promise<import("./types").PageDraft[]> => {
-    const res = await fetch(`${API_BASE}/pages`);
+    const summaryFields = [
+      "id",
+      "name",
+      "pageType",
+      "userType",
+      "createdAt",
+      "reviewStatus",
+      "currentVersionNumber",
+      "draftPreview"
+    ].join(",");
+    const res = await fetch(`${API_BASE}/pages?fields=${encodeURIComponent(summaryFields)}&includeDraft=false&includeRaw=false&includeDraftPreview=true`);
     if (!res.ok) throw new Error(`Failed to load pages: ${res.status}`);
     const data = await res.json();
-    return data.pages || [];
+    return (data.pages || []).map((p: Partial<import("./types").PageDraft>) => toPageSummary(p));
+  },
+  get: async (id: string): Promise<import("./types").PageDraft> => {
+    const res = await fetch(`${API_BASE}/pages/${encodeURIComponent(id)}`);
+    if (!res.ok) {
+      const err = new Error(`Failed to load page: ${res.status}`) as Error & { httpStatus?: number };
+      err.httpStatus = res.status;
+      throw err;
+    }
+    const data = await res.json();
+    return {
+      ...toPageSummary(data),
+      draft: data?.draft || "",
+      raw: data?.raw || "",
+      contentHydrated: true
+    };
   },
   save: async (id: string, page: import("./types").PageDraft, version?: { notes: string; trigger: "generate" | "refine" | "restore" | "manual" }): Promise<void> => {
     const res = await fetch(`${API_BASE}/pages`, {

@@ -25,6 +25,9 @@ const SF = {
   headerShadow: "0 8px 24px rgba(0, 43, 72, 0.06)",
 };
 
+const PREVIEW_FRAME_MAX_WIDTH = "100%";
+const PREVIEW_CONTENT_MAX_WIDTH = "min(980px, 100%)";
+
 const SfGovHeader: React.FC = () => (
   <div
     style={{
@@ -47,7 +50,19 @@ const SfGovHeader: React.FC = () => (
         opacity: 0.85,
       }}
     />
-    <div style={{ maxWidth: 800, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 58, paddingTop: 3 }}>
+    <div
+      style={{
+        maxWidth: PREVIEW_CONTENT_MAX_WIDTH,
+        margin: "0 auto",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        flexWrap: "wrap",
+        height: 58,
+        gap: 8,
+        paddingTop: 3
+      }}
+    >
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <div
           style={{
@@ -78,7 +93,7 @@ const SfGovHeader: React.FC = () => (
         </div>
         <span style={{ fontFamily: SF.fontDisplay, fontSize: 22, fontWeight: 700, color: SF.slate4, letterSpacing: "-0.02em" }}>SF.gov</span>
       </div>
-      <nav style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      <nav style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4, flexWrap: "wrap" }}>
         {["Services", "Departments", "Jobs", "Contact"].map(item => (
           <span
             key={item}
@@ -103,7 +118,7 @@ const SfGovHeader: React.FC = () => (
             padding: "8px 14px",
             background: `linear-gradient(180deg, ${SF.bg} 0%, #EBEBE5 100%)`,
             borderRadius: 8,
-            marginLeft: 10,
+            marginLeft: 6,
             border: `1px solid ${SF.lightBorder}`,
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85)",
           }}
@@ -126,7 +141,7 @@ const SfGovFooter: React.FC = () => (
       boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
     }}
   >
-    <div style={{ maxWidth: 800, margin: "0 auto" }}>
+    <div style={{ maxWidth: PREVIEW_CONTENT_MAX_WIDTH, margin: "0 auto" }}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 24, marginBottom: 32 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
@@ -327,9 +342,71 @@ function renderSfGovLines(lines: string[], parentSection?: string): React.ReactN
     }
   };
 
-  lines.forEach((line, i) => {
+  const isStructuredLine = (trimmed: string): boolean =>
+    /^section heading:?\s*/i.test(trimmed) ||
+    /^section body:?\s*/i.test(trimmed) ||
+    /^callout:?\s*/i.test(trimmed) ||
+    (/^\|/.test(trimmed) && /\|$/.test(trimmed)) ||
+    /^[-•*]\s+\[([ xX])\]\s+/.test(trimmed) ||
+    /^[-•*]\s+/.test(trimmed) ||
+    /^\d+[.)]\s+/.test(trimmed);
+
+  const renderPlainTextRun = (run: string[], keySeed: number) => {
+    const introLine = run[0]?.endsWith(":") ? run[0] : null;
+    const listItems = introLine ? run.slice(1) : run;
+
+    if (introLine) {
+      elements.push(
+        <p
+          key={`p-intro-${keySeed}`}
+          title={bodyLabel()}
+          style={{ fontFamily: SF.font, fontSize: 16, lineHeight: 1.7, color: SF.slate4, margin: "0 0 12px" }}
+        >
+          {parseInlineLinks(introLine)}
+        </p>
+      );
+    }
+
+    if (listItems.length >= 3) {
+      elements.push(
+        <ul
+          key={`plain-list-${keySeed}`}
+          title={bodyLabel()}
+          style={{ margin: "8px 0 12px 20px", padding: 0, fontFamily: SF.font, fontSize: 16, lineHeight: 1.7, color: SF.slate4 }}
+        >
+          {listItems.map((item, idx) => (
+            <li key={idx} style={{ marginBottom: 4 }}>
+              {parseInlineLinks(item)}
+            </li>
+          ))}
+        </ul>
+      );
+      return;
+    }
+
+    listItems.forEach((text, idx) => {
+      elements.push(
+        <p
+          key={`p-${keySeed}-${idx}`}
+          title={bodyLabel()}
+          style={{ fontFamily: SF.font, fontSize: 16, lineHeight: 1.7, color: SF.slate4, margin: "0 0 12px" }}
+        >
+          {parseInlineLinks(text)}
+        </p>
+      );
+    });
+  };
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
     const trimmed = line.trim();
-    if (!trimmed) { flushList(); flushTable(); return; }
+    if (!trimmed) {
+      flushList();
+      flushTable();
+      i += 1;
+      continue;
+    }
 
     const sectionHeadingMatch = trimmed.match(/^section heading:?\s*(.*)/i);
     if (sectionHeadingMatch) {
@@ -348,7 +425,8 @@ function renderSfGovLines(lines: string[], parentSection?: string): React.ReactN
           {sectionHeadingMatch[1]}
         </h3>
       );
-      return;
+      i += 1;
+      continue;
     }
 
     const sectionBodyMatch = trimmed.match(/^section body:?\s*(.*)/i);
@@ -365,7 +443,8 @@ function renderSfGovLines(lines: string[], parentSection?: string): React.ReactN
           {parseInlineLinks(sectionBodyMatch[1])}
         </p>
       );
-      return;
+      i += 1;
+      continue;
     }
 
     const inlineCalloutMatch = trimmed.match(/^callout:?\s*(.*)/i);
@@ -396,15 +475,20 @@ function renderSfGovLines(lines: string[], parentSection?: string): React.ReactN
         </div>
       );
       subsectionActive = false;
-      return;
+      i += 1;
+      continue;
     }
 
     if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
-      if (/^\|[\s-:|]+\|$/.test(trimmed)) return;
+      if (/^\|[\s-:|]+\|$/.test(trimmed)) {
+        i += 1;
+        continue;
+      }
       flushList();
       const cells = trimmed.split("|").slice(1, -1).map(c => c.trim());
       tableRows.push(cells);
-      return;
+      i += 1;
+      continue;
     } else {
       flushTable();
     }
@@ -426,7 +510,8 @@ function renderSfGovLines(lines: string[], parentSection?: string): React.ReactN
           <span style={{ fontFamily: SF.font, fontSize: 15, lineHeight: 1.5, color: SF.slate4 }}>{parseInlineLinks(checkMatch[2])}</span>
         </div>
       );
-      return;
+      i += 1;
+      continue;
     }
 
     const bulletMatch = trimmed.match(/^[-•*]\s+(.*)/);
@@ -437,39 +522,45 @@ function renderSfGovLines(lines: string[], parentSection?: string): React.ReactN
       if (ctaOrContact) {
         flushList();
         appendContactOrCta(i, ctaOrContact);
-        return;
+        i += 1;
+        continue;
       }
       if (listType === "ol") flushList();
       listType = "ul";
       currentList.push(bulletMatch[1]);
+      i += 1;
     } else if (numMatch) {
       const ctaOrContact = parseContactOrCtaLine(trimmed);
       if (ctaOrContact) {
         flushList();
         appendContactOrCta(i, ctaOrContact);
-        return;
+        i += 1;
+        continue;
       }
       if (listType === "ul") flushList();
       listType = "ol";
       currentList.push(numMatch[1]);
+      i += 1;
     } else {
       flushList();
       const ctaOrContact = parseContactOrCtaLine(trimmed);
       if (ctaOrContact) {
         appendContactOrCta(i, ctaOrContact);
+        i += 1;
       } else {
-        elements.push(
-          <p
-            key={`p-${i}`}
-            title={bodyLabel()}
-            style={{ fontFamily: SF.font, fontSize: 16, lineHeight: 1.7, color: SF.slate4, margin: "0 0 12px" }}
-          >
-            {parseInlineLinks(trimmed)}
-          </p>
-        );
+        const run: string[] = [trimmed];
+        let j = i + 1;
+        while (j < lines.length) {
+          const nextTrimmed = lines[j].trim();
+          if (!nextTrimmed || isStructuredLine(nextTrimmed) || parseContactOrCtaLine(nextTrimmed)) break;
+          run.push(nextTrimmed);
+          j += 1;
+        }
+        renderPlainTextRun(run, i);
+        i = j;
       }
     }
-  });
+  }
   flushList();
   flushTable();
   return <>{elements}</>;
@@ -489,7 +580,7 @@ export const SfGovPagePreview = React.forwardRef<HTMLDivElement, { draft: string
       ref={ref}
       style={{
         fontFamily: SF.font,
-        padding: "28px 20px 36px",
+          padding: "clamp(14px, 2.8vw, 28px) clamp(10px, 2.2vw, 20px) clamp(20px, 3.6vw, 36px)",
         background: `radial-gradient(1200px 600px at 10% -10%, rgba(73, 94, 212, 0.12), transparent 55%),
           radial-gradient(900px 500px at 100% 0%, rgba(45, 139, 132, 0.1), transparent 50%),
           linear-gradient(165deg, ${SF.stageTop} 0%, ${SF.stageMid} 48%, ${SF.stageBottom} 100%)`,
@@ -497,7 +588,7 @@ export const SfGovPagePreview = React.forwardRef<HTMLDivElement, { draft: string
     >
       <div
         style={{
-          maxWidth: 844,
+          maxWidth: PREVIEW_FRAME_MAX_WIDTH,
           margin: "0 auto",
           borderRadius: 16,
           boxShadow: SF.frameShadow,
@@ -555,9 +646,9 @@ export const SfGovPagePreview = React.forwardRef<HTMLDivElement, { draft: string
 
         <div
           style={{
-            maxWidth: 800,
+            maxWidth: PREVIEW_CONTENT_MAX_WIDTH,
             margin: "0 auto",
-            padding: "36px 24px 52px",
+            padding: "clamp(20px, 4vw, 36px) clamp(14px, 3vw, 24px) clamp(30px, 5vw, 52px)",
             backgroundColor: SF.paper,
             backgroundImage: `radial-gradient(circle at 1px 1px, rgba(0,43,72,0.06) 1px, transparent 0)`,
             backgroundSize: "22px 22px",
