@@ -46,4 +46,59 @@ describe("SfGovContentDesignTool", () => {
     expect(settingsButtons?.length).toBe(1);
     expect(html).toContain('type="button"');
   });
+
+  it("renders the editorial shell landmarks for the generate workspace", () => {
+    const html = renderToStaticMarkup(
+      <SfGovContentDesignTool
+        tabs={tabs}
+        activeTabId="generate"
+        userType="Resident"
+        activePageType="Transaction"
+        pageGoal="Apply for a business permit"
+        additionalContext="Include permit wait times and eligibility details."
+        previewSlot={<div className="test-preview">Preview body</div>}
+      />
+    );
+
+    expect(html).toContain("editorial-shell");
+    expect(html).toContain("authoring-rail");
+    expect(html).toContain("preview-workbench");
+    expect(html).toContain("preview-notes");
+    expect(html).toContain("Draft board");
+    expect(html).toContain("Ready for Karl review");
+  });
+
+  it("keeps the generate workspace controls visible after shell restyling", () => {
+    const html = renderToStaticMarkup(
+      <SfGovContentDesignTool
+        tabs={tabs}
+        activeTabId="generate"
+        userType="Resident"
+        activePageType="Transaction"
+        pageGoal="Apply for a business permit"
+        additionalContext=""
+        previewSlot={<div>Preview body</div>}
+      />
+    );
+
+    expect(html).toContain(">Generate<");
+    expect(html).toContain("Generate page draft");
+  });
+
+  it("renders proofing chrome for the preview workbench", () => {
+    const html = renderToStaticMarkup(
+      <SfGovContentDesignTool
+        tabs={tabs}
+        activeTabId="generate"
+        userType="Resident"
+        activePageType="Transaction"
+        pageGoal="Apply for a business permit"
+        additionalContext=""
+        previewSlot={<div className="test-preview">Preview body</div>}
+      />
+    );
+
+    expect(html).toContain("preview-sheet-frame");
+    expect(html).toContain("workbench-chrome");
+  });
 });

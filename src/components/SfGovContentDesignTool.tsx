@@ -310,8 +310,8 @@ export function SfGovContentDesignTool({
 
   return (
     <div ref={shellRef} id={`${baseId}-shell`} className={rootClass} style={shellStyle}>
-      <div className="app">
-        <header className="topbar">
+      <div className="app editorial-shell">
+        <header className="topbar editorial-topbar">
           <div className="brand">
             <div className="brand-icon" aria-hidden>
               SF
@@ -355,9 +355,9 @@ export function SfGovContentDesignTool({
           </div>
         </header>
 
-        <div className="main" role="tabpanel" aria-label="Editor and preview" aria-labelledby={`${baseId}-tab-${activeTabId}`}>
+        <div className="main editorial-main" role="tabpanel" aria-label="Editor and preview" aria-labelledby={`${baseId}-tab-${activeTabId}`}>
           {showLeftPanel ? (
-          <aside className="left-panel" aria-label="Editor controls">
+          <aside className="left-panel authoring-rail" aria-label="Editor controls">
             <section className="panel-section">
               <div className="section-label">Context</div>
               <div className="field">
@@ -517,8 +517,8 @@ export function SfGovContentDesignTool({
           />
           ) : null}
 
-          <section className="right-panel" aria-label="Preview">
-            <div className="preview-topbar">
+          <section className="right-panel preview-workbench" aria-label="Preview">
+            <div className="preview-topbar workbench-chrome">
               <div className="browser-dots" aria-hidden>
                 <div className="bdot bdot-r" />
                 <div className="bdot bdot-y" />
@@ -554,7 +554,22 @@ export function SfGovContentDesignTool({
                 </button>
               </div>
             </div>
-            <div className="preview-scroll anim-fade-up">{previewSlot}</div>
+            <div className="preview-scroll anim-fade-up">
+              <div className="workbench-surface">
+                <div className="preview-sheet-frame">{previewSlot}</div>
+                <aside className="preview-notes" aria-label="Editorial notes">
+                  <div className="preview-note preview-note--status">
+                    <div className="preview-note-label">Draft board</div>
+                    <div className="preview-note-title">Ready for Karl review</div>
+                    <p className="preview-note-copy">Check the service promise, page title, and front-door summary before export.</p>
+                  </div>
+                  <div className="preview-note preview-note--pin">
+                    <div className="preview-note-kicker">Proof copy</div>
+                    <p className="preview-note-copy">Lead with the resident task, then confirm timing, eligibility, and what happens next.</p>
+                  </div>
+                </aside>
+              </div>
+            </div>
           </section>
         </div>
 
