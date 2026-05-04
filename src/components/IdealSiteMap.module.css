@@ -282,8 +282,8 @@
 }
 
 .pageType {
-  font-size: 10px;
-  color: #8c8b87;
+  font-size: var(--font-size-micro-label);
+  color: var(--color-text-secondary);
   flex-shrink: 0;
 }
 

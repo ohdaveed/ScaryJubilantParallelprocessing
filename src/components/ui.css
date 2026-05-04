@@ -2,9 +2,9 @@
 
 /* ----- Label ----- */
 .ui-label {
-  font-size: 10px;
+  font-size: var(--font-size-micro-label);
   font-weight: 500;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.09em;
   margin: 0 0 6px;
@@ -572,7 +572,7 @@
 }
 
 .ui-karl-eval__section-title {
-  font-size: 10px;
+  font-size: var(--font-size-micro-label);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.08em;

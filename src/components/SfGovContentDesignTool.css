@@ -124,11 +124,11 @@
 
   .panel-band__kicker {
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: var(--font-size-micro-label);
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 0.58);
     margin: 0 0 10px;
   }
 
@@ -207,7 +207,7 @@
 
   .preview-summary-line__label {
     font-family: var(--font-mono);
-    font-size: 9px;
+    font-size: var(--font-size-micro-label);
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -270,7 +270,7 @@
     align-items: center;
     justify-content: center;
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: var(--font-size-micro-label);
     font-weight: 700;
     color: var(--slate-l4);
     letter-spacing: 0.08em;
@@ -289,9 +289,9 @@
   .brand-sub {
     margin-top: 3px;
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: var(--font-size-micro-label);
     font-weight: 400;
-    color: rgba(255, 255, 255, 0.56);
+    color: rgba(255, 255, 255, 0.62);
     text-transform: uppercase;
     letter-spacing: 0.18em;
   }
@@ -355,7 +355,7 @@
 
   .pill-badge {
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: var(--font-size-micro-label);
     padding: 4px 10px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.08);
@@ -499,11 +499,11 @@
     gap: 8px;
     padding: 10px 12px;
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: var(--font-size-micro-label);
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.62);
+    color: rgba(255, 255, 255, 0.68);
     cursor: pointer;
     list-style: none;
   }
@@ -543,11 +543,11 @@
 
   .section-label {
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: var(--font-size-micro-label);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.16em;
-    color: rgba(255, 255, 255, 0.54);
+    color: rgba(255, 255, 255, 0.62);
     margin-bottom: 14px;
     display: flex;
     align-items: center;
@@ -562,8 +562,8 @@
   }
 
   .section-label-meta {
-    color: rgba(255, 255, 255, 0.38);
-    font-size: 10px;
+    color: rgba(255, 255, 255, 0.45);
+    font-size: var(--font-size-micro-label);
     text-transform: none;
     letter-spacing: 0;
     font-family: var(--font-mono);
@@ -580,9 +580,9 @@
   .field-label {
     display: block;
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: var(--font-size-micro-label);
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.68);
+    color: rgba(255, 255, 255, 0.76);
     letter-spacing: 0.1em;
     margin-bottom: 7px;
     text-transform: uppercase;
@@ -658,7 +658,7 @@
     align-items: center;
     justify-content: center;
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: var(--font-size-micro-label);
     border-radius: 999px;
     border: 1px solid rgba(255, 255, 255, 0.12);
     color: rgba(255, 255, 255, 0.76);
@@ -750,9 +750,9 @@
 
   .karl-name {
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: var(--font-size-micro-label);
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.56);
+    color: rgba(255, 255, 255, 0.64);
     letter-spacing: 0.12em;
     text-transform: uppercase;
   }
@@ -815,8 +815,8 @@
 
   .score-text {
     font-family: var(--font-mono);
-    font-size: 10px;
-    color: rgba(255, 255, 255, 0.52);
+    font-size: var(--font-size-micro-label);
+    color: rgba(255, 255, 255, 0.58);
     display: flex;
     justify-content: space-between;
     gap: 8px;
@@ -984,15 +984,15 @@
 
   .confirm-text {
     font-family: var(--font-mono);
-    font-size: 10px;
-    color: rgba(255, 255, 255, 0.66);
+    font-size: var(--font-size-micro-label);
+    color: rgba(255, 255, 255, 0.72);
     flex: 1;
   }
 
   .confirm-yes,
   .confirm-no {
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: var(--font-size-micro-label);
     padding: 3px 8px;
     border-radius: 5px;
     cursor: pointer;
@@ -1090,7 +1090,7 @@
 
   .url-text {
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: var(--font-size-micro-label);
     color: var(--ink);
     letter-spacing: 0.02em;
     overflow: hidden;
@@ -1221,7 +1221,7 @@
     top: 16px;
     right: 22px;
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: var(--font-size-micro-label);
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--slate-l2);
@@ -1279,7 +1279,7 @@
   .preview-note-label,
   .preview-note-kicker {
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: var(--font-size-micro-label);
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -1336,8 +1336,8 @@
     align-items: center;
     gap: 6px;
     font-family: var(--font-mono);
-    font-size: 10px;
-    color: rgba(255, 255, 255, 0.68);
+    font-size: var(--font-size-micro-label);
+    color: rgba(255, 255, 255, 0.74);
   }
 
   .status-dot {
@@ -1351,8 +1351,8 @@
 
   .stream-text {
     font-family: var(--font-mono);
-    font-size: 10px;
-    color: rgba(255, 255, 255, 0.48);
+    font-size: var(--font-size-micro-label);
+    color: rgba(255, 255, 255, 0.56);
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1365,8 +1365,8 @@
     align-items: center;
     gap: 8px;
     font-family: var(--font-mono);
-    font-size: 9px;
-    color: rgba(255, 255, 255, 0.38);
+    font-size: var(--font-size-micro-label);
+    color: rgba(255, 255, 255, 0.46);
   }
 
   .type-dot-transaction {

@@ -86,7 +86,7 @@ Rendered palette skews **warm paper + cool slate + blue action** — distinctive
 | Studio display | `Iowan Old Style` → Georgia stack | Editorial headings |
 | Mono / logs | `SFMono`, Consolas, Menlo | Stream renderer ~12px, 1.75 line-height |
 
-**Scale (typical):** Uppercase labels `10px` / `0.09em` letter-spacing (`ui-label`); field labels `12px`; buttons `12–14px`; cards inherit `13–14px` body.
+**Scale (typical):** Uppercase micro-labels `11px` via `--font-size-micro-label` / `0.09em` on `.ui-label`, `.app-up-label`, and studio rail labels; field labels `12px`; buttons `12–14px`; card body `13–14px`. On light backgrounds micro-labels use `--color-text-secondary` for ≥4.5:1 contrast (§9 F2).
 
 ---
 
@@ -152,7 +152,7 @@ Global (`index.css`): `spin`, `blink`, `fadeUp`, `pulse`. Studio (`SfGovContentD
 | ID | Impact | Finding | Suggested fix |
 |----|--------|---------|----------------|
 | F1 | Medium | **Focus rings:** `.ui-btn` uses `outline: none` without a `:focus-visible` replacement | Add `:focus-visible { outline: 2px solid var(--color-border-info); outline-offset: 2px; }` (and studio equivalent on dark buttons) |
-| F2 | Polish | **10px uppercase labels** may fall below comfortable reading for some users | Bump to 11px where space allows, or confirm 4.5:1 contrast on `#8C8B87` |
+| F2 | Polish | **10px uppercase labels** may fall below comfortable reading for some users | **Done (2026-05-04):** `--font-size-micro-label: 11px`; light UI labels use `--color-text-secondary`; studio rail labels bumped to 11px with slightly higher foreground opacity on dark surfaces |
 | F3 | Polish | **Emoji** in evaluation stats (✓ ⚠ ✗) — fine for internal tool; swap to SVG icons if exporting screenshots externally | Optional |
 | F4 | Medium | **Reduced motion** not wired globally | `@media (prefers-reduced-motion: reduce)` to shorten/disable decorative animation |
 

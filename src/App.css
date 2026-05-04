@@ -1264,9 +1264,9 @@
 }
 
 .app-meta-chip__k {
-  font-size: 10px;
+  font-size: var(--font-size-micro-label);
   font-weight: 500;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.07em;
   flex-shrink: 0;
@@ -1320,9 +1320,9 @@
 }
 
 .app-preview-toolbar__label {
-  font-size: 10px;
+  font-size: var(--font-size-micro-label);
   font-weight: 500;
-  color: #8c8b87;
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.09em;
 }
@@ -1399,7 +1399,7 @@
 }
 
 .app-note-panel__head span {
-  font-size: 10px;
+  font-size: var(--font-size-micro-label);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -1682,9 +1682,9 @@
 
 /* Uppercase section labels (avoid Label inline overrides in App) */
 .app-up-label {
-  font-size: 10px;
+  font-size: var(--font-size-micro-label);
   font-weight: 500;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.09em;
   margin: 0 0 6px;

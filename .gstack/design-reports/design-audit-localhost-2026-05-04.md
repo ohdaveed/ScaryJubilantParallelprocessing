@@ -25,7 +25,7 @@
 | FINDING-002 | `ca96648` | `ui.css`: `:focus-visible` outline on `.ui-btn`, variant outlines for `--primary` / `--danger`. |
 | FINDING-003 | `35b7614` | `App.tsx`: empty preview main line promoted from `<p>` to `<h2 className="app-builder-empty__title">`. |
 
-**Deferred:** FINDING-004 (10px labels) unchanged — polish tier.
+**FINDING-004 (2026-05-04):** `--font-size-micro-label: 11px` in `index.css`; light-shell labels use `--color-text-secondary`; studio uppercase chrome bumped in `SfGovContentDesignTool.css`; `IdealSiteMap.module.css` page type line aligned.
 
 ---
 

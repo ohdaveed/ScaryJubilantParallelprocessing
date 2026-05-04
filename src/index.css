@@ -27,6 +27,9 @@
   --border-radius-sm: 4px;
   --border-radius-md: 6px;
   --border-radius-lg: 10px;
+
+  /* DESIGN.md §9 F2: uppercase micro-labels — 11px + ≥4.5:1 on light surfaces */
+  --font-size-micro-label: 11px;
 }
 
 *, *::before, *::after {
