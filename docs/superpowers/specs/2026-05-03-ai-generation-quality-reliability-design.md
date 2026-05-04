@@ -504,3 +504,13 @@ Live Karl MCP may be intermittently unavailable or not exposed in some runtimes.
 **Overall design completeness:** **6/10 → 8/10** once unresolved decisions are answered and implementation follows the table above.
 
 **Next:** Run **`/plan-eng-review`** on the same plan for orchestration and test boundaries; run **`/design-review`** after implementation for pixel QA.
+
+---
+
+## Approved mockups (gstack design flow)
+
+| Mockup | Path | Direction | Constraints |
+|--------|------|-----------|-------------|
+| **HHVC Studio — Generate flow (C-fixed)** | `c:\Users\david\.gstack\projects\ScaryJubilantParallelprocessing\designs\hhvc-studio-flow-20260504\variant-C-fixed.png` | Approve **variant C-fixed** as the visual direction for Generate-tab progress, validation, Karl consultation, and evaluation states described in this spec. Boards: `design-board-final.html`, `design-board-all-four.html` in the same folder. | Reconcile extracted palette/typography in root **`DESIGN.md`** § *Extracted Design Language* with existing **§4–§8** studio tokens; do not ship conflicting one-off hex without a token pass. Vision QA passed on C-fixed after **`evolve`** from C (copy fixes). |
+
+**Related:** `implementation-prompt-variant-A.json` (structured notes from **`prompt --image variant-A.png`**), `design-gallery.html`, `approved.json` in the same session folder.

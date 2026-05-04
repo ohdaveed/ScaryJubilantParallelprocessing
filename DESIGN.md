@@ -184,3 +184,36 @@ Global (`index.css`): `spin`, `blink`, `fadeUp`, `pulse`. Studio (`SfGovContentD
 ---
 
 *Generated as part of a design review pass; update this file when tokens or layout paradigms change.*
+
+## Extracted Design Language
+*Auto-extracted from approved mockup on 2026-05-04*
+*Source: variant-C-fixed.png*
+
+When implementing, **prefer the named tokens in §4–§8** (`.sf-cdt`, `--color-*`) over literal hex from this extraction where they differ—the extraction describes the **reference mockup**; the studio skin remains source of truth for shipped CSS.
+
+**Mood:** professional and helpful with a focus on clarity
+
+### Colors
+
+| Name | Hex | Usage |
+|------|-----|-------|
+| primary | `#1C2B3A` | header background, buttons, links |
+| background | `#F8F5F1` | page background |
+| button | `#3366FF` | generate page button |
+
+### Typography
+
+| Role | Family | Size | Weight |
+|------|--------|------|--------|
+| heading | Georgia, serif | 36px | bold |
+| body | Georgia, serif | 18px | normal |
+
+### Spacing
+
+- 8px base unit
+- 24px between sections
+
+### Layout
+
+- left-aligned content
+- max-width 1200px
