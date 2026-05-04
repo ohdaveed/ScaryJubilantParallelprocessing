@@ -1,0 +1,34 @@
+[
+  {
+    "id": "improve-bedbug-transaction",
+    "request": {
+      "raw": "PAGE NAME: Report bed bugs in your apartment\nPAGE TYPE: Transaction\nPRIMARY USER: Tenant\n\nSECTION: Why this matters\nBed bugs can spread between units. It is important to note that you should act quickly.\n\nSECTION: Contact\nCall 311 to report the problem.\n\nSECTION: Responsibilities\nTenants should prepare the home before inspection.",
+      "preferences": [
+        "Use short, direct sentences.",
+        "Move urgent actions near the top."
+      ],
+      "evaluationFeedback": {
+        "score": 62,
+        "grade": "C",
+        "summary": "The draft has useful content but weak structure.",
+        "warnings": [
+          "Lead with the main action.",
+          "Reduce filler language."
+        ],
+        "failed": [
+          "Sentence length exceeds recommended plain-language limit."
+        ]
+      }
+    }
+  },
+  {
+    "id": "improve-trash-owner",
+    "request": {
+      "raw": "PAGE NAME: Fix trash and pest problems in shared buildings\nPAGE TYPE: Transaction\nPRIMARY USER: Property owner\n\nSECTION: Details\nOwners must respond to tenant complaints and coordinate cleanup.\n\nSECTION: Contact\nCall 311 for city support.",
+      "preferences": [
+        "Keep owner responsibilities explicit.",
+        "Avoid legal jargon."
+      ]
+    }
+  }
+]

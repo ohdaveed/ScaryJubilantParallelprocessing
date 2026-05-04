@@ -1,0 +1,14 @@
+{
+  "startedAt": "2026-05-04T15:24:22.618Z",
+  "baseUrl": "http://localhost:3001",
+  "mode": "judge-only",
+  "chat": null,
+  "evaluate": null,
+  "improveStructure": null,
+  "judge": {
+    "skipped": true,
+    "reason": "ANTHROPIC_API_KEY missing; set it to run judge scoring.",
+    "results": []
+  },
+  "completedAt": "2026-05-04T15:24:22.622Z"
+}

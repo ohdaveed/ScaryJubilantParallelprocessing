@@ -6,6 +6,12 @@ import mammoth from "mammoth";
 import { createPersistence, formatPersistenceError } from "./lib/persistence.js";
 import { withKarlCitations, enforceKarlCitationsOnEvaluation } from "./lib/karlCitations.js";
 import { fetchKarlGuidance } from "./lib/karlMcp.js";
+import {
+  extractJsonObjectFromText,
+  extractModelText,
+  hasRequiredDraftShape,
+  normalizeEvaluationPayload
+} from "./lib/modelResponseGuards.js";
 
 const require = createRequire(import.meta.url);
 const pdfParse = require("pdf-parse");
@@ -184,9 +190,9 @@ USER: ${userType || "Unknown"}
 DRAFT:
 ${draft}
 
-Evaluate and return ONLY this JSON structure (no other text, no markdown):
+Evaluate and return ONLY one valid JSON object that matches this exact schema (no markdown, no comments, no extra keys, no trailing text):
 {
-  "score": <number 0-100>,
+  "score": <integer 0-100>,
   "grade": "<A|B|C|D|F>",
   "summary": "<one sentence overall assessment>",
   "passed": ["<check that passed>", ...],
@@ -218,7 +224,7 @@ Check for:
 - What to know and What to do sections present for Transaction pages
 - 311 reference for Transaction pages (via Button link, Phone number, or text in What to do)
 - Tenant responsibilities included if tenants are primary or secondary user
-- System Relationships lists "Healthy Housing and Vector Control (Topic)" as the Parent
+- System Relationships lists "Healthy housing and pests (Topic)" as the Parent
 - No markdown formatting in content
 
 DIGITAL.GOV PLAIN LANGUAGE CHECKS (check each of these specifically and include the result in passed, warnings, or failed):
@@ -253,15 +259,8 @@ If any passed, warnings, or failed item discusses Karl CMS page types, Related p
     }
 
     const data = await upstream.json();
-    const textContent = data.content?.find(c => c.type === "text")?.text || "";
-
-    let evaluation;
-    try {
-      const jsonMatch = textContent.match(/\{[\s\S]*\}/);
-      evaluation = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
-    } catch {
-      evaluation = null;
-    }
+    const textContent = extractModelText(data);
+    let evaluation = normalizeEvaluationPayload(extractJsonObjectFromText(textContent));
 
     if (!evaluation) {
       const repairPrompt = `Your previous response was not valid JSON.
@@ -274,17 +273,15 @@ ${textContent}`;
           model: "claude-haiku-4-5",
           max_tokens: 1024,
           system: [{ type: "text", text: evalSystem, cache_control: { type: "ephemeral" } }],
-          messages: [{ role: "user", content: repairPrompt }]
+          messages: [{
+            role: "user",
+            content: [{ type: "text", text: repairPrompt, cache_control: { type: "ephemeral" } }]
+          }]
         }, 30000, 0);
       if (repairUpstream.ok) {
         const repairData = await repairUpstream.json();
-        const repairText = repairData.content?.find(c => c.type === "text")?.text || "";
-        try {
-          const repairJsonMatch = repairText.match(/\{[\s\S]*\}/);
-          evaluation = repairJsonMatch ? JSON.parse(repairJsonMatch[0]) : null;
-        } catch {
-          evaluation = null;
-        }
+        const repairText = extractModelText(repairData);
+        evaluation = normalizeEvaluationPayload(extractJsonObjectFromText(repairText));
       }
     }
 
@@ -303,12 +300,12 @@ ${textContent}`;
     }
 
     const normalized = enforceKarlCitationsOnEvaluation({
-      score: Number.isFinite(Number(evaluation.score)) ? Number(evaluation.score) : 0,
-      grade: typeof evaluation.grade === "string" ? evaluation.grade : "F",
-      summary: typeof evaluation.summary === "string" ? evaluation.summary : "No evaluator summary provided.",
-      passed: Array.isArray(evaluation.passed) ? evaluation.passed : [],
-      warnings: Array.isArray(evaluation.warnings) ? evaluation.warnings : [],
-      failed: Array.isArray(evaluation.failed) ? evaluation.failed : [],
+      score: evaluation.score,
+      grade: evaluation.grade,
+      summary: evaluation.summary,
+      passed: evaluation.passed,
+      warnings: evaluation.warnings,
+      failed: evaluation.failed,
       parseError: false,
       parseFailureReason: null,
       confidence: evaluation.failed?.length > 0 ? "medium" : "high"
@@ -398,7 +395,10 @@ Return the COMPLETE improved page in exactly the same format. Change structure a
         model: "claude-sonnet-4-6",
         max_tokens: 4000,
         system: [{ type: "text", text: "You are an SF.gov content structure editor. Improve page structure and readability without changing facts.", cache_control: { type: "ephemeral" } }],
-        messages: [{ role: "user", content: improvePrompt }],
+        messages: [{
+          role: "user",
+          content: [{ type: "text", text: improvePrompt, cache_control: { type: "ephemeral" } }]
+        }],
       }, 45000, 1);
 
     if (!upstream.ok) {
@@ -407,7 +407,47 @@ Return the COMPLETE improved page in exactly the same format. Change structure a
     }
 
     const data = await upstream.json();
-    const improved = data.content?.find(c => c.type === "text")?.text || "";
+    let improved = extractModelText(data);
+
+    // Keep downstream parser stable by ensuring the draft preserves required top-level headings.
+    if (!hasRequiredDraftShape(improved)) {
+      const repairPrompt = `Your previous response did not preserve the required draft format.
+Return the full improved page as plain text with these required headings present:
+- PAGE NAME:
+- PAGE TYPE:
+- PRIMARY USER:
+
+Do not add markdown fences or commentary.
+
+INVALID RESPONSE:
+${improved}
+
+SOURCE PAGE:
+${raw}`;
+
+      const repairUpstream = await postAnthropic({
+        model: "claude-sonnet-4-6",
+        max_tokens: 4000,
+        system: [{ type: "text", text: "You are an SF.gov content structure editor. Preserve output format exactly.", cache_control: { type: "ephemeral" } }],
+        messages: [{
+          role: "user",
+          content: [{ type: "text", text: repairPrompt, cache_control: { type: "ephemeral" } }]
+        }],
+      }, 30000, 0);
+
+      if (repairUpstream.ok) {
+        const repairData = await repairUpstream.json();
+        const repaired = extractModelText(repairData);
+        if (hasRequiredDraftShape(repaired)) {
+          improved = repaired;
+        }
+      }
+    }
+
+    if (!hasRequiredDraftShape(improved)) {
+      improved = raw;
+    }
+
     res.json({ improved });
   } catch (err) {
     console.error("Structure improvement error:", err);
@@ -531,8 +571,12 @@ app.get("/api/pages/:id/versions", async (req, res) => {
 
 app.get("/api/pages/:id/versions/:versionId", async (req, res) => {
   try {
+    const { id } = req.params;
     const version = await db.getVersion(req.params.versionId);
     if (!version) return res.status(404).json({ error: "Version not found" });
+    if (String(version.pageId) !== String(id)) {
+      return res.status(404).json({ error: "Version not found for page" });
+    }
     res.json(version);
   } catch (err) {
     console.error("GET /api/pages/:id/versions/:versionId error:", getErrorMessage(err));
@@ -545,6 +589,9 @@ app.post("/api/pages/:id/restore/:versionId", async (req, res) => {
   try {
     const version = await db.getVersion(versionId);
     if (!version) return res.status(404).json({ error: "Version not found" });
+    if (String(version.pageId) !== String(id)) {
+      return res.status(404).json({ error: "Version not found for page" });
+    }
     await db.savePage(id, version.data);
     await db.saveVersion(id, version.data, `Restored from v${version.versionNumber}`, "restore");
     res.json({ ok: true, data: version.data });
@@ -637,6 +684,24 @@ app.patch("/api/planned-pages/:id", async (req, res) => {
     return res.status(400).json({ error: "A page cannot be its own parent" });
   }
   try {
+    if (parentId !== undefined && parentId !== null) {
+      const currentId = Number(req.params.id);
+      let cursor = await db.getPlannedPage(parentId);
+      if (!cursor) return res.status(400).json({ error: "Parent not found" });
+
+      // Walk ancestor chain to prevent assigning a descendant as parent.
+      for (let depth = 0; depth < 100 && cursor?.parentId != null; depth += 1) {
+        if (Number(cursor.id) === currentId) {
+          return res.status(400).json({ error: "Parent assignment would create a cycle" });
+        }
+        cursor = await db.getPlannedPage(cursor.parentId);
+        if (!cursor) break;
+      }
+      if (Number(cursor?.id) === currentId) {
+        return res.status(400).json({ error: "Parent assignment would create a cycle" });
+      }
+    }
+
     const patch = {};
     if (name !== undefined) patch.name = name;
     if (pageType !== undefined) patch.pageType = pageType;

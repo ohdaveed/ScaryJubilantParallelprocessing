@@ -1,0 +1,30 @@
+[
+  {
+    "id": "chat-transaction-bedbugs",
+    "request": {
+      "model": "claude-sonnet-4-6",
+      "max_tokens": 1400,
+      "stream": false,
+      "messages": [
+        {
+          "role": "user",
+          "content": "Draft an HHVC Transaction page for bed bug complaints. Use this exact heading format: PAGE NAME:, PAGE TYPE:, PRIMARY USER:. Include clear next steps and mention 311."
+        }
+      ]
+    }
+  },
+  {
+    "id": "chat-information-mold",
+    "request": {
+      "model": "claude-sonnet-4-6",
+      "max_tokens": 1400,
+      "stream": false,
+      "messages": [
+        {
+          "role": "user",
+          "content": "Create an HHVC Information page about mold prevention for tenants. Keep language simple, and preserve headings PAGE NAME:, PAGE TYPE:, PRIMARY USER:."
+        }
+      ]
+    }
+  }
+]

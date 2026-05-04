@@ -105,6 +105,14 @@
 
 ## State Flow & Logic Issues
 
+### **Recent Stability Improvements**
+
+- Version restore now enforces page/version ownership (`/api/pages/:id/restore/:versionId` and `/api/pages/:id/versions/:versionId` reject cross-page IDs).
+- Planned page parent updates now block self-parenting and cycle creation in `/api/planned-pages/:id`.
+- First-load sitemap skeleton drafts now ship with concrete section copy (no `[Content to be generated]` placeholders in seed source).
+
+---
+
 ### **Issue 1: Complex Parameter Passing**
 
 **Location:** `usePageGeneration` hook

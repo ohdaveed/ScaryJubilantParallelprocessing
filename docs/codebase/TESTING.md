@@ -6,7 +6,7 @@
 |------|---------|---------|
 | **Vitest** | ^3.2.4 | Unit + integration test runner |
 | **supertest** | ^7.1.1 | HTTP assertion library (API testing) |
-| **[TODO]** | — | No explicit test utilities exported; patterns inline |
+| **@testing-library/react + jsdom** | current | Component rendering and interaction tests |
 
 ### Running Tests
 
@@ -170,7 +170,7 @@ describe("POST /api/pages", () => {
 | **React hooks** | Actual hook execution (no wrapper) | Test components with real hooks |
 | **DOM** | No DOM library; inline assertions | Minimal UI logic (mostly data binding) |
 
-### [TODO] Mock Patterns Not Yet Implemented
+### Planned Mocking Improvements
 
 - [ ] Mock Anthropic API for deterministic tests (reduce latency)
 - [ ] Mock file I/O for unit tests (currently hits disk)
@@ -183,24 +183,11 @@ describe("POST /api/pages", () => {
 
 ### Current State
 
-```
-Files     Functions   Statements   Branches
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[TODO]    [TODO]      [TODO]       [TODO]
-```
-
-**Gap:** No coverage report configured. To enable:
+Coverage is configured in `vitest.config.ts` with:
 
 ```bash
-# Add to vitest.config.ts
-export default defineConfig({
-  test: {
-    coverage: {
-      reporter: ["text", "json", "html"],
-      exclude: ["node_modules/", "dist/"]
-    }
-  }
-});
+npm test
+# reporters: text, json, html (v8 provider)
 ```
 
 ### Target Coverage
@@ -230,7 +217,7 @@ src/fixtures/
 
 ### Fixture Categories
 
-**[TODO]** — Structured fixtures not yet organized. Examples inline in test files:
+Fixtures are mostly inline today. Typical shapes used in tests:
 
 ```typescript
 const FIXTURE_PAGE_DRAFT: PageDraft = {
@@ -329,7 +316,7 @@ it("should fall back to file DB if PostgreSQL unavailable", async () => {
 
 ### Development Workflow
 ```
-1. npm run dev                # Start dev servers (includes test watcher)
+1. npm run dev                # Start dev servers
 2. Edit code
 3. npm run test:watch        # Auto-run affected tests
 4. Review output
@@ -356,8 +343,8 @@ npm run preview              # Preview production build
 ## Known Testing Challenges
 
 ### 1. AI Output Parsing
-**Challenge:** AI responses unpredictable; hard to test parser without real API  
-**Workaround:** [TODO] Create synthetic test fixtures with various response shapes
+**Challenge:** AI responses can vary and are hard to validate with only happy-path fixtures.  
+**Workaround:** Expand synthetic fixtures for malformed and edge-case responses.
 
 ### 2. Streaming Responses
 **Challenge:** Testing streaming chunks requires special handling  
@@ -375,7 +362,7 @@ npm run preview              # Preview production build
 
 ## Performance Testing
 
-**Status:** Not configured.
+**Status:** No benchmark/performance test suite is configured yet.
 
 ### To Enable (Optional)
 ```typescript

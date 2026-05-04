@@ -57,7 +57,7 @@ for (const item of data) {
   if (item.relationships) {
     item.relationships = item.relationships.map(r => {
       if (r.startsWith("Parent:")) {
-        return "Parent: Healthy Housing and Vector Control (Topic)";
+        return "Parent: Healthy housing and pests (Topic)";
       }
       return r;
     });

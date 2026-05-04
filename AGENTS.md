@@ -60,6 +60,9 @@ printf 'ANTHROPIC_API_KEY=%s\nDB_FALLBACK_MODE=file\n' "$ANTHROPIC_API_KEY" > .e
 - The server must be restarted after `.env` changes; Vite HMR does not reload the Express backend.
 - AI page generation (the core feature) takes ~10-30 seconds per page. The evaluation endpoint uses Claude Haiku and is faster (~5 s).
 - When the "Karl citations" service is unreachable (external dependency), the app logs a warning and falls back to base standards. This does not block page generation.
+- `skeletonToPageDraft()` uses the canonical parent string `Healthy housing and pests (Topic)`; keep docs/prompts aligned to this exact casing.
+- Planned page parent updates now reject self-parenting and cycle creation in `PATCH /api/planned-pages/:id`.
+- Version restore/detail endpoints now reject cross-page version IDs (`404 Version not found for page`).
 
 
 <claude-mem-context>

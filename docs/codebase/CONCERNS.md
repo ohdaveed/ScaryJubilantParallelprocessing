@@ -81,14 +81,14 @@ DB_FALLBACK_MODE=              # Set to 'file' to force file-based persistence
 
 ---
 
-### 7. No Test Coverage Reporting
+### 7. Coverage Baselines Need Enforcement
 
-**Issue:** No code coverage configured in Vitest  
-**Risk:** Blind spots in test suite; uncovered edge cases released to production  
+**Issue:** Coverage reporting is configured in Vitest, but threshold gates are not enforced.  
+**Risk:** Coverage can regress without failing CI.  
 **Severity:** Low  
 **Recommendation:**
-- Enable Vitest coverage with HTML report
-- Set minimum thresholds (70% statements, 60% branches)
+- Keep current text/json/html coverage outputs
+- Add minimum thresholds (statements/branches/functions/lines)
 - Fail CI/CD if coverage drops
 
 ---
@@ -109,7 +109,7 @@ DB_FALLBACK_MODE=              # Set to 'file' to force file-based persistence
 
 ### 2. Google Drive Credentials (Legacy, Unused)
 
-**Risk:** `GOOGLE_APPLICATION_CREDENTIALS` may contain unencrypted JSON  
+**Risk:** legacy Google service-account keys may contain unencrypted JSON  
 **Status:** Drive integration removed from frontend; backend code unused  
 **Recommendation:**
 - Remove Drive routes from server.js
@@ -284,12 +284,12 @@ DB_FALLBACK_MODE=              # Set to 'file' to force file-based persistence
 
 ---
 
-### 3. Version History Not Tested
+### 3. Version History Edge Cases Partially Tested
 
-**Issue:** `useVersionHistory` hook + `page_versions` table lack test coverage  
-**Risk:** Rollback feature may break silently  
+**Issue:** API coverage exists for version restore ownership checks, but hook-level UX paths still have limited test depth.  
+**Risk:** UI-level rollback behaviors may regress silently.  
 **Severity:** Low  
-**Recommendation:** Add integration tests for version restore
+**Recommendation:** Add focused tests for `useVersionHistory` state transitions and error states.
 
 ---
 
@@ -322,25 +322,22 @@ Based on git history (90 days), these files change frequently and may harbor bug
 
 ---
 
-## [ASK USER] Questions for Clarification
+## Open Product/Ops Decisions
 
-1. **Production Deployment:** Will this app run behind a proxy/load balancer? How many concurrent users expected?
-   - Affects: Connection pool sizing, rate limiting strategy
+1. **Deployment topology and expected concurrency**
+   - Affects pool sizing, request limits, and retry behavior.
 
-2. **Data Retention:** What's the retention policy for page drafts and version history?
-   - Affects: Database size, archival strategy, cleanup jobs
+2. **Retention policy for drafts and version history**
+   - Affects storage growth, archival plans, and cleanup jobs.
 
-3. **Offline Mode:** Should the app support offline-first (service worker + local storage)?
-   - Affects: Frontend architecture, sync strategy
+3. **Single-user versus multi-user operation**
+   - Affects collaboration semantics, conflict handling, and audit expectations.
 
-4. **Multi-User Access:** Will multiple users access the tool simultaneously? If yes, need collaborative features?
-   - Affects: Locking strategy, conflict resolution, notifications
+4. **Compliance/data-governance requirements**
+   - Affects logging redaction, deletion controls, and operational controls.
 
-5. **Compliance:** Are there data governance requirements (GDPR, HIPAA, etc.)?
-   - Affects: Logging, audit trails, data deletion procedures
-
-6. **AI Model Costs:** Any monthly budget for Anthropic API? Should we optimize for cost vs. quality?
-   - Affects: Model selection (sonnet vs. haiku), request volume limits
+5. **AI latency/cost trade-off policy**
+   - Affects model routing decisions and queue/rate-limit policies.
 
 ---
 

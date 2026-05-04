@@ -53,7 +53,7 @@ export interface TodoItem {
   id: string;
   title: string;
   description?: string;
-  status: "pending" | "in-progress" | "completed";
+  status: "pending" | "generating" | "done" | "failed";
   pageId?: string;
   createdAt: string;
   queueIndex?: number;                 // Position in execution queue
@@ -411,7 +411,7 @@ if (!ANTHROPIC_API_KEY) {
 | `ANTHROPIC_API_KEY` | Yes | — | Claude API key |
 | `DATABASE_URL` | No | — | PostgreSQL connection (falls back to file) |
 | `DB_FALLBACK_MODE` | No | — | Set to `file` to force file-based DB |
-| `GOOGLE_APPLICATION_CREDENTIALS` | No | — | Google Drive API (legacy, backend only) |
+| `GOOGLE_SERVICE_ACCOUNT_KEY` | No | — | Legacy backend-only Google credential support |
 
 ## Evidence
 

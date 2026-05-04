@@ -20,7 +20,7 @@
 | **Dev Server** | Vite dev server | ^5.4.21 | Port 5000 (proxies `/api` to Express on 3001) |
 | **DOM Utilities** | html-to-image | ^1.11.13 | Canvas-based image capture (screenshots) |
 | **PDF Rendering** | html2canvas | ^1.4.1 | Image-to-canvas for PDF export |
-| **PDF Generation** | jspdf | ^2.5.1 | PDF export from canvas |
+| **PDF Generation** | jspdf | ^4.2.1 | PDF export from canvas |
 | **State Management** | React Hooks + Context | Native | Custom hooks: `usePagesData`, `usePageGeneration`, `usePlanMap`, etc. |
 | **CSS** | CSS Modules + CSS | Vanilla | `src/**/*.module.css` for scoped styles; global in `src/index.css` |
 
@@ -31,7 +31,7 @@
 | **Web Framework** | Express | ^4.22.1 | HTTP API server (port 3001) |
 | **HTTP Parser** | Express built-in | — | JSON body parsing (limit: 20MB) |
 | **AI/LLM** | Anthropic Claude API | v1 (2023-06-01) | Page generation, Karl evaluation, content improvement |
-| **Claude Models** | claude-sonnet-4-x, claude-haiku-4-x | Latest | Prompt caching enabled on all routes |
+| **Claude Models** | claude-sonnet-4-6, claude-haiku-4-5 | Current | Prompt caching enabled on generation/evaluation/refinement routes |
 | **File Format Parsers** | mammoth | ^1.12.0 | Word (.docx) to plain text |
 | **File Format Parsers** | pdf-parse | ^2.4.5 | PDF to plain text |
 | **Archive Handling** | jszip | ^3.10.1 | ZIP file extraction (for .docx parsing) |
@@ -83,7 +83,7 @@ npm run metrics:fixtures # Report fixture metrics
 | `ANTHROPIC_API_KEY` | Yes | String | Anthropic API key for Claude calls |
 | `DATABASE_URL` | No | String | PostgreSQL connection string (Neon) |
 | `DB_FALLBACK_MODE` | No | Enum | Set to `file` to force file-based persistence |
-| `GOOGLE_APPLICATION_CREDENTIALS` | No | String | Path or base64 JSON for Google Drive API (legacy; backend only) |
+| `GOOGLE_SERVICE_ACCOUNT_KEY` | No | String | Path or base64 JSON for remaining backend-only Google integration paths |
 
 **Note:** Server reads `.env` at process start via `node --env-file=.env`. Changes require restart.
 
@@ -101,7 +101,7 @@ npm run metrics:fixtures # Report fixture metrics
 
 - `package.json`: dependencies, devDependencies, scripts, Node.js version range
 - `AGENTS.md`: Node.js version guidance, env var documentation
-- `.env`: current configuration (DATABASE_URL, ANTHROPIC_API_KEY, GOOGLE_APPLICATION_CREDENTIALS)
+- `.env`: current configuration (DATABASE_URL, ANTHROPIC_API_KEY, optional Google service-account key)
 - `server.js`: Express setup, fetch to Anthropic, request parsing
 - `src/App.tsx`: React imports, hooks, CSS imports
 - `lib/persistence.js`: PostgreSQL connection via `pg.Pool`; file-based fallback logic

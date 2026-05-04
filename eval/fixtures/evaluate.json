@@ -1,0 +1,20 @@
+[
+  {
+    "id": "evaluate-good-transaction",
+    "request": {
+      "pageName": "Report bed bugs in your apartment",
+      "pageType": "Transaction",
+      "userType": "Tenant",
+      "draft": "PAGE NAME: Report bed bugs in your apartment\nPAGE TYPE: Transaction\nPRIMARY USER: Tenant\n\nDESCRIPTION: Report a bed bug problem so we can inspect your home.\n\nWHAT TO KNOW:\n- Bed bugs spread quickly in shared housing.\n- We inspect for signs of infestation.\n\nWHAT TO DO:\n- Call 311 to file a complaint.\n- Keep records of bites and sightings.\n\nSYSTEM RELATIONSHIPS:\nParent: Healthy housing and pests (Topic)"
+    }
+  },
+  {
+    "id": "evaluate-bad-page-type",
+    "request": {
+      "pageName": "General tenant help",
+      "pageType": "Guidance page",
+      "userType": "Tenant",
+      "draft": "PAGE NAME: General tenant help\nPAGE TYPE: Guidance page\nPRIMARY USER: Tenant\n\nThis page has unclear actions and no 311 reference."
+    }
+  }
+]

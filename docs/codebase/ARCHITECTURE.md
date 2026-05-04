@@ -19,10 +19,11 @@
 │  ├─ POST /api/chat (→ Anthropic, cache)                   │
 │  ├─ POST /api/evaluate (Karl check)                       │
 │  ├─ POST /api/improve-structure (refinement)              │
+│  ├─ POST /api/karl-remediate (MCP guidance retrieval)     │
 │  ├─ CRUD /api/pages (PageDraft)                           │
 │  ├─ CRUD /api/todos (TodoItem queue)                      │
-│  ├─ GET /api/planned-pages (from DB)                      │
-│  └─ POST /api/parse-file (Word/PDF)                       │
+│  ├─ CRUD /api/planned-pages (from DB)                     │
+│  └─ CRUD /api/preferences (user preferences)              │
 └─────────────────────────┬───────────────────────────────────┘
                           │ SQL / File I/O
                           ↓
@@ -49,15 +50,15 @@
 │              EXTERNAL INTEGRATIONS                          │
 │                                                             │
 │  ├─ Anthropic Claude API (v1, 2023-06-01)                 │
-│  │  ├─ claude-sonnet-4-x (complex tasks)                  │
-│  │  └─ claude-haiku-4-x (fast eval)                       │
+│  │  ├─ claude-sonnet-4-6 (complex tasks)                  │
+│  │  └─ claude-haiku-4-5 (fast eval)                       │
 │  │  └─ Prompt caching (system prompts)                    │
 │  │                                                         │
 │  ├─ Karl Citations Service (SF.gov standards)             │
 │  │  └─ Enriches system prompt with content rules          │
 │  │                                                         │
 │  └─ Google Drive (legacy; backend only)                   │
-│     └─ GOOGLE_APPLICATION_CREDENTIALS config              │
+│     └─ Legacy service-account key config                  │
 │                                                            │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -124,7 +125,7 @@ User clicks "Evaluate Against Karl"
 POST /api/evaluate with PageDraft
     ↓
 server.js:
-  - Send to Anthropic (claude-haiku-4-x for speed)
+  - Send to Anthropic (claude-haiku-4-5 for speed)
   - System prompt: Karl content standards rules
   - Payload: page name, purpose, draft, components, etc.
     ↓
@@ -154,7 +155,7 @@ Frontend replaces draft, re-evaluates if needed
 
 ```
 Save Page:
-  POST /api/pages { pageDraft }
+  POST /api/pages { id, data, versionNotes?, versionTrigger? }
     ↓
   server.js → lib/persistence.js
     ↓
@@ -166,12 +167,6 @@ Save Page:
     Read .local/hhvc-local-db.json
     Append to pages array
     Write back to disk
-    
-Update Page:
-  PATCH /api/pages/:id { pageDraft }
-    ↓
-  UPDATE pages SET ... WHERE id = ?
-  (or file mode equivalent)
     
 List Pages:
   GET /api/pages
@@ -317,10 +312,11 @@ The **Karl** system is SF.gov's content design framework. Integration occurs via
 | Failure Point | Behavior | Recovery |
 |--------------|----------|----------|
 | PostgreSQL unavailable | Fall back to file mode automatically | No user action required; file DB used |
-| Anthropic API timeout | Retry up to 1 time (60s default) | Return 502 if both attempts fail |
-| Missing ANTHROPIC_API_KEY | Return 500 on `/api/chat` | App starts; AI endpoints disabled |
-| File I/O error in persistence | Log error; propagate to caller | Caller must handle 500 response |
-| Invalid page structure | Normalize; sanitize; log warning | Continue with safe defaults |
+| Anthropic API timeout | Retry up to 1 time (60s default for `/api/chat`) | Return 500 if retries fail |
+| Missing ANTHROPIC_API_KEY | Return 500 on AI routes | App starts; AI endpoints disabled |
+| File I/O error in persistence | Log error; propagate to caller | Caller handles 500 response |
+| Cross-page version restore | Explicitly rejected (`404`) | Use matching page/version pair only |
+| Planned-page cycle assignment | Explicitly rejected (`400`) | Choose parent outside child ancestry |
 
 ## Evidence
 

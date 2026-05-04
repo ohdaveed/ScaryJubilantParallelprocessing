@@ -13,7 +13,7 @@
         "pageType": "Transaction",
         "recommendedComponents": ["Title", "Description", "Section", "Callout", "Button link", "Phone number", "Related"],
         "systemRelationships": {
-          "parent": "Healthy Housing and Vector Control (Topic)",
+          "parent": "Healthy housing and pests (Topic)",
           "siblings": "Help with pests and bugs",
           "children": "None",
           "entryPoints": "311 and SF.gov search",
@@ -30,20 +30,20 @@
     }
   },
   {
-    "name": "Owner Fee Guidance",
-    "topic": "Fee deadlines and late costs",
+    "name": "Owner Tools and Fee Guidance",
+    "topic": "Tools, fees, and help",
     "userType": "Property owner / landlord",
     "pageType": "Information",
     "structured": {
       "page": {
-        "name": "Fee deadlines and late costs",
+        "name": "Tools, fees, and help",
         "primaryUser": "Property owner / landlord",
         "userGoal": "Understand fee amounts and avoid late penalties.",
         "primaryPurpose": "Explain owner fee deadlines and consequences in plain language.",
         "pageType": "Information",
         "recommendedComponents": ["Title", "Description", "Section", "Related"],
         "systemRelationships": {
-          "parent": "Healthy Housing and Vector Control (Topic)",
+          "parent": "Healthy housing and pests (Topic)",
           "siblings": "Pay your annual building fee",
           "children": "None",
           "entryPoints": "Owner service pages",
@@ -73,7 +73,7 @@
         "pageType": "Campaign",
         "recommendedComponents": ["Title", "Description", "Section", "Related"],
         "systemRelationships": {
-          "parent": "Healthy Housing and Vector Control (Topic)",
+          "parent": "Healthy housing and pests (Topic)",
           "siblings": "Mosquito classes for schools",
           "children": "None",
           "entryPoints": "Community outreach and search",

@@ -18,7 +18,7 @@ Headers:
 
 Request body:
 {
-  "model": "claude-sonnet-4-x" (or user-specified),
+  "model": "<frontend-selected model>",
   "max_tokens": <user-specified>,
   "system": [{ 
     "type": "text", 
@@ -39,8 +39,8 @@ Response:
 ```
 
 **Models Used:**
-- `claude-sonnet-4-x`: Complex page generation (slow, expensive, high quality)
-- `claude-haiku-4-x`: Fast evaluation against Karl standards (~5s per page)
+- `claude-sonnet-4-6`: Structure/refinement route
+- `claude-haiku-4-5`: Evaluation route
 
 **Timeout:** 60 seconds (retries up to 1 time on failure)
 
@@ -51,7 +51,7 @@ Response:
 #### 2. POST /api/evaluate (Karl Evaluation)
 ```
 Same endpoint, different request:
-  - model: "claude-haiku-4-x" (for speed)
+  - model: "claude-haiku-4-5" (for speed)
   - max_tokens: 1500
   - system: Karl standards rules
   - messages: page draft + evaluation prompt
@@ -196,9 +196,8 @@ const pool = new Pool({
 - **Retention constant:** `PAGE_VERSION_RETENTION` (lib/persistence.js)
 
 ### Timeout & Connection Limits
-- **Query timeout:** [TODO] (check server logs for actual value)
-- **Pool size:** [ASK USER] — not explicitly configured; uses pg defaults
-- **Idle timeout:** [TODO]
+- Pool size uses `pg` defaults unless explicitly configured in persistence setup.
+- API calls to Anthropic are wrapped with route-specific timeout/retry logic in `server.js`.
 
 ### Connection Failure Handling
 1. **Automatic fallback:** If connection fails, switch to file-based persistence
@@ -276,7 +275,7 @@ try {
 ### Current Usage
 - **Backend:** Server still supports uploading to/downloading from Google Drive
 - **Frontend:** No UI for Drive operations
-- **Configuration:** `GOOGLE_APPLICATION_CREDENTIALS` env var (path or base64 JSON)
+- **Configuration:** legacy service-account key support remains backend-only (`GOOGLE_SERVICE_ACCOUNT_KEY` path/base64 in current docs)
 
 ### Routes (Disabled for Frontend)
 - `POST /api/drive/upload` [Disabled]
@@ -288,13 +287,13 @@ Drive integration was removed because:
 - OAuth flow complexity
 - File storage now local/database-backed
 
-Future cleanup:
-- [ ] Remove unused Drive routes from server.js
-- [ ] Remove GOOGLE_APPLICATION_CREDENTIALS from docs
+Cleanup direction:
+- Remove unused legacy Drive routes from `server.js`.
+- Remove remaining legacy Google credential references from docs.
 
 ### Evidence
 - `server.js`: commented-out or removed Drive routes
-- `.env`: `GOOGLE_APPLICATION_CREDENTIALS` config (not actively used)
+- `.env`: optional Google service-account key configuration (not actively used by core flows)
 - `CLAUDE.md`: notes Drive code removed from frontend
 
 ---
@@ -311,7 +310,7 @@ Future cleanup:
 | `pg` | ^8.20.0 | PostgreSQL client |
 | `html-to-image` | ^1.11.13 | Canvas-based image capture |
 | `html2canvas` | ^1.4.1 | HTML to canvas (PDF export) |
-| `jspdf` | ^2.5.1 | PDF generation |
+| `jspdf` | ^4.2.1 | PDF generation |
 | `jszip` | ^3.10.1 | ZIP archive handling (Word parsing) |
 | `mammoth` | ^1.12.0 | Word (.docx) parser |
 | `pdf-parse` | ^2.4.5 | PDF text extraction |
@@ -368,7 +367,7 @@ DB_FALLBACK_MODE=file                # Force file mode (skip DB attempt)
 
 ### Optional for Google Drive (Legacy)
 ```bash
-GOOGLE_APPLICATION_CREDENTIALS=...   # No longer active in frontend
+GOOGLE_SERVICE_ACCOUNT_KEY=...   # No longer active in frontend
 ```
 
 ### Server Startup

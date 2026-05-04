@@ -56,12 +56,12 @@ project-root/
 │   # - POST /api/improve-structure        → AI-driven content refinement
 │   # - GET/POST/PATCH /api/pages          → CRUD for PageDraft
 │   # - GET/POST/PATCH /api/todos          → CRUD for TodoItem (queue management)
-│   # - GET /api/planned-pages             → fetch planned pages from DB
-│   # - POST /api/parse-file               → parse uploaded Word/PDF files
+│   # - CRUD /api/planned-pages            → planned IA pages
+│   # - CRUD /api/preferences              → preference storage
 │   # - All routes include request ID tracking & error handling
 │
 ├── .env                              # Environment configuration (git-ignored)
-├── .env.example [TODO]               # Example env vars (not currently in repo)
+├── .env.example (optional)           # Example env vars (may be absent in local clones)
 ├── .local/                           # Runtime artifacts
 │   └── hhvc-local-db.json            # File-based DB fallback (created at runtime)
 │
@@ -165,7 +165,7 @@ project-root/
 ## Imports & Module Resolution
 
 - **Default strategy:** Relative imports (`./`, `../`) for same-directory and adjacent modules
-- **[ASK USER]** — No TypeScript path aliases configured; all imports are relative or from `node_modules`
+- No TypeScript path aliases configured; imports are relative or from `node_modules`
 - **ESM format:** `import`/`export` syntax (configured via `"type": "module"` in package.json)
 - **Node.js interop:** CJS modules imported via `createRequire()` (e.g., `pdf-parse`)
 

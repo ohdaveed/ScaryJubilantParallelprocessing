@@ -73,9 +73,7 @@ HHVC IA (FINAL):
 3) Fix a problem in your building
 4) Prevent pests and health problems
 5) Programs and services
-6) Tools and lookup
-7) Fees and payments
-8) Resources and help
+6) Tools, fees, and help
 
 CANONICAL PAGES TO SUPPORT:
 - Reports: rats or mice, cockroaches, bed bugs, pigeons, mosquitoes, garbage/dirty conditions, animal waste/flies/attractants, clutter causing health problems, overgrown vegetation that attracts pests, indoor moisture on walls/windows (not leaks).
@@ -295,7 +293,7 @@ export const FEW_SHOT_EXEMPLARS: Record<string, string> = {
     "recommendedComponents": ["Title", "Description", "Spotlight", "Section", "Related"],
     "systemRelationships": {
       "parent": "Healthy housing and pests (Topic)",
-      "siblings": "Resources and help; Tools and lookup",
+      "siblings": "Tools, fees, and help",
       "children": "Report a housing or pest problem; Fix a problem in your building; Prevent pests and health problems",
       "entryPoints": "SF.gov navigation and search",
       "nextSteps": "Route to report, lifecycle guidance, prevention, tools, or payments"
@@ -425,8 +423,8 @@ export const SITEMAP_SKELETON: SkeletonTemplate[] = [
     userType: "General public",
     hub: "Main topic",
     sections: [
-      { heading: "Report, fix, and prevent", body: "[Content to be generated]" },
-      { heading: "Find services and tools", body: "[Content to be generated]" }
+      { heading: "Report, fix, and prevent", body: "Use report pages for active hazards, fix pages for inspection follow-up, and prevention pages for daily home care." },
+      { heading: "Find services and tools", body: "Use this topic hub to find lookups, fee payment, guides, and HHVC contact options." }
     ],
     related: ["Report a housing or pest problem", "Fix a problem in your building", "Prevent pests and health problems"]
   },
@@ -440,10 +438,10 @@ export const SITEMAP_SKELETON: SkeletonTemplate[] = [
     hub: "Report and 311",
     parentName: "Healthy housing and pests",
     sections: [
-      { heading: "Choose your report type", body: "[Content to be generated]" },
-      { heading: "What happens after 311", body: "[Content to be generated]" }
+      { heading: "Choose your report type", body: "Pick the page that matches your issue so 311 can route your request to the right HHVC workflow." },
+      { heading: "What happens after 311", body: "311 routes eligible reports to HHVC for review, inspection planning, and follow-up communication." }
     ],
-    related: ["Fix a problem in your building", "Tools and lookup"]
+    related: ["Fix a problem in your building", "Tools, fees, and help"]
   },
   {
     name: "Report rats or mice or fix a rat or mouse problem",
@@ -456,8 +454,8 @@ export const SITEMAP_SKELETON: SkeletonTemplate[] = [
     parentName: "Report a housing or pest problem",
     cta: "Report to 311",
     sections: [
-      { heading: "What to report", body: "[Content to be generated]" },
-      { heading: "What happens after reporting", body: "[Content to be generated]" }
+      { heading: "What to report", body: "Describe signs, location, and timeline. Add clear photos when possible." },
+      { heading: "What happens after reporting", body: "HHVC reviews the report and contacts you with inspection or next-step guidance when appropriate." }
     ],
     related: ["Report cockroaches or fix a cockroach problem", "Report bed bugs or fix a bed bug problem"]
   },
@@ -472,8 +470,8 @@ export const SITEMAP_SKELETON: SkeletonTemplate[] = [
     parentName: "Report a housing or pest problem",
     cta: "Report to 311",
     sections: [
-      { heading: "What to report", body: "[Content to be generated]" },
-      { heading: "What happens after reporting", body: "[Content to be generated]" }
+      { heading: "What to report", body: "Describe where cockroaches appear, how often, and what conditions may attract them." },
+      { heading: "What happens after reporting", body: "311 routes your request and HHVC follows up based on inspection scope and priority." }
     ],
     related: ["Report rats or mice or fix a rat or mouse problem", "Report bed bugs or fix a bed bug problem"]
   },
@@ -488,8 +486,8 @@ export const SITEMAP_SKELETON: SkeletonTemplate[] = [
     parentName: "Report a housing or pest problem",
     cta: "Report to 311",
     sections: [
-      { heading: "What to report", body: "[Content to be generated]" },
-      { heading: "What happens after reporting", body: "[Content to be generated]" }
+      { heading: "What to report", body: "Share where bed bugs were found and what signs you observed in sleeping areas." },
+      { heading: "What happens after reporting", body: "HHVC reviews details and may schedule an inspection or provide further instructions." }
     ],
     related: ["Report cockroaches or fix a cockroach problem", "Fix a problem in your building"]
   },
@@ -504,8 +502,8 @@ export const SITEMAP_SKELETON: SkeletonTemplate[] = [
     parentName: "Report a housing or pest problem",
     cta: "Report to 311",
     sections: [
-      { heading: "What to report", body: "[Content to be generated]" },
-      { heading: "What happens after reporting", body: "[Content to be generated]" }
+      { heading: "What to report", body: "Describe nesting, droppings, and where pigeon activity is affecting health or sanitation." },
+      { heading: "What happens after reporting", body: "Reports are routed for review and next steps based on location and risk." }
     ],
     related: ["Report mosquitoes in your home or yard", "Report animal waste, flies, or things that attract pests"]
   },
@@ -520,8 +518,8 @@ export const SITEMAP_SKELETON: SkeletonTemplate[] = [
     parentName: "Report a housing or pest problem",
     cta: "Report to 311",
     sections: [
-      { heading: "What to report", body: "[Content to be generated]" },
-      { heading: "What happens after reporting", body: "[Content to be generated]" }
+      { heading: "What to report", body: "Report standing water, mosquito activity, and where people are being affected." },
+      { heading: "What happens after reporting", body: "HHVC or partner services review mosquito risks and provide follow-up guidance." }
     ],
     related: ["Prevent mosquitoes by removing standing water", "Request a mosquito education workshop for students"]
   },
@@ -536,8 +534,8 @@ export const SITEMAP_SKELETON: SkeletonTemplate[] = [
     parentName: "Report a housing or pest problem",
     cta: "Report to 311",
     sections: [
-      { heading: "What to report", body: "[Content to be generated]" },
-      { heading: "What happens after reporting", body: "[Content to be generated]" }
+      { heading: "What to report", body: "Describe trash buildup, odors, and unsanitary conditions that may attract pests." },
+      { heading: "What happens after reporting", body: "Your request is routed through 311 and reviewed for inspection or enforcement steps." }
     ],
     related: ["Report animal waste, flies, or things that attract pests", "Keep your home clean and free of pests"]
   },
@@ -552,8 +550,8 @@ export const SITEMAP_SKELETON: SkeletonTemplate[] = [
     parentName: "Report a housing or pest problem",
     cta: "Report to 311",
     sections: [
-      { heading: "What to report", body: "[Content to be generated]" },
-      { heading: "What happens after reporting", body: "[Content to be generated]" }
+      { heading: "What to report", body: "Include details about animal waste, flies, and conditions that attract pests." },
+      { heading: "What happens after reporting", body: "Staff review report details and determine inspection or outreach follow-up." }
     ],
     related: ["Report garbage or dirty conditions", "Report overgrown plants or weeds that attract pests"]
   },
@@ -568,8 +566,8 @@ export const SITEMAP_SKELETON: SkeletonTemplate[] = [
     parentName: "Report a housing or pest problem",
     cta: "Report to 311",
     sections: [
-      { heading: "What to report", body: "[Content to be generated]" },
-      { heading: "What happens after reporting", body: "[Content to be generated]" }
+      { heading: "What to report", body: "Report cluttered conditions and materials that create health or pest risk." },
+      { heading: "What happens after reporting", body: "HHVC may inspect conditions and provide correction steps when risks are confirmed." }
     ],
     related: ["Report garbage or dirty conditions", "What tenants need to do after getting a notice of violation"]
   },
@@ -584,8 +582,8 @@ export const SITEMAP_SKELETON: SkeletonTemplate[] = [
     parentName: "Report a housing or pest problem",
     cta: "Report to 311",
     sections: [
-      { heading: "What to report", body: "[Content to be generated]" },
-      { heading: "What happens after reporting", body: "[Content to be generated]" }
+      { heading: "What to report", body: "Describe overgrown plants or weeds and how they create pest habitat." },
+      { heading: "What happens after reporting", body: "Reports are reviewed to determine whether inspection or referral is needed." }
     ],
     related: ["Report animal waste, flies, or things that attract pests", "Prevent cockroaches and other pests"]
   },
@@ -600,8 +598,8 @@ export const SITEMAP_SKELETON: SkeletonTemplate[] = [
     parentName: "Report a housing or pest problem",
     cta: "Report to 311",
     sections: [
-      { heading: "What to report", body: "[Content to be generated]" },
-      { heading: "What happens after reporting", body: "[Content to be generated]" }
+      { heading: "What to report", body: "Describe moisture on walls or windows, where it appears, and how long it has continued." },
+      { heading: "What happens after reporting", body: "HHVC reviews moisture complaints in scope and provides next steps through 311 workflows." }
     ],
     related: ["Reduce indoor moisture and prevent mold (not leaks)", "Fix a problem in your building"]
   },
@@ -615,8 +613,8 @@ export const SITEMAP_SKELETON: SkeletonTemplate[] = [
     hub: "Fix and enforcement",
     parentName: "Healthy housing and pests",
     sections: [
-      { heading: "From report to enforcement", body: "[Content to be generated]" },
-      { heading: "Tenant and owner roles", body: "[Content to be generated]" }
+      { heading: "From report to enforcement", body: "After reports are reviewed, inspections may occur, notices may be issued, and follow-up visits confirm corrections." },
+      { heading: "Tenant and owner roles", body: "Tenants support access and accurate reporting; owners are responsible for completing required repairs." }
     ],
     related: ["Get ready for a housing inspection after you report a problem", "What happens if problems are not fixed"]
   },
@@ -630,8 +628,8 @@ export const SITEMAP_SKELETON: SkeletonTemplate[] = [
     hub: "Fix and enforcement",
     parentName: "Fix a problem in your building",
     sections: [
-      { heading: "Save your case details", body: "[Content to be generated]" },
-      { heading: "Prepare the inspection area", body: "[Content to be generated]" }
+      { heading: "Save your case details", body: "Keep your case number, dates, notes, and photos in one place." },
+      { heading: "Prepare the inspection area", body: "Make sure inspectors can access affected rooms and visible problem areas." }
     ],
     related: ["Get ready for a follow-up inspection", "Understand inspections and follow-up visits"]
   },
@@ -645,8 +643,8 @@ export const SITEMAP_SKELETON: SkeletonTemplate[] = [
     hub: "Fix and enforcement",
     parentName: "Fix a problem in your building",
     sections: [
-      { heading: "Show what was fixed", body: "[Content to be generated]" },
-      { heading: "What to do if issues remain", body: "[Content to be generated]" }
+      { heading: "Show what was fixed", body: "Bring receipts, photos, and notes that show repairs were completed." },
+      { heading: "What to do if issues remain", body: "Document unresolved conditions and ask what evidence is needed at the next visit." }
     ],
     related: ["What tenants need to do after getting a notice of violation", "What owners need to do after getting a notice of violation"]
   },
@@ -660,8 +658,8 @@ export const SITEMAP_SKELETON: SkeletonTemplate[] = [
     hub: "Fix and enforcement",
     parentName: "Fix a problem in your building",
     sections: [
-      { heading: "Required tenant actions", body: "[Content to be generated]" },
-      { heading: "How tenants support follow-up", body: "[Content to be generated]" }
+      { heading: "Required tenant actions", body: "Allow access, provide clear details, and keep records of written communication." },
+      { heading: "How tenants support follow-up", body: "Share updates on conditions so inspectors can verify whether risks remain." }
     ],
     related: ["Get ready for a follow-up inspection", "What owners need to do after getting a notice of violation"]
   },
@@ -675,8 +673,8 @@ export const SITEMAP_SKELETON: SkeletonTemplate[] = [
     hub: "Fix and enforcement",
     parentName: "Fix a problem in your building",
     sections: [
-      { heading: "Required owner actions", body: "[Content to be generated]" },
-      { heading: "How owners show compliance", body: "[Content to be generated]" }
+      { heading: "Required owner actions", body: "Correct cited conditions by deadlines and coordinate repair access." },
+      { heading: "How owners show compliance", body: "Keep dated documentation that shows completed repairs and corrective steps." }
     ],
     related: ["Learn about reinspection fees", "What happens if problems are not fixed"]
   },
@@ -690,8 +688,8 @@ export const SITEMAP_SKELETON: SkeletonTemplate[] = [
     hub: "Fix and enforcement",
     parentName: "Fix a problem in your building",
     sections: [
-      { heading: "Enforcement outcomes", body: "[Content to be generated]" },
-      { heading: "How to avoid enforcement", body: "[Content to be generated]" }
+      { heading: "Enforcement outcomes", body: "Unresolved violations may lead to additional notices, fees, or hearing-related steps." },
+      { heading: "How to avoid enforcement", body: "Act early, complete repairs, and respond to follow-up instructions on time." }
     ],
     related: ["What owners need to do after getting a notice of violation", "Understand inspections and follow-up visits"]
   },
@@ -705,8 +703,8 @@ export const SITEMAP_SKELETON: SkeletonTemplate[] = [
     hub: "Fix and enforcement",
     parentName: "Fix a problem in your building",
     sections: [
-      { heading: "Inspection process", body: "[Content to be generated]" },
-      { heading: "Follow-up process", body: "[Content to be generated]" }
+      { heading: "Inspection process", body: "Inspectors review visible health risks, document findings, and outline required corrections." },
+      { heading: "Follow-up process", body: "Follow-up visits confirm repairs and determine whether the case can close." }
     ],
     related: ["Get ready for a housing inspection after you report a problem", "Learn about reinspection fees"]
   },
@@ -720,8 +718,8 @@ export const SITEMAP_SKELETON: SkeletonTemplate[] = [
     hub: "Fix and enforcement",
     parentName: "Fix a problem in your building",
     sections: [
-      { heading: "When fees apply", body: "[Content to be generated]" },
-      { heading: "How fees are handled", body: "[Content to be generated]" }
+      { heading: "When fees apply", body: "Reinspection fees may apply when additional visits are needed to verify unresolved issues." },
+      { heading: "How fees are handled", body: "Use current official fee guidance and keep payment records for compliance." }
     ],
     related: ["What owners need to do after getting a notice of violation", "Pay your healthy housing fee for buildings with 3 or more units"]
   },
@@ -735,8 +733,8 @@ export const SITEMAP_SKELETON: SkeletonTemplate[] = [
     hub: "Prevention",
     parentName: "Healthy housing and pests",
     sections: [
-      { heading: "Choose prevention by problem", body: "[Content to be generated]" },
-      { heading: "When to report", body: "[Content to be generated]" }
+      { heading: "Choose prevention by problem", body: "Start with the prevention guide that matches the risk you see at home." },
+      { heading: "When to report", body: "If conditions continue or worsen, move from prevention to the matching report page." }
     ],
     related: ["Report a housing or pest problem", "Programs and services"]
   },
@@ -750,53 +748,53 @@ export const SITEMAP_SKELETON: SkeletonTemplate[] = [
     hub: "Programs and services",
     parentName: "Healthy housing and pests",
     sections: [
-      { heading: "Available services", body: "[Content to be generated]" },
-      { heading: "Program information", body: "[Content to be generated]" }
+      { heading: "Available services", body: "Find education workshops, surveillance reporting, and public health support services." },
+      { heading: "Program information", body: "Learn what HHVC inspects and how complaint response workflows operate." }
     ],
-    related: ["Tools and lookup", "Resources and help"]
+    related: ["Tools, fees, and help"]
   },
   {
-    name: "Tools and lookup",
+    name: "Tools, fees, and help",
     contentTitle: "HHVC - Tools - Entry",
-    serviceTitle: "Tools and lookup",
+    serviceTitle: "Tools, fees, and help",
     summary: "Use lookup tools for violations and inspector contact.",
     pageType: "Information",
     userType: "General public",
-    hub: "Tools and lookup",
+    hub: "Tools, fees, and help",
     parentName: "Healthy housing and pests",
     sections: [
-      { heading: "Property lookup tools", body: "[Content to be generated]" },
-      { heading: "Inspector lookup", body: "[Content to be generated]" }
+      { heading: "Property lookup tools", body: "Use official lookup tools to view violations history and related public records." },
+      { heading: "Inspector lookup", body: "Find neighborhood inspector information for non-urgent questions and follow-up." }
     ],
-    related: ["Fix a problem in your building", "Resources and help"]
+    related: ["Fix a problem in your building", "Contact healthy housing and vector control"]
   },
   {
-    name: "Fees and payments",
-    contentTitle: "HHVC - Fees - Entry",
-    serviceTitle: "Fees and payments",
-    summary: "Find healthy housing fee information and payment links.",
-    pageType: "Information",
+    name: "Pay your healthy housing fee for buildings with 3 or more units",
+    contentTitle: "HHVC - Fees - Payment",
+    serviceTitle: "Pay your healthy housing fee for buildings with 3 or more units",
+    summary: "Pay required Healthy Housing fees for qualifying residential buildings.",
+    pageType: "Transaction",
     userType: "Property owner / landlord",
-    hub: "Fees and payments",
-    parentName: "Healthy housing and pests",
+    hub: "Tools, fees, and help",
+    parentName: "Tools, fees, and help",
     sections: [
-      { heading: "Fee overview", body: "[Content to be generated]" },
-      { heading: "Payment options", body: "[Content to be generated]" }
+      { heading: "Check if your building is covered", body: "Confirm your property has 3 or more units before you begin payment." },
+      { heading: "Pay online", body: "Use the official SF.gov payment path and keep your confirmation for your records." }
     ],
-    related: ["Pay your healthy housing fee for buildings with 3 or more units", "Learn about reinspection fees"]
+    related: ["Tools, fees, and help", "Learn about reinspection fees"]
   },
   {
-    name: "Resources and help",
-    contentTitle: "HHVC - Resources - Entry",
-    serviceTitle: "Resources and help",
-    summary: "Find guides, contacts, and help pages for housing and pest problems.",
+    name: "Healthy housing guides and resources",
+    contentTitle: "HHVC - Resources - Guides",
+    serviceTitle: "Healthy housing guides and resources",
+    summary: "Browse practical guides and handouts for housing and pest prevention.",
     pageType: "Information",
     userType: "General public",
-    hub: "Resources and help",
-    parentName: "Healthy housing and pests",
+    hub: "Tools, fees, and help",
+    parentName: "Tools, fees, and help",
     sections: [
-      { heading: "Guides and help", body: "[Content to be generated]" },
-      { heading: "Contact options", body: "[Content to be generated]" }
+      { heading: "Download trusted guides", body: "Use HHVC handouts for prevention, reporting, and follow-up basics." },
+      { heading: "Choose the right guide first", body: "Start with the topic that matches your issue, then open deeper role-specific guidance." }
     ],
     related: ["Contact healthy housing and vector control", "Get help with a housing or pest problem"]
   }
