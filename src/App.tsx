@@ -405,17 +405,10 @@ function buildKarlPanelView(ev: KarlEvaluation | undefined): KarlEvaluationView 
 
 export default function App() {
   const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTab>("generate");
-  const [topic, setTopic] = useState("");
-  const [userType, setUserType] = useState(USER_TYPES[0]);
-  const [notes, setNotes] = useState("");
-  const [selected, setSelected] = useState<PageDraft | null>(null);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("All");
   const [sortNewest, setSortNewest] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [topicTouched, setTopicTouched] = useState(false);
-  const [refineInput, setRefineInput] = useState("");
-  const [preferences, setPreferences] = useState<UserPreference[]>([]);
   const [selectedPageIds, setSelectedPageIds] = useState<Set<string>>(new Set());
   const [newPref, setNewPref] = useState("");
   const [mockupEditOpen, setMockupEditOpen] = useState(false);
@@ -451,6 +444,8 @@ export default function App() {
   } = useVersionHistory();
 
   const {
+    state,
+    actions,
     loading,
     streaming,
     evaluating,
@@ -467,31 +462,31 @@ export default function App() {
     regenerate,
     refine
   } = usePageGeneration({
-    state: {
-      topic,
-      userType,
-      notes,
-      pendingPageType,
-      pendingPlannedId,
-      preferences,
-      pages,
-      selected,
-      plannedPages,
-      refineInput
-    },
-    actions: {
-      setPages,
-      setSelected,
-      setPendingPlannedId,
-      setPendingPageType,
-      setTopic,
-      setNotes,
-      setTopicTouched,
-      setPreferences,
-      setRefineInput,
-      linkPlannedPage
-    }
+    pages,
+    setPages,
+    plannedPages,
+    linkPlannedPage
   });
+
+  const {
+    topic,
+    userType,
+    notes,
+    selected,
+    topicTouched,
+    refineInput,
+    preferences
+  } = state;
+
+  const {
+    setSelected,
+    setTopic,
+    setUserType,
+    setNotes,
+    setTopicTouched,
+    setRefineInput,
+    setPreferences
+  } = actions;
 
   useEffect(() => {
     setPreferences([]);
