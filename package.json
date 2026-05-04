@@ -16,7 +16,8 @@
     "eval:deterministic": "node eval/run-evals.mjs --deterministic-only",
     "eval:judge": "node eval/run-evals.mjs --judge-only",
     "eval:baseline": "node eval/run-evals.mjs --deterministic-only --baseline",
-    "eval:check": "node eval/run-evals.mjs --deterministic-only --check-baseline"
+    "eval:check": "node eval/run-evals.mjs --deterministic-only --check-baseline",
+    "ui:audit": "node scripts/ui-audit-playwright.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
@@ -32,6 +33,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
     "@types/pg": "^8.20.0",

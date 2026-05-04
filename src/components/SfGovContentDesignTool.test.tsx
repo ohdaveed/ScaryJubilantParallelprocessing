@@ -40,6 +40,7 @@ describe("SfGovContentDesignTool", () => {
         pageGoal=""
         additionalContext=""
         previewSlot={<span />}
+        onSettingsClick={() => {}}
       />
     );
     const settingsButtons = html.match(/aria-label="Settings"/g);

@@ -1,15 +1,16 @@
 import React, { Suspense, lazy, useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { PageDraft, TodoItem, KarlEvaluation, PlannedPage, UserPreference, ReviewStatus, VerificationState } from "./types";
+import { PageDraft, TodoItem, PlannedPage, UserPreference, ReviewStatus, VerificationState } from "./types";
 import { USER_TYPES, PAGE_TYPES, TYPE_META } from "./constants";
 import { clean, pagesApi, replacePageDraftInRaw, todosApi, preferencesApi, renderPageAsPNG, renderPageAsPDF, generateZip, findOverlappingPageIds, getVerificationState, VERIFICATION_FILTERS } from "./utils";
-import { Badge, Divider, Btn, Card, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar, DeleteConfirmationModal } from "./components/ui";
+import { Badge, Divider, Btn, Card, ComponentChips, RelPanel, KarlEvalPanel, ProgressBar, DeleteConfirmationModal } from "./components/ui";
 import { SfGovPagePreview } from "./components/SfGovPreview";
 import { usePagesData } from "./hooks/usePagesData";
 import { usePlanMap } from "./hooks/usePlanMap";
 import { useVersionHistory } from "./hooks/useVersionHistory";
 import { usePageGeneration } from "./hooks/usePageGeneration";
 import { useQueueRunner } from "./hooks/useQueueRunner";
-import { SfGovContentDesignTool, type ContentDesignTab, type KarlEvaluationView } from "./components/SfGovContentDesignTool";
+import { SfGovContentDesignTool, type ContentDesignTab } from "./components/SfGovContentDesignTool";
+import packageJson from "../package.json";
 import "./App.css";
 
 const LazyMapTab = lazy(() => import("./components/tabs/MapTab").then((m) => ({ default: m.MapTab })));
@@ -482,10 +483,10 @@ function TodoPanel({
 type WorkspaceTab = "plan" | "generate" | "library" | "ideal";
 
 const WORKSPACE_TABS: readonly ContentDesignTab[] = [
-  { id: "plan", label: "Site Plan" },
-  { id: "generate", label: "Generate" },
-  { id: "library", label: "Library" },
-  { id: "ideal", label: "Ideal Map" }
+  { id: "plan", label: "Site Plan", description: "Sketch site architecture and planned pages before you build." },
+  { id: "generate", label: "Generate", description: "Choose audience and page type, then generate and preview a draft." },
+  { id: "library", label: "Library", description: "Open, search, and manage pages you have already created." },
+  { id: "ideal", label: "Ideal Map", description: "Compare your plan to the reference information architecture." }
 ];
 
 const STUDIO_PAGE_TYPE_CHIPS = [
@@ -500,27 +501,6 @@ const STUDIO_PAGE_TYPE_CHIPS = [
 
 function studioPageTypes(): string[] {
   return STUDIO_PAGE_TYPE_CHIPS.filter((t) => PAGE_TYPES.includes(t));
-}
-
-function buildKarlPanelView(ev: KarlEvaluation | undefined): KarlEvaluationView | null {
-  if (!ev) return null;
-  const checks: KarlEvaluationView["checks"] = [
-    ...ev.passed.map((label, i) => ({ id: `p-${i}`, label: `${label} — passed`, status: "pass" as const })),
-    ...ev.warnings.map((label, i) => ({ id: `w-${i}`, label: `${label} — warning`, status: "warn" as const })),
-    ...ev.failed.map((label, i) => ({ id: `f-${i}`, label: `${label} — failed`, status: "fail" as const }))
-  ];
-  const w = ev.warnings.length;
-  const f = ev.failed.length;
-  const parts: string[] = [];
-  if (w) parts.push(`${w} warning${w !== 1 ? "s" : ""}`);
-  if (f) parts.push(`${f} failed`);
-  return {
-    grade: ev.grade || "—",
-    score: ev.score,
-    maxScore: 100,
-    warningsSummary: parts.length ? parts.join(" · ") : undefined,
-    checks
-  };
 }
 
 export default function App() {
@@ -816,7 +796,20 @@ export default function App() {
     }
   }, [setPages]);
 
-  const studioKarlView = useMemo(() => buildKarlPanelView(selected?.karlEvaluation), [selected?.karlEvaluation]);
+  const contentChecksFooter = useMemo(() => {
+    const labels: Record<string, string> = {
+      idle: "Content checks offline",
+      connecting: "Connecting to standards…",
+      active: "Content checks on",
+      fallback: "Baseline rules (live standards unavailable)"
+    };
+    return labels[karlStatus] ?? `Standards: ${karlStatus}`;
+  }, [karlStatus]);
+
+  const streamFooterMetaFull = useMemo(
+    () => `${contentChecksFooter} · v${packageJson.version}`,
+    [contentChecksFooter]
+  );
 
   const streamBarMessage = useMemo(() => {
     if (streaming) return progressLabel || "Generating…";
@@ -836,13 +829,22 @@ export default function App() {
       if (g !== undefined && s !== undefined) return `Last generated: ${n} · Karl grade ${g} · ${s}/100`;
       return `Last generated: ${n}`;
     }
-    return "Ready — enter a topic and generate a page draft";
+    return "Ready — use the left panel to generate a new draft or open Library to continue";
   }, [streaming, evaluating, error, selected, justGenerated, progressLabel]);
 
   const previewUrlSlug = useMemo(() => {
     const base = (clean(selected?.name) || topic || "preview").toLowerCase().replace(/\s+/g, "-").slice(0, 48);
     return `sf.gov / hhvc / ${base || "preview"}`;
   }, [selected?.name, topic]);
+
+  const previewSummaryLine = useMemo(() => {
+    const pt = pendingPageType || studioPageTypes()[0] || "Transaction";
+    const goal = topic.trim();
+    const max = 72;
+    if (!goal) return `${pt} · Add a page goal in the left panel`;
+    const trunc = goal.length > max ? `${goal.slice(0, max)}…` : goal;
+    return `${pt} · ${trunc}`;
+  }, [pendingPageType, topic]);
 
   const libraryRows = useMemo(
     () =>
@@ -862,17 +864,24 @@ export default function App() {
     if (next === "ideal") setMapMode("view");
   }, [setMapMode]);
 
+  const showGenerateContextRail = topicError || !!pendingPageType || !!selected;
+
   return (
     <div className="app-root-sf-studio">
       <SfGovContentDesignTool
         className="app-sf-studio-shell"
         brandTitle="HHVC Page Builder"
         brandSubtitle="SF.gov · Healthy Housing & Vector Control"
+        version={`v${packageJson.version}`}
+        showHeaderVersion={false}
         showLeftPanel={workspaceTab === "generate"}
         pageGoalInputMode="textarea"
         tabs={WORKSPACE_TABS}
         activeTabId={workspaceTab}
         onTabChange={handleWorkspaceTab}
+        onBrowseLibraryClick={() => setWorkspaceTab("library")}
+        headerExportDisabled={!selected}
+        showPreviewExportButton={!!selected}
         onExportClick={() => {
           if (selected) void handleExportScreenshot(selected.name);
         }}
@@ -897,104 +906,87 @@ export default function App() {
           loading ? (streaming ? "Generating…" : evaluating ? "Evaluating…" : "Working…") : "Generate page"
         }
         generateDisabled={loading || topicError}
-        karlEvaluation={studioKarlView}
         libraryPages={libraryRows}
         selectedLibraryPageId={selected?.id ?? null}
         onLibraryPageSelect={(id) => selectById(id)}
         onLibraryPageDelete={(id) => void deletePage(id)}
         previewUrlText={previewUrlSlug}
+        previewSummaryLine={workspaceTab === "generate" ? previewSummaryLine : undefined}
         streamMessage={streamBarMessage}
-        streamFooterMeta={karlStatus !== "idle" ? `Karl: ${karlStatus}` : undefined}
+        streamFooterMeta={streamFooterMetaFull}
         onExportPreview={() => {
           if (selected) void handleExportScreenshot(selected.name);
         }}
         previewSlot={
           workspaceTab === "generate" ? (
-        <div className="app-studio-generate">
+        <div className={["app-studio-generate", !showGenerateContextRail ? "app-studio-generate--no-rail" : ""].filter(Boolean).join(" ")}>
+          {showGenerateContextRail ? (
           <div className="app-studio-generate__rail">
-            <Card className="app-card-pad--18-20">
-              <KarlStatus status={karlStatus} />
-              {topicError && <p className="app-topic-err">Enter a topic in the left panel to continue</p>}
-              {pendingPageType && (
-                <div className="app-pending-type-banner">
-                  <Badge type={pendingPageType} small />
-                  <span>from plan</span>
-                  <button type="button" className="app-icon-btn" onClick={() => { setPendingPageType(""); setPendingPlannedId(null); }}>&#10005;</button>
-                </div>
-              )}
-            </Card>
+            {(topicError || pendingPageType) ? (
+              <Card className="app-card-pad--18-20">
+                {topicError && <p className="app-topic-err">Enter a page goal in the left panel to generate.</p>}
+                {pendingPageType && (
+                  <div className="app-pending-type-banner">
+                    <Badge type={pendingPageType} small />
+                    <span>from plan</span>
+                    <button type="button" className="app-icon-btn" onClick={() => { setPendingPageType(""); setPendingPlannedId(null); }}>&#10005;</button>
+                  </div>
+                )}
+              </Card>
+            ) : null}
 
             {selected && (
-            <Card className="app-card-pad--14-16-mb">
-              <p className="app-up-label app-up-label--mb8">Preferences</p>
-              <p className="app-pref-lead">
-                Remembered for this page. Refine to teach the agent.
-              </p>
-              {preferences.map(p => (
-                <div key={p.id} className="app-pref-row">
-                  <span className="app-pref-text">{p.preference}</span>
-                  <span className="app-pref-src">{p.source}</span>
-                  <button
-                    type="button"
-                    className="app-pref-remove"
-                    onClick={async () => { await preferencesApi.delete(p.id).catch(() => {}); setPreferences(prev => prev.filter(x => x.id !== p.id)); }}
-                    title="Remove preference"
-                  >&#10005;</button>
-                </div>
-              ))}
-              {preferences.length === 0 && (
-                <p className="app-pref-empty">No preferences yet. Add one below or refine this page to teach the agent.</p>
-              )}
-              <div className="app-pref-add-row">
-                <input
-                  className="app-input app-input--pref"
-                  placeholder='e.g. "Always lead with tenant rights"'
-                  value={newPref}
-                  onChange={e => setNewPref(e.target.value)}
-                  onKeyDown={async e => {
-                    if (e.key === "Enter" && newPref.trim()) {
+            <details className="app-pref-details">
+              <summary className="app-pref-details__summary">Advanced preferences</summary>
+              <Card className="app-card-pad--14-16-mb app-card-pref-inner">
+                <p className="app-pref-lead">
+                  Remembered for this page. Refine to teach the agent.
+                </p>
+                {preferences.map(p => (
+                  <div key={p.id} className="app-pref-row">
+                    <span className="app-pref-text">{p.preference}</span>
+                    <span className="app-pref-src">{p.source}</span>
+                    <button
+                      type="button"
+                      className="app-pref-remove"
+                      onClick={async () => { await preferencesApi.delete(p.id).catch(() => {}); setPreferences(prev => prev.filter(x => x.id !== p.id)); }}
+                      title="Remove preference"
+                    >&#10005;</button>
+                  </div>
+                ))}
+                {preferences.length === 0 && (
+                  <p className="app-pref-empty">No preferences yet. Add one below or refine this page to teach the agent.</p>
+                )}
+                <div className="app-pref-add-row">
+                  <input
+                    className="app-input app-input--pref"
+                    placeholder='e.g. "Always lead with tenant rights"'
+                    value={newPref}
+                    onChange={e => setNewPref(e.target.value)}
+                    onKeyDown={async e => {
+                      if (e.key === "Enter" && newPref.trim()) {
+                        const pref = await preferencesApi.create(newPref.trim(), "manual", selected?.id);
+                        setPreferences(prev => [pref, ...prev]);
+                        setNewPref("");
+                      }
+                    }}
+                  />
+                  <Btn
+                    variant="ghost" size="sm"
+                    disabled={!newPref.trim()}
+                    onClick={async () => {
+                      if (!newPref.trim()) return;
                       const pref = await preferencesApi.create(newPref.trim(), "manual", selected?.id);
                       setPreferences(prev => [pref, ...prev]);
                       setNewPref("");
-                    }
-                  }}
-                />
-                <Btn
-                  variant="ghost" size="sm"
-                  disabled={!newPref.trim()}
-                  onClick={async () => {
-                    if (!newPref.trim()) return;
-                    const pref = await preferencesApi.create(newPref.trim(), "manual", selected?.id);
-                    setPreferences(prev => [pref, ...prev]);
-                    setNewPref("");
-                  }}
-                >Add</Btn>
-              </div>
-            </Card>
-            )}
-
-            {pages.length > 0 && (
-              <Card className="app-card-pad--14-16-only">
-                <p className="app-up-label">Recent pages</p>
-                {[...pages].reverse().slice(0, 5).map(p => (
-                    <button
-                      type="button"
-                      key={p.id}
-                      onClick={() => { setSelected(p); setShowSuccess(false); }}
-                      className={`app-recent-btn${selected?.id === p.id ? " app-recent-btn--active" : ""}`}
-                    >
-                      <span className="app-recent-dot" data-page-type={clean(p.pageType) || undefined} />
-                      <span className="app-recent-name">{clean(p.name) || "Untitled"}</span>
-                      {p.karlEvaluation && (
-                        <span className="app-recent-grade" data-grade={p.karlEvaluation.grade}>
-                          {p.karlEvaluation.grade}
-                        </span>
-                      )}
-                    </button>
-                ))}
+                    }}
+                  >Add</Btn>
+                </div>
               </Card>
+            </details>
             )}
           </div>
+          ) : null}
 
           <div className="app-studio-generate__main">
           <Card className="app-card-pad--20-24">
@@ -1034,14 +1026,20 @@ export default function App() {
                     <p className="app-page-sub">SF.gov · Healthy Housing &amp; Vector Control</p>
                   </div>
                   <div className="app-page-actions">
-                    {selected.skeleton && (
-                      <Btn onClick={() => { if (selected.inputs) generate({ topic: selected.inputs.topic, userType: selected.inputs.userType, notes: selected.inputs.notes, replaceSkeletonId: selected.id }); }} variant="primary" size="sm">Generate with AI</Btn>
-                    )}
-                    <Btn onClick={() => handleCopy(selected.raw)} variant="ghost" size="sm">{copied ? "Copied!" : "Copy"}</Btn>
-                    <Btn onClick={() => handleDownload(selected.raw, (clean(selected.name) || "page").toLowerCase().replace(/\s+/g, "-") + ".txt")} variant="ghost" size="sm">Download</Btn>
-                    {!selected.skeleton && <Btn onClick={() => regenerate(selected)} variant="ghost" size="sm">Regenerate</Btn>}
-                    {!selected.skeleton && <Btn onClick={() => openHistory(selected.id)} variant="ghost" size="sm">History</Btn>}
-                    <Btn onClick={() => deletePage(selected.id)} variant="danger" size="sm">Delete</Btn>
+                    <div className="app-page-actions__group app-page-actions__group--primary">
+                      {selected.skeleton && (
+                        <Btn onClick={() => { if (selected.inputs) generate({ topic: selected.inputs.topic, userType: selected.inputs.userType, notes: selected.inputs.notes, replaceSkeletonId: selected.id }); }} variant="primary" size="sm">Generate with AI</Btn>
+                      )}
+                      {!selected.skeleton && <Btn onClick={() => regenerate(selected)} variant="primary" size="sm">Regenerate</Btn>}
+                    </div>
+                    <div className="app-page-actions__group app-page-actions__group--secondary">
+                      <Btn onClick={() => handleCopy(selected.raw)} variant="ghost" size="sm">{copied ? "Copied!" : "Copy"}</Btn>
+                      <Btn onClick={() => handleDownload(selected.raw, (clean(selected.name) || "page").toLowerCase().replace(/\s+/g, "-") + ".txt")} variant="ghost" size="sm">Download</Btn>
+                      {!selected.skeleton && <Btn onClick={() => openHistory(selected.id)} variant="ghost" size="sm">History</Btn>}
+                    </div>
+                    <div className="app-page-actions__group app-page-actions__group--danger">
+                      <Btn onClick={() => deletePage(selected.id)} variant="danger" size="sm">Delete</Btn>
+                    </div>
                   </div>
                 </div>
 
@@ -1158,8 +1156,30 @@ export default function App() {
                   <>
                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M9 12h6M12 9v6" /></svg>
                     <div className="app-builder-empty__center">
-                      <p className="app-builder-empty__title">{pages.length === 0 ? "No pages yet" : "Select a page"}</p>
-                      <p className="app-builder-empty__sub">{pages.length === 0 ? "Enter a topic in the form and click Generate to create your first page." : "Choose a page from the Recent list or Library tab."}</p>
+                      <p className="app-builder-empty__title">
+                        {pages.length === 0 ? "Start your first draft" : "Start a new draft or open a saved page"}
+                      </p>
+                      <p className="app-builder-empty__sub">
+                        {pages.length === 0
+                          ? "Add a page goal in the left panel, then generate. You can also browse the Library when you have saved pages."
+                          : "Generate from the left panel, use Quick pick there, or go to Library to search and open a page."}
+                      </p>
+                      <p className="app-builder-empty__hint" title={previewSummaryLine}>
+                        {previewSummaryLine}
+                      </p>
+                      <div className="app-builder-empty__actions">
+                        <Btn
+                          variant="primary"
+                          size="md"
+                          disabled={loading || topicError}
+                          onClick={() => void generate({ pageType: pendingPageType || studioPageTypes()[0] })}
+                        >
+                          {loading ? "Working…" : "Generate draft"}
+                        </Btn>
+                        <Btn variant="ghost" size="md" onClick={() => setWorkspaceTab("library")}>
+                          Browse Library
+                        </Btn>
+                      </div>
                     </div>
                   </>
                 )}

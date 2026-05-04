@@ -34,6 +34,7 @@ hhvc-local-db.json
 # Cache and temporary files
 .deno/
 .config/
+.playwright-ui-audit/
 
 # Logs
 *.log

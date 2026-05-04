@@ -4,7 +4,7 @@ import { pageTypeToDotClass } from "./sfGovContentDesignTool/pageTypeDots";
 
 export { normalizePageTypeKey, pageTypeToDotClass } from "./sfGovContentDesignTool/pageTypeDots";
 
-export type ContentDesignTab = { id: string; label: string };
+export type ContentDesignTab = { id: string; label: string; /** One-line wayfinding under tabs (Hick’s / cognitive load) */ description?: string };
 
 export type KarlCheckStatus = "pass" | "warn" | "fail";
 
@@ -50,7 +50,8 @@ export type SfGovContentDesignToolProps = {
   onGenerateClick?: () => void;
   generateLabel?: string;
   generateDisabled?: boolean;
-  karlEvaluation?: KarlEvaluationView | null;
+  /** Open full Library tab / picker (sidebar list is quick-pick only). */
+  onBrowseLibraryClick?: () => void;
   libraryPages?: readonly LibraryPageRow[];
   selectedLibraryPageId?: string | null;
   onLibraryPageSelect?: (id: string) => void;
@@ -59,9 +60,17 @@ export type SfGovContentDesignToolProps = {
   previewSlot: React.ReactNode;
   onExpandPreview?: () => void;
   onExportPreview?: () => void;
+  /** When true, top-bar export is disabled (e.g. no page selected). */
+  headerExportDisabled?: boolean;
+  /** When false, hides duplicate export control in the faux browser chrome. */
+  showPreviewExportButton?: boolean;
+  /** When false, hides the version pill in the header (version can live in footer / About). */
+  showHeaderVersion?: boolean;
   streamStatus?: string;
   streamMessage?: string;
   streamFooterMeta?: string;
+  /** Shown under the faux URL bar: page type + truncated goal (orientation / Jakob’s Law). */
+  previewSummaryLine?: string;
   defaultLeftPanelWidth?: number;
   minLeftPanelWidth?: number;
   maxLeftPanelWidth?: number;
@@ -82,14 +91,8 @@ const DEFAULT_PAGE_TYPES = [
   "Form"
 ] as const;
 
-function gradeToBadgeClass(grade: string): string {
-  const g = grade.trim().toUpperCase().charAt(0);
-  if (g === "A") return "grade-A";
-  if (g === "B") return "grade-B";
-  if (g === "C") return "grade-C";
-  if (g === "D" || g === "F") return "grade-D";
-  return "grade-B";
-}
+/** Visible page-type chips before “More types” (choice overload). */
+const PAGE_TYPE_CHIP_PRIMARY_COUNT = 5;
 
 function IconSettings() {
   return (
@@ -227,7 +230,7 @@ export function SfGovContentDesignTool({
   onGenerateClick,
   generateLabel = "Generate page draft",
   generateDisabled = false,
-  karlEvaluation,
+  onBrowseLibraryClick,
   libraryPages = [],
   selectedLibraryPageId,
   onLibraryPageSelect,
@@ -236,9 +239,13 @@ export function SfGovContentDesignTool({
   previewSlot,
   onExpandPreview,
   onExportPreview,
+  headerExportDisabled = false,
+  showPreviewExportButton = true,
+  showHeaderVersion = false,
   streamStatus = "Connected",
   streamMessage = "",
   streamFooterMeta,
+  previewSummaryLine,
   defaultLeftPanelWidth = 300,
   minLeftPanelWidth = 240,
   maxLeftPanelWidth = 480,
@@ -254,6 +261,21 @@ export function SfGovContentDesignTool({
   const [leftWidth, setLeftWidth] = useState(defaultLeftPanelWidth);
   const [splitterDragging, setSplitterDragging] = useState(false);
   const [dismissConfirm, setDismissConfirm] = useState(0);
+  const [pageTypesExpanded, setPageTypesExpanded] = useState(false);
+
+  const activeTabMeta = useMemo(() => tabs.find((t) => t.id === activeTabId), [tabs, activeTabId]);
+
+  const pageTypeOverflow = pageTypeOptions.length > PAGE_TYPE_CHIP_PRIMARY_COUNT;
+  const pageTypesVisible = useMemo(() => {
+    if (!pageTypeOverflow || pageTypesExpanded) return [...pageTypeOptions];
+    return pageTypeOptions.slice(0, PAGE_TYPE_CHIP_PRIMARY_COUNT);
+  }, [pageTypeOptions, pageTypeOverflow, pageTypesExpanded]);
+
+  useEffect(() => {
+    if (!pageTypeOverflow || pageTypesExpanded) return;
+    const rest = pageTypeOptions.slice(PAGE_TYPE_CHIP_PRIMARY_COUNT);
+    if (rest.includes(activePageType)) setPageTypesExpanded(true);
+  }, [activePageType, pageTypeOptions, pageTypeOverflow, pageTypesExpanded]);
 
   const shellStyle = useMemo(
     () =>
@@ -303,9 +325,6 @@ export function SfGovContentDesignTool({
     return () => document.removeEventListener("click", onDocClick);
   }, []);
 
-  const maxScore = karlEvaluation?.maxScore ?? 100;
-  const scorePct = karlEvaluation ? Math.min(100, Math.max(0, (karlEvaluation.score / maxScore) * 100)) : 0;
-
   const rootClass = ["sf-cdt", !showLeftPanel ? "sf-cdt--preview-only" : "", className].filter(Boolean).join(" ");
 
   return (
@@ -345,24 +364,47 @@ export function SfGovContentDesignTool({
           </div>
 
           <div className="topbar-actions">
-            <span className="pill-badge">{version}</span>
-            <button type="button" className="icon-btn" title="Settings" aria-label="Settings" onClick={() => onSettingsClick?.()}>
+            {showHeaderVersion ? <span className="pill-badge">{version}</span> : null}
+            <button
+              type="button"
+              className="icon-btn"
+              title={onSettingsClick ? "Settings" : `About this build · ${version}`}
+              aria-label={onSettingsClick ? "Settings" : `About this build, version ${version}`}
+              onClick={() => onSettingsClick?.()}
+            >
               <IconSettings />
             </button>
-            <button type="button" className="icon-btn" title="Export PNG" aria-label="Export PNG" onClick={() => onExportClick?.()}>
+            <button
+              type="button"
+              className="icon-btn"
+              title={headerExportDisabled ? "Select a page to export preview as PNG" : "Export preview as PNG"}
+              aria-label="Export preview as PNG"
+              aria-disabled={headerExportDisabled}
+              disabled={headerExportDisabled}
+              onClick={() => {
+                if (headerExportDisabled) return;
+                onExportClick?.();
+              }}
+            >
               <IconExport />
             </button>
           </div>
         </header>
 
+        {activeTabMeta?.description ? (
+          <p className="tab-context-strip" id={`${baseId}-tab-hint`}>
+            {activeTabMeta.description}
+          </p>
+        ) : null}
+
         <div className="main editorial-main" role="tabpanel" aria-label="Editor and preview" aria-labelledby={`${baseId}-tab-${activeTabId}`}>
           {showLeftPanel ? (
           <aside className="left-panel authoring-rail" aria-label="Editor controls">
-            <section className="panel-section">
-              <div className="section-label">Context</div>
+            <section className="panel-section panel-band">
+              <div className="panel-band__kicker">Who this is for</div>
               <div className="field">
                 <label className="field-label" htmlFor={userFieldId}>
-                  User Type
+                  User type
                 </label>
                 <select
                   id={userFieldId}
@@ -377,12 +419,16 @@ export function SfGovContentDesignTool({
                   ))}
                 </select>
               </div>
+            </section>
+
+            <section className="panel-section panel-band">
+              <div className="panel-band__kicker">What you&apos;re building</div>
               <div className="field">
                 <div className="field-label" id={`${baseId}-page-type-label`}>
-                  Page Type
+                  Page type
                 </div>
                 <div className="chips" role="group" aria-labelledby={`${baseId}-page-type-label`}>
-                  {pageTypeOptions.map((pt) => (
+                  {pageTypesVisible.map((pt) => (
                     <button
                       key={pt}
                       type="button"
@@ -392,15 +438,35 @@ export function SfGovContentDesignTool({
                       {pt}
                     </button>
                   ))}
+                  {pageTypeOverflow && !pageTypesExpanded ? (
+                    <button
+                      type="button"
+                      className="chip chip--more"
+                      aria-expanded={false}
+                      onClick={() => setPageTypesExpanded(true)}
+                    >
+                      More types…
+                    </button>
+                  ) : null}
+                  {pageTypeOverflow && pageTypesExpanded ? (
+                    <button
+                      type="button"
+                      className="chip chip--more chip--ghost"
+                      aria-expanded={true}
+                      onClick={() => setPageTypesExpanded(false)}
+                    >
+                      Fewer types
+                    </button>
+                  ) : null}
                 </div>
               </div>
             </section>
 
-            <section className="panel-section">
-              <div className="section-label">Prompt</div>
+            <section className="panel-section panel-band">
+              <div className="panel-band__kicker">Page goal and instructions</div>
               <div className="field">
                 <label className="field-label" htmlFor={goalFieldId}>
-                  Page Name / Goal
+                  Page name / goal
                 </label>
                 {pageGoalInputMode === "textarea" ? (
                   <textarea
@@ -422,73 +488,58 @@ export function SfGovContentDesignTool({
                   />
                 )}
               </div>
-              <div className="field">
-                <label className="field-label" htmlFor={contextFieldId}>
-                  Additional Context
-                </label>
-                <textarea
-                  id={contextFieldId}
-                  className="field-textarea"
-                  placeholder="Describe any requirements, tone, audience, or constraints…"
-                  value={additionalContext}
-                  onChange={(e) => onAdditionalContextChange?.(e.target.value)}
-                />
-              </div>
+              <details className="panel-details">
+                <summary className="panel-details__summary">Additional context (optional)</summary>
+                <div className="field field--in-details">
+                  <label className="field-label visually-hidden" htmlFor={contextFieldId}>
+                    Additional context
+                  </label>
+                  <textarea
+                    id={contextFieldId}
+                    className="field-textarea"
+                    placeholder="Requirements, tone, audience, or constraints…"
+                    value={additionalContext}
+                    onChange={(e) => onAdditionalContextChange?.(e.target.value)}
+                  />
+                </div>
+              </details>
               <button type="button" className="generate-btn" disabled={generateDisabled} onClick={() => onGenerateClick?.()}>
                 <IconSpark />
                 {generateLabel}
               </button>
             </section>
 
-            {karlEvaluation ? (
-              <section className="panel-section">
-                <div className="section-label">Karl Evaluation</div>
-                <div className="karl-card">
-                  <div className="karl-header">
-                    <div className="karl-name">Content Grade</div>
-                    <div className={`grade-badge ${gradeToBadgeClass(karlEvaluation.grade)}`} aria-label={`Grade ${karlEvaluation.grade}`}>
-                      {karlEvaluation.grade.trim().charAt(0).toUpperCase()}
-                    </div>
-                  </div>
-                  <div className="score-bar-wrap">
-                    <div className="score-bar-track">
-                      <div className="score-bar-fill" style={{ width: `${scorePct}%` }} />
-                    </div>
-                    <div className="score-text">
-                      <span>
-                        {karlEvaluation.score} / {maxScore}
-                      </span>
-                      <span>{karlEvaluation.warningsSummary ?? ""}</span>
-                    </div>
-                  </div>
-                  <div className="karl-checks">
-                    {karlEvaluation.checks.map((c) => (
-                      <div key={c.id} className="karl-check">
-                        <span className={`check-dot check-${c.status === "pass" ? "pass" : c.status === "warn" ? "warn" : "fail"}`} aria-hidden />
-                        {c.label}
-                      </div>
-                    ))}
-                  </div>
+            <section className="panel-section panel-section--grow panel-section--library">
+              <button type="button" className="library-browse-all" onClick={() => onBrowseLibraryClick?.()}>
+                Browse all pages
+                <span className="library-browse-all__meta" aria-hidden>
+                  →
+                </span>
+              </button>
+              <details className="panel-library-quickpick">
+                <summary className="panel-library-quickpick__summary">
+                  Quick pick
+                  <span className="section-label-meta">
+                    {libraryPages.length} page{libraryPages.length !== 1 ? "s" : ""}
+                  </span>
+                </summary>
+                <div className="page-list page-list--quickpick">
+                  {libraryPages.length === 0 ? (
+                    <p className="panel-library-quickpick__empty">No saved pages yet. Generate one or add from Site Plan.</p>
+                  ) : (
+                    libraryPages.map((p) => (
+                      <LibraryPageItem
+                        key={p.id}
+                        page={p}
+                        active={p.id === selectedLibraryPageId}
+                        dismissSignal={dismissConfirm}
+                        onSelect={() => onLibraryPageSelect?.(p.id)}
+                        onDelete={onLibraryPageDelete ? () => onLibraryPageDelete(p.id) : undefined}
+                      />
+                    ))
+                  )}
                 </div>
-              </section>
-            ) : null}
-
-            <section className="panel-section panel-section--grow">
-              <div className="section-label">
-                Library <span className="section-label-meta">{libraryPages.length} page{libraryPages.length !== 1 ? "s" : ""}</span>
-              </div>
-              <div className="page-list">
-                {libraryPages.map((p) => (
-                  <LibraryPageItem
-                    key={p.id}
-                    page={p}
-                    active={p.id === selectedLibraryPageId}
-                    dismissSignal={dismissConfirm}
-                    onSelect={() => onLibraryPageSelect?.(p.id)}
-                    onDelete={onLibraryPageDelete ? () => onLibraryPageDelete(p.id) : undefined}
-                  />
-                ))}
-              </div>
+              </details>
             </section>
           </aside>
           ) : null}
@@ -539,21 +590,29 @@ export function SfGovContentDesignTool({
                     <line x1="3" y1="21" x2="10" y2="14" />
                   </svg>
                 </button>
-                <button
-                  type="button"
-                  className="icon-btn icon-btn--preview icon-btn--preview-active"
-                  title="Export preview"
-                  aria-label="Export preview"
-                  onClick={() => onExportPreview?.()}
-                >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
-                </button>
+                {showPreviewExportButton ? (
+                  <button
+                    type="button"
+                    className="icon-btn icon-btn--preview icon-btn--preview-active"
+                    title="Export preview"
+                    aria-label="Export preview"
+                    onClick={() => onExportPreview?.()}
+                  >
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                  </button>
+                ) : null}
               </div>
             </div>
+            {previewSummaryLine ? (
+              <div className="preview-summary-line" title={previewSummaryLine}>
+                <span className="preview-summary-line__label">Preview</span>
+                <span className="preview-summary-line__text">{previewSummaryLine}</span>
+              </div>
+            ) : null}
             <div className="preview-scroll anim-fade-up">
               <div className="workbench-surface">
                 <div className="preview-sheet-frame">{previewSlot}</div>

@@ -593,6 +593,7 @@ export const SfGovPagePreview = React.forwardRef<HTMLDivElement, { draft: string
                 <h1 style={{
                   fontFamily: SF.fontDisplay, fontSize: "clamp(2rem, 4vw, 2.35rem)", fontWeight: 700, lineHeight: 1.12,
                   color: SF.slate4, margin: "0 0 14px", letterSpacing: "-0.02em",
+                  wordBreak: "normal", overflowWrap: "break-word", maxWidth: "100%",
                 }} title={karlTooltip("Title")}>{sec.title || pageTitle || "Untitled"}</h1>
                 {sec.lines.filter((l: string) => clean(l)).map((l: string, j: number) => (
                   <p key={j} style={{ fontFamily: SF.font, fontSize: 18, lineHeight: 1.6, color: SF.slate2, margin: "0 0 6px", fontWeight: 300 }}>{clean(l)}</p>
