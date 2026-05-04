@@ -710,6 +710,9 @@ export default function App() {
   };
   const openPageById = useCallback(async (id: string) => {
     const full = await hydratePage(id).catch(() => null);
+    // #region agent log
+    fetch('http://127.0.0.1:7910/ingest/1f771304-c700-4a27-befb-b9f1265e128e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'34ed74'},body:JSON.stringify({sessionId:'34ed74',location:'App.tsx:openPageById',message:'hydrate result',data:{pageId:id,hydrated:Boolean(full)},timestamp:Date.now(),hypothesisId:'H2',runId:'pre-fix'})}).catch(()=>{});
+    // #endregion
     if (!full) return;
     setSelected(full);
     setShowSuccess(false);
@@ -893,10 +896,19 @@ export default function App() {
 
   const handleWorkspaceTab = useCallback((id: string) => {
     const next = id as WorkspaceTab;
+    // #region agent log
+    fetch('http://127.0.0.1:7910/ingest/1f771304-c700-4a27-befb-b9f1265e128e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'34ed74'},body:JSON.stringify({sessionId:'34ed74',location:'App.tsx:handleWorkspaceTab',message:'tab click',data:{requestedId:id,next,priorTab:workspaceTab,priorMapMode:mapMode},timestamp:Date.now(),hypothesisId:'H1',runId:'pre-fix'})}).catch(()=>{});
+    // #endregion
     setWorkspaceTab(next);
     if (next === "plan") setMapMode("plan");
     if (next === "ideal") setMapMode("view");
-  }, [setMapMode]);
+  }, [setMapMode, workspaceTab, mapMode]);
+
+  useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7910/ingest/1f771304-c700-4a27-befb-b9f1265e128e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'34ed74'},body:JSON.stringify({sessionId:'34ed74',location:'App.tsx:ux-sync',message:'workspaceTab mapMode committed',data:{workspaceTab,mapMode},timestamp:Date.now(),hypothesisId:'H3',runId:'pre-fix'})}).catch(()=>{});
+    // #endregion
+  }, [workspaceTab, mapMode]);
 
   const showGenerateContextRail = topicError || !!pendingPageType || !!selected;
 
