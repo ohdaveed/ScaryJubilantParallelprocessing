@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-05-04T15:41:00.702Z",
+  "startedAt": "2026-05-04T16:18:23.750Z",
   "baseUrl": "http://localhost:3001",
   "mode": "deterministic-only",
   "chat": {
@@ -10,7 +10,7 @@
         "responseParsed": true,
         "hasOutputText": true,
         "requiredHeadingsPresent": true,
-        "latencyMs": 25992,
+        "latencyMs": 26451,
         "status": 200
       },
       {
@@ -19,7 +19,7 @@
         "responseParsed": true,
         "hasOutputText": true,
         "requiredHeadingsPresent": true,
-        "latencyMs": 14510,
+        "latencyMs": 20351,
         "status": 200
       }
     ],
@@ -31,9 +31,9 @@
       "requiredHeadingsPresentRate": 1,
       "latency": {
         "count": 2,
-        "p50Ms": 25992,
-        "p95Ms": 25992,
-        "meanMs": 20251
+        "p50Ms": 26451,
+        "p95Ms": 26451,
+        "meanMs": 23401
       }
     },
     "judgeSamples": [
@@ -51,7 +51,7 @@
             }
           ]
         },
-        "output": "# Bed Bug Complaint Draft — Karl CMS Transaction Page\n\n---\n\n**PAGE NAME:** Report a Bed Bug Problem\n**PAGE TYPE:** Transaction\n**PRIMARY USER:** A renter, tenant, or building resident who has discovered bed bugs in their home and needs to file a complaint with the City.\n\n---\n\n## Why This Is a Transaction Page\n\nThis page drives the user to **do something with the City** — file a complaint. Per the Karl editor guidance on choosing content types, a Transaction page is the correct choice here because it is the entry point into a City service and must be actionable.\n📎 https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/content-types/choosing-a-content-type\n\n---\n\n## PAGE DRAFT\n\n---\n\n### Report a Bed Bug Problem\n\nBed bugs are a health and housing issue. If you have bed bugs in your rental unit and your landlord has not addressed the problem, you can file a complaint with the City.\n\n---\n\n### What You Can Do\n\n**Call or go online to file a complaint with 311.**\n\nSan Francisco 311 connects you to City services. When you report a bed bug problem, your complaint is routed to the **Department of Building Inspection (DBI)** or the **San Francisco Department of Public Health (SFDPH)**, depending on the nature of the issue.\n\n---\n\n### Before You Start\n\nHave this information ready when you contact 311:\n\n- Your full address, including unit number\n- The date you first noticed the bed bugs\n- Whether you have already notified your landlord in writing\n- Any photos or documentation you have (useful but not required)\n\n---\n\n### How to File a Complaint\n\n**Step 1 — Contact 311**\nCall **3-1-1** (or 415-701-2311 from outside San Francisco), go to **sf311.org**, or use the **SF311 mobile app** to submit your complaint online.\n\n**Step 2 — Describe the problem**\nTell 311 that you have a bed bug infestation in your rental unit. Include your address, unit number, and a brief description of the problem.\n\n**Step 3 — Notify your landlord in writing (if you haven't already)**\nYour landlord is legally responsible for maintaining a habitable unit. Send a written notice — email or letter — describing the problem and keeping a copy for your records.\n\n**Step 4 — Schedule an inspection**\nAfter your complaint is filed, a City inspector may contact you to schedule an inspection of your unit. You will typically receive a case or complaint number — keep this for your records.\n\n**Step 5 — Follow up**\nIf you do not hear back within 5–7 business days, follow up with 311 using your complaint number.\n\n---\n\n### After You File\n\n- A **DBI or SFDPH inspector** may visit your building to assess the infestation\n- Your landlord may be required to hire a **licensed pest control professional**\n- If violations are found, the City can issue a **Notice of Violation** to the property owner\n\n---\n\n## SUPPORTING INFORMATION SECTIONS\n\n*(These appear in expandable or static sections near the bottom of the page. The \"Supporting information\" label does not display publicly.)*\n📎 https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/content-types/building-a-page-by-content-type/transaction/supporting-information-on-a-transaction-page\n\n---\n\n**Your rights as a tenant**\nSan Francisco law requires landlords to provide and maintain habitable housing. This includes addressing pest infestations. If your landlord fails to act after written notice, you may have additional legal options. Contact the **Rent Board** or a tenant legal services organization for help.\n\n**About bed bugs**\nBed bugs are small insects that feed on human blood, usually at night. They hide in mattresses, furniture, and walls. An infestation is not a sign of poor cleanliness — they spread through travel, used furniture, and shared walls in multi-unit buildings.\n\n**Protecting yourself during treatment**\nCooperate with your landlord's pest control provider. You may need to prepare your unit before treatment, such as laundering bedding and clearing clutter. Ask the pest control professional for written preparation instructions.\n\n---\n\n## RELATED PAGES (Right Rail)\n\n*(Only Transaction, Information, Campaign, and Topic pages can be tagged as Related. Titles and descriptions sync automatically when linked pages are updated.)*\n📎 https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/components/related\n\nSuggested Related pages to tag:\n\n| Page Title | Content Type |\n|---|---|\n| Report a housing code violation | Transaction |\n| Tenant rights in San Francisco | Information |\n| Contact your landlord about repairs | Information |\n| San Francisco Rent Board | Transaction |\n\n---\n\n## EDITOR NOTES\n\n> 📝 **Content type check:** This is correctly filed as a **Transaction** because the primary action is filing a complaint with the City via 311. If you build a deeper explainer about what bed bugs are or tenant legal options, create a separate **Information** page and use the **Part of** component to link it back to this Transaction page.\n> 📎 https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/content-types/building-a-page-by-content-type/information/part-of-on-an-information-page\n\n> 📝 **311 integration:** Confirm with your 311 team the correct service request category name so the CTA language exactly matches what users will see in the 311 system.\n\n> 📝 **Department ownership:** Confirm whether DBI or SFDPH is the primary owning department for this complaint type before publishing, and update the routing language accordingly."
+        "output": "# Bed Bug Complaint Draft — Karl CMS Transaction Page\n\n---\n\n**PAGE NAME:** Report a Bed Bug Problem in Your Home or Building\n\n**PAGE TYPE:** Transaction\n\n**PRIMARY USER:** San Francisco renter, tenant, or building occupant who has discovered bed bugs and needs to file a complaint with the City\n\n---\n\n## What This Page Does\n\nThis is a **Transaction page** — it serves as the entry point into a City service and must be actionable. The resident is trying to *do something* (file a complaint), not just read information.\n\n> Per the Karl editor guide on choosing a content type: a Transaction page is the right choice here because the user must take action with the City.\n> 📖 [https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/content-types/choosing-a-content-type](https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/content-types/choosing-a-content-type)\n\n---\n\n## DRAFT PAGE CONTENT\n\n---\n\n### Intro / Lead Text\n\n**Report a bed bug problem in your home or building**\n\nIf you have bed bugs in your rental unit, your landlord is required to address the infestation. If your landlord has not responded or refused to act, you can file a complaint with the City.\n\n---\n\n### What You'll Need Before You Start\n\n- Your address and unit number\n- The date you first noticed bed bugs\n- Documentation that you notified your landlord (texts, emails, or written notice — if you have it)\n- Your contact information\n\n---\n\n### How to File a Complaint\n\n**Option 1 — Report online or by phone through 311**\n\nThe fastest way to report a bed bug complaint is through **SF 311**, San Francisco's non-emergency City services line.\n\n- 📞 **Call 311** (or 415-701-2311 from outside SF)\n- 💻 **Submit online at** [sf311.org](https://sf311.org)\n- 📱 **Use the SF311 app** (available on iOS and Android)\n\n311 will route your complaint to the **Department of Building Inspection (DBI)** or the **San Francisco Department of Public Health (SFDPH)**, depending on the nature of your complaint.\n\n---\n\n**Option 2 — File directly with the Department of Building Inspection**\n\nYou can also contact DBI directly to report housing code violations related to bed bugs.\n\n- Visit the **Complaint Intake Counter** at 49 South Van Ness Avenue\n- Call DBI's complaint line\n- Submit a complaint through the DBI online portal\n\n---\n\n**Option 3 — Contact the Department of Public Health**\n\nIf you believe the infestation poses a public health risk or affects multiple units, contact SFDPH's **Housing and Environmental Health** section.\n\n---\n\n### What Happens After You File\n\n1. **Your complaint is logged** — 311 or DBI assigns a case number. Save this for your records.\n2. **An inspector is assigned** — A housing inspector will contact you to schedule a visit.\n3. **Inspection takes place** — The inspector documents the conditions in your unit.\n4. **Landlord is notified** — If violations are found, the landlord receives a formal notice to correct the problem.\n5. **Follow-up** — If the landlord does not comply, further enforcement action may be taken.\n\n---\n\n### Supporting Information\n\n> ℹ️ *In Karl, the sections below are built as **Supporting information** on the Transaction page. The heading \"Supporting information\" does not appear on the live public page — only your custom headings show.*\n> 📖 [https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/content-types/building-a-page-by-content-type/transaction/supporting-information-on-a-transaction-page](https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/content-types/building-a-page-by-content-type/transaction/supporting-information-on-a-transaction-page)\n\n---\n\n#### Your rights as a tenant\n\nUnder San Francisco law, landlords must maintain rental units free of pest infestations, including bed bugs. Bed bugs are considered a **habitability issue** under the San Francisco Housing Code. Your landlord cannot retaliate against you for filing a complaint.\n\nIf you face harassment or retaliation after reporting, contact the **San Francisco Rent Board** or a tenant rights organization.\n\n---\n\n#### What landlords are required to do\n\nLandlords must:\n- Respond promptly when notified of a bed bug infestation\n- Hire a licensed pest control professional\n- Not rent a unit they know has an active bed bug infestation\n- Provide advance notice before entering to inspect or treat\n\n---\n\n#### Tips while you wait for an inspection\n\n- Do not throw away furniture without documenting it first (photograph everything)\n- Place bed bug interceptors under bed legs to help confirm activity\n- Wash and dry bedding on high heat\n- Avoid moving items from the infested unit to other rooms or units, as this can spread the infestation\n\n---\n\n#### If you live in a hotel or SRO\n\nResidents of single-room occupancy hotels (SROs) and residential hotels have the same rights. Contact the **City's SRO Collaborative** or file through 311 as described above.\n\n---\n\n### Related Pages\n\n> ℹ️ *In Karl, add these as **Related pages** in the right-hand column of the Transaction page. Only Transaction, Information, Campaign, and Topic pages can be tagged as Related.*\n> 📖 [https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/components/related](https://sfdigitalservices.gitbook.io/karl-sf.gov-editor"
       },
       {
         "id": "chat-information-mold",
@@ -67,7 +67,7 @@
             }
           ]
         },
-        "output": "# Mold Prevention in Your Rental Home\n\n**PAGE NAME:** Mold Prevention in Your Rental Home\n**PAGE TYPE:** Information\n**PRIMARY USER:** Renters/Tenants\n\n---\n\n## Page Summary\n\nLearn how to prevent mold in your home and what to do if you find it.\n\n---\n\n## Body Content\n\n### What is mold?\n\nMold is a fungus that grows in wet or damp places. It can appear as black, green, or white spots. Mold can make you and your family sick.\n\n### Where does mold grow?\n\nMold likes:\n\n* Bathrooms and kitchens\n* Under sinks and around pipes\n* Windows and walls where moisture builds up\n* Basements and crawl spaces\n\n### How to prevent mold\n\n**Control moisture in your home:**\n\n* Use the bathroom fan when you shower or bathe\n* Use the kitchen fan when you cook\n* Open windows when the weather allows\n* Wipe up spills and leaks right away\n* Do not let wet clothes or towels sit in piles\n\n**Watch for leaks:**\n\n* Check under sinks regularly\n* Look for water stains on walls and ceilings\n* Report leaks to your landlord right away\n\n**Keep air moving:**\n\n* Leave space between furniture and walls\n* Do not block vents or heaters\n\n---\n\n### What to do if you find mold\n\n**Small areas of mold (smaller than a dinner plate):**\n\nYou may be able to clean it yourself with soap and water. Wear gloves and a mask. Dry the area completely after cleaning.\n\n**Large areas of mold:**\n\nDo not try to clean large amounts of mold yourself. Contact your landlord in writing. Your landlord is responsible for fixing the conditions that caused the mold.\n\n---\n\n### Know your rights\n\nSan Francisco tenants have the right to a safe and livable home. If your landlord does not fix a mold problem, you may have options, including:\n\n* Contacting the Department of Building Inspection\n* Filing a complaint with the Rent Board\n\n---\n\n## Part of\n\n> This Information page should be linked to the **Report a Housing Code Violation** Transaction page using the *Part of* component.\n>\n> Per Karl CMS guidance, the **Part of** component lets you choose exactly one SF.gov Transaction page that this Information page supports.\n> 📎 [Part of on an Information page](https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/content-types/building-a-page-by-content-type/information/part-of-on-an-information-page)\n\n---\n\n## Content Type Note\n\n> This page is built as an **Information** page because it provides reference content — tenants are not completing a transaction directly on this page. If the primary goal were to prompt a user to take action with the City (such as filing a complaint), a **Transaction** page would be more appropriate.\n>\n> 📎 [Choosing a content type](https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/content-types/choosing-a-content-type)"
+        "output": "# Mold Prevention for Tenants\n\n---\n\n**PAGE NAME:** Mold Prevention for Tenants\n**PAGE TYPE:** Information\n**PRIMARY USER:** Renters who want to prevent mold growth in their home\n\n---\n\n## About this page\n\nThis Information page gives renters practical steps to prevent mold. It does not ask the user to take action with the City, so Information is the right content type. If a user needs to report mold or file a complaint, a separate Transaction page should handle that.\n\n> 📖 **Content type guidance:** [Choosing a content type](https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/content-types/choosing-a-content-type) — *Information: non-actionable reference; use Transaction if the user must do something with the City.*\n\n---\n\n## Draft page content\n\n---\n\n### Page name\nMold Prevention for Tenants\n\n---\n\n### Description (shown in search results and link previews)\nLearn how to prevent mold in your rental home and protect your health.\n\n---\n\n### Body content\n\n---\n\n#### What is mold?\n\nMold is a fungus that grows in damp or wet areas. It can appear as black, green, or white spots. Mold can make you sick, especially if you have asthma or allergies.\n\n---\n\n#### Why renters should care\n\n- Mold spreads quickly in small spaces\n- It can damage walls, ceilings, and furniture\n- It can cause breathing problems, coughing, and skin irritation\n- Landlords are required to keep your home free from mold hazards\n\n---\n\n#### How to prevent mold in your home\n\n**Control moisture**\n- Wipe up spills and leaks right away\n- Dry wet surfaces within 24 to 48 hours\n- Fix dripping faucets and report leaks to your landlord\n\n**Improve airflow**\n- Open windows when the weather allows\n- Use exhaust fans in the bathroom and kitchen while cooking or showering\n- Keep furniture a few inches away from walls\n\n**Reduce humidity**\n- Use a dehumidifier if your home feels damp\n- Hang laundry outside or use a dryer — not indoors — when possible\n- Keep indoor humidity below 60 percent\n\n**Clean regularly**\n- Clean bathrooms and kitchens with mold-killing products\n- Check under sinks and around pipes often\n- Throw away items that have mold that cannot be cleaned\n\n---\n\n#### When to tell your landlord\n\nTell your landlord right away if you see:\n\n- Mold or dark spots on walls, ceilings, or floors\n- A musty smell that does not go away\n- Water leaks, flooding, or condensation on windows\n\nYour landlord must fix mold problems that affect your health and safety. Keep a copy of any complaints you make in writing.\n\n---\n\n#### When to get help\n\nIf your landlord does not fix the problem, you have options:\n\n- Contact the **San Francisco Department of Building Inspection (DBI)**\n- Reach out to a tenant rights organization\n- Call **311** to report a housing complaint\n\n---\n\n### Part of (Transaction page link)\n\n> 📖 Per Karl CMS guidance, this Information page should be linked to exactly one Transaction page using the **Part of** component:\n> [Part of on an Information page](https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/content-types/building-a-page-by-content-type/information/part-of-on-an-information-page)\n\n**Suggested Transaction page to link:**\n*Report a Housing Code Violation* — or whichever Transaction page covers housing complaint filing on SF.gov.\n\n---\n\n### Related pages\n\nNo Related pages are added to Information pages directly. Related pages (Transaction, Information, Campaign, or Topic) are managed on the Transaction page side.\n\n> 📖 [Related component guidance](https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/components/related) — *Only Transaction, Information, Campaign, and Topic pages can be tagged as Related.*\n\n---\n\n## Editor notes\n\n| Field | Entry |\n|---|---|\n| Page name | Mold Prevention for Tenants |\n| Page type | Information |\n| Primary user | Renters who want to prevent mold in their home |\n| Part of (Transaction) | Report a Housing Code Violation *(confirm exact page name)* |\n| Reading level target | 6th grade or below |\n| Status | Draft — needs SME review before publishing |"
       }
     ]
   },
@@ -80,7 +80,7 @@
         "validGrade": true,
         "parseErrorFalse": true,
         "hasFeedbackArrays": true,
-        "latencyMs": 7255,
+        "latencyMs": 6986,
         "status": 200
       },
       {
@@ -90,7 +90,7 @@
         "validGrade": true,
         "parseErrorFalse": true,
         "hasFeedbackArrays": true,
-        "latencyMs": 6046,
+        "latencyMs": 5700,
         "status": 200
       }
     ],
@@ -103,9 +103,9 @@
       "hasFeedbackArraysRate": 1,
       "latency": {
         "count": 2,
-        "p50Ms": 7255,
-        "p95Ms": 7255,
-        "meanMs": 6651
+        "p50Ms": 6986,
+        "p95Ms": 6986,
+        "meanMs": 6343
       }
     },
     "judgeSamples": [
@@ -116,33 +116,31 @@
           "pageName": "Report bed bugs in your apartment",
           "pageType": "Transaction",
           "userType": "Tenant",
-          "draft": "PAGE NAME: Report bed bugs in your apartment\nPAGE TYPE: Transaction\nPRIMARY USER: Tenant\n\nDESCRIPTION: Report a bed bug problem so we can inspect your home.\n\nWHAT TO KNOW:\n- Bed bugs spread quickly in shared housing.\n- We inspect for signs of infestation.\n\nWHAT TO DO:\n- Call 311 to file a complaint.\n- Keep records of bites and sightings.\n\nSYSTEM RELATIONSHIPS:\nParent: Healthy Housing and Vector Control (Topic)"
+          "draft": "PAGE NAME: Report bed bugs in your apartment\nPAGE TYPE: Transaction\nPRIMARY USER: Tenant\n\nDESCRIPTION: Report a bed bug problem so we can inspect your home.\n\nWHAT TO KNOW:\n- Bed bugs spread quickly in shared housing.\n- We inspect for signs of infestation.\n\nWHAT TO DO:\n- Call 311 to file a complaint.\n- Keep records of bites and sightings.\n\nSYSTEM RELATIONSHIPS:\nParent: Healthy housing and pests (Topic)"
         },
         "output": {
           "score": 62,
           "grade": "D",
-          "summary": "Transaction page has correct type and includes required sections, but lacks actionable first-person title, uses passive voice and hidden verbs, omits Related pages, and needs plain-language improvements.",
+          "summary": "Transaction type is correct and 311 is referenced, but the page lacks actionable first-person language, uses passive voice and hidden verbs, omits tenant responsibilities, and the parent Topic name does not match Karl standards.",
           "passed": [
             "Page type is valid Karl content type: Transaction",
-            "What to know and What to do sections present for Transaction page",
-            "311 reference included in What to do section",
-            "System Relationships correctly lists parent as Topic",
-            "Description under 150 characters (69 characters)",
-            "Primary user (Tenant) identified",
-            "No markdown formatting in content",
-            "All components used are valid Karl components (What to know, What to do, Phone number reference implicit)"
+            "Components used (Title, Description, What to know, What to do) are all valid Karl components",
+            "311 reference is present in What to do section",
+            "Description is under 150 characters",
+            "Plain language: mostly simple vocabulary appropriate for 5th-6th grade level"
           ],
           "warnings": [
-            "Title is not action-oriented or first-person — change 'Report bed bugs in your apartment' to 'Report bed bugs in my apartment' or 'I want to report bed bugs in my apartment'",
-            "Sentence 'We inspect for signs of infestation' contains hidden verb — use 'We look for signs of infestation' instead",
-            "First sentence of What to know does not lead with main point for tenant action — consider starting with 'You should report bed bugs quickly because they spread in shared housing'",
-            "What to do section does not address reader as 'you' — rewrite 'Call 311 to file a complaint' as 'You can call 311 to file a complaint' and 'Keep records of bites and sightings' as 'You should keep records of your bites and sightings'",
-            "Missing Related pages component — per https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/components/related, Transaction pages should include Related pages (which may link to Information, Campaign, or Topic pages that support this transaction)",
-            "Tenant responsibilities not explicitly addressed — add a section clarifying tenant duties (e.g., providing access for inspection, documenting evidence)"
+            "Title is not action-oriented or in first person — change 'Report bed bugs in your apartment' to 'Report bed bugs in my apartment' or 'I need to report bed bugs'",
+            "What to know section leads with background context instead of actionable information — reorder to prioritize what user needs to do first",
+            "Sentence 'We inspect for signs of infestation' contains hidden verb construction — use active form 'We look for signs of infestation' or clarify timeline",
+            "Paragraph length warning: What to know section is 2 sentences but lacks user context; What to do is 2 sentences but should explain tenant responsibilities per https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/content-types/building-a-page-by-content-type/transaction"
           ],
           "failed": [
-            "Passive voice used once — 'We inspect for signs of infestation' is passive; rewrite as active voice 'We look for infestation signs'",
-            "Description uses institutional voice 'so we can' — rewrite to lead with your benefit: 'Get your home inspected for bed bugs' (18 characters) to be more user-centered"
+            "Missing first-person 'you' language in body content — body should say 'You can call 311' or 'You should keep records', not use imperative without addressing reader directly",
+            "Passive voice found: 'so we can inspect your home' — rewrite as active construction: 'so the City can send an inspector'",
+            "Hidden verb: 'file a complaint' — use simpler form 'call 311 to report bed bugs'",
+            "Tenant responsibilities are completely absent — Transaction pages must include what tenants must or should do; add guidance on preparing the apartment, providing access, or documenting the problem",
+            "System Relationships Parent name does not match Karl standard — change 'Healthy housing and pests' to 'Healthy Housing and Vector Control' to align with SF.gov Topic naming"
           ],
           "parseError": false,
           "parseFailureReason": null,
@@ -159,24 +157,24 @@
           "draft": "PAGE NAME: General tenant help\nPAGE TYPE: Guidance page\nPRIMARY USER: Tenant\n\nThis page has unclear actions and no 311 reference."
         },
         "output": {
-          "score": 15,
+          "score": 28,
           "grade": "F",
-          "summary": "Page draft uses an invalid Karl content type ('Guidance page') and lacks essential SF.gov content structure, user-actionable content, 311 reference, and plain language compliance.",
-          "passed": [],
+          "summary": "Page fails critical SF.gov standards: invalid content type, no description, missing actionable title, no 311 reference, and insufficient content for evaluation.",
+          "passed": [
+            "System Relationships lists Healthy Housing and Vector Control (Topic) as Parent"
+          ],
           "warnings": [
-            "No page content provided for plain language evaluation — unable to assess sentence length, active voice, paragraph structure, or direct reader address.",
-            "No Description (SEO summary) provided — required field under 150 characters.",
-            "No components listed — cannot verify valid Karl components are used."
+            "No Description field present — SEO summary required and must be under 150 characters.",
+            "Primary user is Tenant but no tenant responsibilities content included.",
+            "Page title 'General tenant help' is not action-oriented or first-person; should begin with action verb (e.g., 'Get tenant help' or 'Understand your tenant rights').",
+            "No clear primary purpose stated — unclear whether this is reference information or a service entry point."
           ],
           "failed": [
-            "Invalid content type 'Guidance page' — not a valid Karl CMS type. Choose from: Transaction, Information, Step by step, Location, News, Event, Campaign, About, Resource Collection, Meeting, Profile, Data story, Reports, Agency, or Topic. See https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/content-types/choosing-a-content-type",
-            "Page type unclear prevents proper structure — for tenant-focused actionable help, use Transaction type per https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/content-types/building-a-page-by-content-type/transaction; if informational only, use Information type.",
-            "No 311 reference present — Transaction pages require 311 contact via Button link, Phone number component, or text in What to do section.",
-            "No tenant responsibilities documented — tenant is primary user but no content addresses tenant obligations or rights.",
-            "No clear primary action or entry point — 'General tenant help' is not action-oriented; rewrite as first-person action statement (e.g., 'Get help with my lease' or 'Resolve a housing issue').",
-            "Page lacks What to do section — required for actionable Transaction content; see https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/content-types/building-a-page-by-content-type/transaction",
-            "No System Relationships Parent specified — must list 'Healthy Housing and Vector Control (Topic)' as Parent.",
-            "Body content not provided — cannot verify plain language compliance, direct reader address using 'you', or absence of institutional jargon."
+            "INVALID CONTENT TYPE: 'Guidance page' is not a valid Karl CMS content type. Use one of: Transaction, Information, Step by step, Location, News, Event, Campaign, About, Resource Collection, Meeting, Profile, Data story, Reports, Agency, or Topic. See https://sfdigitalservices.gitbook.io/karl-sf.gov-editor-help-center/using-karl-the-cms/content-types/choosing-a-content-type",
+            "MISSING 311 REFERENCE: For tenant services, include 311 contact method via Button link, Phone number component, or in page content. Recommend: 'Call 311 or visit sf.gov/311' in a What to do section or callout.",
+            "NO CONTENT PROVIDED: Draft contains only metadata; body content, components, and structure are missing — cannot fully evaluate against plain language or Karl component standards.",
+            "NO DESCRIPTION: Description field is empty; required for SEO and user scanning.",
+            "READER NOT ADDRESSED AS 'YOU': No body text uses second person; all visible content is institutional (page name, type, user label)."
           ],
           "parseError": false,
           "parseFailureReason": null,
@@ -193,7 +191,7 @@
         "requiredHeadingsPresent": true,
         "noNumericFactDrift": true,
         "keeps311Reference": true,
-        "latencyMs": 4357,
+        "latencyMs": 6759,
         "status": 200
       },
       {
@@ -202,7 +200,7 @@
         "requiredHeadingsPresent": true,
         "noNumericFactDrift": true,
         "keeps311Reference": true,
-        "latencyMs": 8102,
+        "latencyMs": 8071,
         "status": 200
       }
     ],
@@ -214,9 +212,9 @@
       "keeps311ReferenceRate": 1,
       "latency": {
         "count": 2,
-        "p50Ms": 8102,
-        "p95Ms": 8102,
-        "meanMs": 6230
+        "p50Ms": 8071,
+        "p95Ms": 8071,
+        "meanMs": 7415
       }
     },
     "judgeSamples": [
@@ -242,7 +240,7 @@
             ]
           }
         },
-        "output": "PAGE NAME: Report bed bugs in your apartment\nPAGE TYPE: Transaction\nPRIMARY USER: Tenant\n\nSECTION: Report bed bugs now\nCall 311 to report bed bugs in your home.\n\nACTION LINK: Call 311\n\nSECTION: Why you should act fast\nBed bugs can spread between units. Act quickly.\n\nCALLOUT: DPH inspects for bed bugs within 48 hours of your report. This is a health issue. DPH handles it — not DBI (which fixes building structure).\n\nSECTION: What you need to do before the inspector comes\nPrepare your home before the inspection.\n\n---\n\nDUPLICATION RISKS: Check for overlap with existing SF.gov pages on 311 service requests or general pest reporting."
+        "output": "PAGE NAME: Report bed bugs in your apartment\nPAGE TYPE: Transaction\nPRIMARY USER: Tenant\n\nSECTION: Report bed bugs now\nCall 311 to report bed bugs in your home.\n\nACTION LINK: Call 311\n\nSECTION: Why you need to act fast\nBed bugs spread between units quickly. DPH inspects health and pest issues. We aim to respond within 48 hours of your report.\n\nCALLOUT: DPH handles bed bug and pest inspections. For structural repairs, contact DBI.\n\nSECTION: What tenants need to do\nPrepare your home before the inspector arrives. Your landlord must also be notified of the problem.\n\nSECTION: Contact us\nCall 311 to report bed bugs or ask questions. You can also visit SF.gov/311.\n\n---\n\n**DUPLICATION RISKS:**\n- \"Report bed bugs\" may overlap with an existing 311 service page. Check before publishing.\n- Tenant responsibility language may duplicate content in the HHVC Tenant Hub overview page.\n\n**KARL CMS NOTES:**\n- Content Title (internal): HHVC - Tenant Hub - Report Bed Bugs\n- Service Title (public H1): Report bed bugs in your apartment\n- Summary: Call 311 to report bed bugs in your home so we can inspect within 48 hours.\n- CTA Button Label: Call 311"
       },
       {
         "id": "improve-trash-owner",
@@ -254,7 +252,7 @@
             "Avoid legal jargon."
           ]
         },
-        "output": "PAGE NAME: Fix trash and pest problems in shared buildings\nPAGE TYPE: Transaction\nPRIMARY USER: Property owner\n\nSECTION: What you need to do\nCall 311 to get city support for trash or pest problems in your building.\n\n**Action Link:** Call 311\n\nSECTION: Owner responsibilities\nAs the property owner, you must:\n- Respond to tenant complaints about trash or pests\n- Coordinate cleanup in shared spaces\n\nSECTION: Contact\n**Call 311** for city support with trash or pest problems.\n\n---\n\n**EDITOR NOTES (internal, do not publish):**\n\n- **DUPLICATION RISKS:** Check for existing SF.gov pages on 311 complaints or DBI structural issues that may overlap with this page's scope.\n- **DPH vs. DBI clarification needed:** If this page covers any structural issues (e.g., broken trash chutes), add a Callout noting that DPH handles health and sanitation concerns, while DBI handles structural and life-safety issues.\n- **Bed bugs / sewage check:** If this page is expanded to cover bed bugs or sewage, the 48-hour priority response time must be prominently called out.\n- **CMS fields to confirm:** Content Title should follow format \"HHVC - Owner Hub - Fix trash and pest problems in shared buildings.\" Confirm Summary field is one sentence. Confirm CTA button label is set (suggested: \"Call 311\").\n- **Reading level:** Current draft is simple and accessible. Maintain 5th-grade level in any future edits.\n- **Hub alignment:** Page fits within the Owner Hub."
+        "output": "PAGE NAME: Fix trash and pest problems in shared buildings\nPAGE TYPE: Transaction\nPRIMARY USER: Property owner\n\nSECTION: What you need to do first\nCall 311 to get city support before starting cleanup.\n\n[Action Link: Call 311]\n[Action Link: 311.sf.gov]\n\nSECTION: What owners must do\nYou must respond to tenant complaints and coordinate cleanup of trash and pest problems in your building.\n\nSECTION: What we inspect\nWe inspect shared areas of buildings for trash buildup and pest problems. This includes hallways, trash rooms, and shared outdoor spaces. Inspections follow SF Health Code Article 11.\n\nSECTION: Who handles what\n[Callout]\nDPH (Department of Public Health) handles health and cleanliness problems — like trash pileups and pest issues. DBI (Department of Building Inspection) handles structural and safety problems — like broken walls or unsafe stairs. This page is about DPH issues only.\n[End Callout]\n\nSECTION: Tenant and owner responsibilities\n**Owners must:**\n- Respond quickly to tenant complaints\n- Set up and coordinate cleanup\n- Keep shared spaces free of trash and pests\n\n**Tenants must:**\n- Report trash and pest problems right away\n- Keep their own unit clean\n\nSECTION: Contact\n[Action Link: Call 311]\n[Action Link: 311.sf.gov]\n\nOffice: SF Department of Public Health, 49 South Van Ness Ave, San Francisco, CA 94103\n\n---\nDUPLICATION RISKS: Check existing SF.gov pages for \"report trash problems\" and \"pest control rental housing\" to avoid overlap with this Transaction page."
       }
     ]
   },
@@ -264,5 +262,5 @@
     "failures": []
   },
   "baselineComparison": null,
-  "completedAt": "2026-05-04T15:42:06.973Z"
+  "completedAt": "2026-05-04T16:19:38.075Z"
 }

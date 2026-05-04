@@ -116,7 +116,7 @@
           "pageName": "Report bed bugs in your apartment",
           "pageType": "Transaction",
           "userType": "Tenant",
-          "draft": "PAGE NAME: Report bed bugs in your apartment\nPAGE TYPE: Transaction\nPRIMARY USER: Tenant\n\nDESCRIPTION: Report a bed bug problem so we can inspect your home.\n\nWHAT TO KNOW:\n- Bed bugs spread quickly in shared housing.\n- We inspect for signs of infestation.\n\nWHAT TO DO:\n- Call 311 to file a complaint.\n- Keep records of bites and sightings.\n\nSYSTEM RELATIONSHIPS:\nParent: Healthy Housing and Vector Control (Topic)"
+          "draft": "PAGE NAME: Report bed bugs in your apartment\nPAGE TYPE: Transaction\nPRIMARY USER: Tenant\n\nDESCRIPTION: Report a bed bug problem so we can inspect your home.\n\nWHAT TO KNOW:\n- Bed bugs spread quickly in shared housing.\n- We inspect for signs of infestation.\n\nWHAT TO DO:\n- Call 311 to file a complaint.\n- Keep records of bites and sightings.\n\nSYSTEM RELATIONSHIPS:\nParent: Healthy housing and pests (Topic)"
         },
         "output": {
           "score": 68,
@@ -128,7 +128,7 @@
             "What to know section present",
             "What to do section present",
             "311 reference included in What to do",
-            "System Relationships correctly lists Healthy Housing and Vector Control (Topic) as Parent",
+            "System Relationships correctly lists Healthy housing and pests (Topic) as Parent",
             "No markdown formatting detected",
             "No invalid Karl components used",
             "Primary user clearly identified as Tenant",
