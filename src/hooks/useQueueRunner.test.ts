@@ -1,3 +1,4 @@
+/** @vitest-environment jsdom */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { runQueue, useQueueRunner } from './useQueueRunner';
 import { renderHook, act } from '@testing-library/react';
