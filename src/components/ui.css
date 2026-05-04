@@ -196,6 +196,19 @@
   cursor: pointer;
 }
 
+.ui-btn:focus-visible {
+  outline: 2px solid var(--color-text-primary);
+  outline-offset: 2px;
+}
+
+.ui-btn--primary:focus-visible {
+  outline-color: var(--color-background-primary);
+}
+
+.ui-btn--danger:focus-visible {
+  outline-color: var(--color-text-danger);
+}
+
 .ui-btn--sm {
   font-size: 12px;
   padding: 5px 12px;
