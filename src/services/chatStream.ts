@@ -49,7 +49,7 @@ export async function streamModelText(options: StreamModelTextOptions): Promise<
   let charCount = 0;
   let karlHit = false;
 
-  onAdvance(15, mode === "generate" ? "Querying Karl content standards..." : "Revising page content...");
+  onAdvance(15, "Generating draft");
 
   while (true) {
     const { done, value } = await reader.read();
@@ -64,11 +64,11 @@ export async function streamModelText(options: StreamModelTextOptions): Promise<
         const j = JSON.parse(d) as StreamEvent;
         if (mode === "generate" && j.type === "content_block_start" && j.content_block?.type === "tool_use") {
           karlHit = true;
-          onAdvance(30, "Reading Karl docs...");
+          onAdvance(30, "Generating draft");
           onKarlToolUse(j.content_block.name || "tool");
         }
         if (mode === "generate" && j.type === "content_block_stop" && !hasStreamText()) {
-          onAdvance(50, "Applying SF.gov standards...");
+          onAdvance(50, "Generating draft");
         }
         if (j.type === "content_block_delta" && j.delta?.type === "text_delta") {
           const deltaText = j.delta.text || "";
@@ -87,7 +87,7 @@ export async function streamModelText(options: StreamModelTextOptions): Promise<
             onAdvance(pct, lbl);
           } else {
             const pct = Math.min(88, 15 + Math.round((charCount / 2200) * 73));
-            onAdvance(pct, pct < 45 ? "Revising structure..." : pct < 70 ? "Updating content..." : "Finalizing revisions...");
+            onAdvance(pct, "Generating draft");
           }
         }
       } catch {

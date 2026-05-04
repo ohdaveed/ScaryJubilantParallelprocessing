@@ -11,6 +11,7 @@
     "metrics:fixtures": "node scripts/report-fixture-metrics.mjs"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "express": "^4.22.1",
     "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",

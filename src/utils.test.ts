@@ -86,6 +86,14 @@ describe("prompt contract", () => {
 
     expect(prompt).not.toContain("OUTPUT FORMAT — return EXACTLY this structure");
   });
+
+  it("includes local Karl standards in the generation prompt", () => {
+    const prompt = buildGenerationUserPrompt("Design a page", "Transaction");
+
+    expect(prompt).toContain("VALID KARL PAGE TYPES");
+    expect(prompt).toContain("VALID KARL COMPONENTS");
+    expect(prompt).toContain("TRANSACTION REQUIRED SECTIONS");
+  });
 });
 
 describe("quality gate", () => {

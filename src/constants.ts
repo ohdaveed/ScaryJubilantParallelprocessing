@@ -1,4 +1,9 @@
 import { Milestone, ComponentStyle, SkeletonTemplate } from "./types";
+import {
+  TRANSACTION_REQUIRED_SECTION_LABELS,
+  VALID_KARL_COMPONENTS,
+  VALID_KARL_PAGE_TYPES
+} from "./karlStandards";
 
 export const KARL_PAGE_TYPES = [
   "Transaction",
@@ -176,6 +181,15 @@ export const PROMPT_SELF_CHECK_RULES = `SELF-CHECK BEFORE FINAL ANSWER:
 4) Ensure no markdown fences or prose outside the JSON object.
 5) If any check fails, fix it before returning the final JSON.`;
 
+const KARL_PROMPT_SECTION = `VALID KARL PAGE TYPES:
+${VALID_KARL_PAGE_TYPES.join(", ")}
+
+VALID KARL COMPONENTS:
+${VALID_KARL_COMPONENTS.join(", ")}
+
+TRANSACTION REQUIRED SECTIONS:
+${TRANSACTION_REQUIRED_SECTION_LABELS.join(", ")}`;
+
 const FEW_SHOT_TRANSACTION_PAGE_DRAFT = `# I need to report rats or mice
 
 Description: Report rats or mice to 311 and learn what happens after your report.
@@ -316,6 +330,8 @@ ${PROMPT_IMMUTABLE_CONSTRAINTS}
 ${PROMPT_TASK_CONTEXT_RULES}
 
 ${PROMPT_FIELD_LEVEL_RULES}
+
+${KARL_PROMPT_SECTION}
 
 ${PROMPT_SELF_CHECK_RULES}
 

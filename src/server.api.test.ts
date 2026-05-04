@@ -27,4 +27,9 @@ describe("API validation guards", () => {
     const res = await request(app).post("/api/improve-structure").send({ raw: "", preferences: "bad" });
     expect(res.status).toBe(400);
   });
+
+  it("rejects invalid /api/karl-remediate payload", async () => {
+    const res = await request(app).post("/api/karl-remediate").send({ raw: "" });
+    expect(res.status).toBe(400);
+  });
 });

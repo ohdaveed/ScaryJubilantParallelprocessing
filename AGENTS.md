@@ -65,27 +65,16 @@ printf 'ANTHROPIC_API_KEY=%s\nDB_FALLBACK_MODE=file\n' "$ANTHROPIC_API_KEY" > .e
 <claude-mem-context>
 # Memory Context
 
-# [ScaryJubilantParallelprocessing] recent context, 2026-05-03 3:18pm PDT
+# [ScaryJubilantParallelprocessing] recent context, 2026-05-03 4:32pm PDT
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (17,063t read) | 534,349t work | 97% savings
+Stats: 50 obs (18,011t read) | 878,536t work | 98% savings
 
 ### May 2, 2026
-7 6:17p 🔵 hhvc-tool Does Not Use Anthropic Prompt Caching
-9 6:21p 🔵 hhvc-tool Uses Neon Hosted PostgreSQL (us-west-2) via DATABASE_URL
-10 6:22p ✅ PostgreSQL MCP Server Added for Neon Database
-11 6:23p ✅ Two Claude Code Hooks Added to hhvc-tool settings.local.json
-12 6:25p 🔵 Full server.js API Route Map and Business Logic for hhvc-tool
-13 6:26p 🟣 Prompt Caching Added to /api/chat System Prompt in server.js
-14 6:27p 🟣 Prompt Caching and Model Update Applied to /api/evaluate in server.js
-15 " 🟣 Prompt Caching and Model Update Applied to /api/improve-structure in server.js
-16 6:32p ✅ Task 3: Remove Google Drive Frontend Code from HHVC Page Builder
-17 " 🔵 useDriveContext Hook: Google Drive Frontend State Management
-18 " 🔵 Google Drive Frontend Code Fully Mapped Across 4 Files
-19 " 🔵 chatStream.ts Also Passes driveContext to /api/chat
+18 6:32p 🔵 Google Drive Frontend Code Fully Mapped Across 4 Files
 20 6:33p ✅ useDriveContext.ts Deleted and DriveFile Interface Removed from types.ts
 21 " ✅ driveApi Removed from utils.ts
 22 " ✅ Drive Params Removed from usePageGeneration Hook Type and Imports
@@ -135,6 +124,17 @@ S23 Add API key — user asked to add an API key, location/type unspecified (May
 55 " 🔄 Removed Effectless shouldStop() Call from runQueue Implementation
 56 " ✅ Task 8 Fix Committed to feature/cleanup-and-queue
 57 12:29p 🔵 HHVC Cleanup Plan Structure: Tasks 9 and 10 Remain
+58 3:17p 🔵 Coverage Files Deleted from Working Tree — Root Cause Traced
+59 " ✅ Test Infrastructure Upgraded: jsdom + @testing-library Added, Coverage Config Added to vitest
+60 3:18p 🔴 coverage/ Added to .gitignore — Stops Vitest Coverage Reports from Being Git-Tracked
+61 3:22p 🟣 Karl SF.gov Editor Help Center MCP Added
+62 3:40p 🟣 Karl GitBook MCP Added to VS Code mcp.json
+63 " ⚖️ Design Spec Revised: Hybrid Karl-First Loop with Live MCP Escalation
+64 " 🔵 Karl Evaluation Feedback Loop Confirmed In Source Code
+65 3:42p 🔵 AI Generation Quality & Reliability Implementation Plan Loaded
+66 " 🔵 src/karlStandards.ts Does Not Exist Yet — Task 1 Not Started
+67 3:44p 🔴 Task 1 Step 1 Complete: Failing Test Added to src/utils.test.ts
+68 " 🔵 Vitest Blocked by Windows EPERM Error on esbuild Spawn
 
-Access 534k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 879k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

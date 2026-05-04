@@ -1,10 +1,11 @@
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from "react";
 import { PageDraft, PlannedPage, UserPreference } from "../types";
 import { SYSTEM_PROMPT, STRUCTURED_OUTPUT_RULES, buildGenerationUserPrompt, buildRefineUserPrompt, USER_TYPES } from "../constants";
-import { clean, evaluateQualityGate, improveStructure, isPest, pagesApi, parsePage, preferencesApi, runKarlEvaluation, versionsApi } from "../utils";
+import { clean, evaluateQualityGate, fetchKarlRemediation, improveStructure, isPest, pagesApi, parsePage, preferencesApi, runKarlEvaluation, versionsApi } from "../utils";
 import { streamModelText as streamModelTextService } from "../services/chatStream";
 import { repairAndParseStructured as repairAndParseStructuredService } from "../services/pageParser";
 import { GenerationInputSnapshot } from "../state/appTypes";
+import { validateGeneratedPage } from "../generationValidation";
 
 const REPAIR_PROMPT = `Your previous response did not match the required JSON schema.
 Return only ONE valid JSON object that matches the schema exactly.
@@ -12,6 +13,21 @@ Do not add any commentary, markdown, or extra fields.`;
 
 const stringifyParseError = (error: { code: string; message: string } | null): string =>
   error ? `${error.code}: ${error.message}` : "unknown_parse_error";
+
+const MAX_GENERATION_RETRIES = 2;
+
+const buildRetryPrompt = (originalPrompt: string, invalidOutput: string, failures: string[]): string => `The previous output failed validation.
+
+Original request:
+${originalPrompt}
+
+Validation failures:
+${failures.map((failure, index) => `${index + 1}. ${failure}`).join("\n")}
+
+Return one complete corrected output in the required schema only.
+
+Invalid output:
+${invalidOutput}`;
 
 type GenerateOverrides = Partial<{
   topic: string;
@@ -98,6 +114,74 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     });
   }, []);
 
+  const improveFromEvaluationFeedback = useCallback(async ({
+    parsed,
+    preferenceTexts,
+    evaluation
+  }: {
+    parsed: ReturnType<typeof parsePage>;
+    preferenceTexts: string[];
+    evaluation: PageDraft["karlEvaluation"] | null;
+  }): Promise<{
+    parsed: ReturnType<typeof parsePage>;
+    evaluation: PageDraft["karlEvaluation"] | null;
+    qualityGate: PageDraft["qualityGate"];
+  }> => {
+    const initialQualityGate = evaluateQualityGate(parsed.pageType, evaluation);
+    if (!evaluation || evaluation.parseError || initialQualityGate.status !== "review_required") {
+      return {
+        parsed,
+        evaluation,
+        qualityGate: initialQualityGate
+      };
+    }
+
+    adv(97, "Consulting Karl...");
+
+    const karlRemediation = await fetchKarlRemediation({
+      raw: parsed.raw,
+      pageType: parsed.pageType,
+      evaluation
+    });
+
+    const feedbackImproved = await improveStructure(parsed.raw, preferenceTexts, {
+      ...evaluation,
+      warnings: [
+        ...(evaluation.warnings || []),
+        ...karlRemediation.guidance
+      ]
+    });
+    if (!feedbackImproved) {
+      return {
+        parsed,
+        evaluation,
+        qualityGate: initialQualityGate
+      };
+    }
+
+    const feedbackParsed = parsePage(feedbackImproved);
+    if (!feedbackParsed.valid) {
+      return {
+        parsed,
+        evaluation,
+        qualityGate: initialQualityGate
+      };
+    }
+
+    const reevaluation = await runKarlEvaluation({
+      name: feedbackParsed.name,
+      pageType: feedbackParsed.pageType,
+      draft: feedbackParsed.draft,
+      userType: feedbackParsed.userType
+    });
+
+    return {
+      parsed: feedbackParsed,
+      evaluation: reevaluation,
+      qualityGate: evaluateQualityGate(feedbackParsed.pageType, reevaluation)
+    };
+  }, [adv]);
+
   const generate = useCallback(async (ov: GenerateOverrides = {}): Promise<PageDraft | null> => {
     const t = ov.topic || topic;
     if (!t.trim()) {
@@ -114,7 +198,7 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     setParseWarn(false);
     if (!ov.quiet) setSelected(null);
     setKarlStatus("connecting");
-    adv(0, "Connecting to Karl docs…");
+    adv(15, "Generating draft");
 
     streamRef.current = "";
     lastInput.current = { topic: t, userType: ov.userType || userType, notes: ov.notes || notes };
@@ -140,16 +224,45 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     let page: PageDraft | null = null;
 
     try {
-      const streamResult = await streamModelText({
-        msg,
-        mode: "generate"
-      });
+      let retryPrompt: string | null = null;
+      let parseResult: Awaited<ReturnType<typeof repairAndParseStructured>>["parseResult"] | null = null;
+      let parsed: Awaited<ReturnType<typeof repairAndParseStructured>>["parsed"] | null = null;
 
-      karlHit = streamResult.karlHit;
+      for (let attempt = 0; attempt <= MAX_GENERATION_RETRIES; attempt += 1) {
+        if (attempt > 0) {
+          adv(70, `Retrying generation (${attempt}/${MAX_GENERATION_RETRIES})`);
+        }
+
+        streamRef.current = "";
+        setStreamText("");
+
+        const streamResult = await streamModelText({
+          msg: retryPrompt ?? msg,
+          mode: "generate"
+        });
+
+        karlHit = karlHit || streamResult.karlHit;
+        const repaired = await repairAndParseStructured(streamRef.current);
+        parseResult = repaired.parseResult;
+        parsed = repaired.parsed;
+        const validation = validateGeneratedPage(parsed);
+
+        if (validation.ok) {
+          break;
+        }
+
+        if (attempt === MAX_GENERATION_RETRIES) {
+          throw new Error(validation.failures.join(" "));
+        }
+
+        retryPrompt = buildRetryPrompt(msg, parsed.raw || streamRef.current, validation.failures);
+      }
+
       if (!karlHit) setKarlStatus("fallback");
+      if (!parseResult || !parsed) {
+        throw new Error("Failed to parse generated output");
+      }
 
-      const { parseResult, parsed: parsedInitial } = await repairAndParseStructured(streamRef.current);
-      let parsed = parsedInitial;
       if (!parsed.valid) {
         setParseWarn(true);
         setError(`Draft parsed with issues (${stringifyParseError(parseResult.parseError)}). Review generated content before publishing.`);
@@ -159,7 +272,7 @@ export function usePageGeneration(params: UsePageGenerationParams) {
 
       setStreaming(false);
       setEvaluating(true);
-      adv(88, "Improving page structure…");
+      adv(60, "Validating against Karl rules");
 
       const prefTexts = preferences.map((p) => p.preference);
       const improvedInput = parseResult.rawText || parsed.raw || streamRef.current;
@@ -179,7 +292,7 @@ export function usePageGeneration(params: UsePageGenerationParams) {
         karlConnected: karlHit
       } as PageDraft;
 
-      adv(93, "Evaluating against Karl standards…");
+      adv(93, "Running Karl evaluation");
 
       const evaluation = await runKarlEvaluation({
         name: page.name,
@@ -187,11 +300,19 @@ export function usePageGeneration(params: UsePageGenerationParams) {
         draft: page.draft,
         userType: page.userType
       });
-
-      if (evaluation) {
-        page = { ...page, karlEvaluation: evaluation };
-      }
-      page = { ...page, qualityGate: evaluateQualityGate(page.pageType, evaluation) };
+      adv(99, "Applying final quality corrections");
+      const feedbackResult = await improveFromEvaluationFeedback({
+        parsed,
+        preferenceTexts: prefTexts,
+        evaluation
+      });
+      parsed = feedbackResult.parsed;
+      page = {
+        ...page,
+        ...parsed,
+        ...(feedbackResult.evaluation ? { karlEvaluation: feedbackResult.evaluation } : {}),
+        qualityGate: feedbackResult.qualityGate
+      };
 
       adv(100, "Done");
       setEvaluating(false);
@@ -285,7 +406,7 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     setError("");
     setParseWarn(false);
     streamRef.current = "";
-    adv(0, "Sending revision request…");
+    adv(15, "Generating draft");
 
     let versionHistory: string | undefined;
     try {
@@ -316,7 +437,7 @@ export function usePageGeneration(params: UsePageGenerationParams) {
 
       setStreaming(false);
       setEvaluating(true);
-      adv(93, "Re-evaluating against Karl standards…");
+      adv(93, "Running Karl evaluation");
 
       const evaluation = await runKarlEvaluation({
         name: parsed.name,
@@ -324,6 +445,13 @@ export function usePageGeneration(params: UsePageGenerationParams) {
         draft: parsed.draft,
         userType: parsed.userType
       });
+      adv(99, "Applying final quality corrections");
+      const feedbackResult = await improveFromEvaluationFeedback({
+        parsed,
+        preferenceTexts: [],
+        evaluation
+      });
+      parsed = feedbackResult.parsed;
 
       const updated: PageDraft = {
         ...selected,
@@ -331,8 +459,8 @@ export function usePageGeneration(params: UsePageGenerationParams) {
         id: selected.id,
         createdAt: selected.createdAt,
         inputs: selected.inputs,
-        ...(evaluation ? { karlEvaluation: evaluation } : {}),
-        qualityGate: evaluateQualityGate(parsed.pageType, evaluation)
+        ...(feedbackResult.evaluation ? { karlEvaluation: feedbackResult.evaluation } : {}),
+        qualityGate: feedbackResult.qualityGate
       };
 
       adv(100, "Done");
@@ -365,6 +493,7 @@ export function usePageGeneration(params: UsePageGenerationParams) {
     adv,
     streamModelText,
     repairAndParseStructured,
+    improveFromEvaluationFeedback,
     setPages,
     setSelected,
     setPreferences

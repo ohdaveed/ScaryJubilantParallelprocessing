@@ -376,6 +376,35 @@ export const runKarlEvaluation = async (page: {
   }
 };
 
+export const fetchKarlRemediation = async (payload: {
+  raw: string;
+  pageType: string;
+  evaluation: import("./types").KarlEvaluation;
+}): Promise<{ consulted: boolean; guidance: string[]; error: string | null }> => {
+  try {
+    const res = await fetch(`${API_BASE}/karl-remediate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      return {
+        consulted: false,
+        guidance: [],
+        error: `Karl remediation failed: ${res.status}`
+      };
+    }
+
+    return res.json();
+  } catch (error) {
+    return {
+      consulted: false,
+      guidance: [],
+      error: error instanceof Error ? error.message : "Karl remediation failed"
+    };
+  }
+};
+
 const QUALITY_GATE_MIN_SCORE: Record<string, number> = {
   "Transaction": 85,
   "Step by step": 82,
@@ -492,12 +521,16 @@ export const versionsApi = {
   }
 };
 
-export const improveStructure = async (raw: string, preferences: string[]): Promise<string | null> => {
+export const improveStructure = async (
+  raw: string,
+  preferences: string[],
+  evaluationFeedback?: import("./types").KarlEvaluation | null
+): Promise<string | null> => {
   try {
     const res = await fetch(`${API_BASE}/improve-structure`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ raw, preferences })
+      body: JSON.stringify({ raw, preferences, evaluationFeedback })
     });
     if (!res.ok) {
       console.error("Structure improvement failed:", res.status);

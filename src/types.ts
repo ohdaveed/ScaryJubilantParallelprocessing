@@ -43,6 +43,12 @@ export interface ParseStructuredResult {
   parseError: ParseErrorDetail | null;
 }
 
+export interface GenerationValidationResult {
+  ok: boolean;
+  failures: string[];
+  warnings: string[];
+}
+
 export interface StructuredPageOutput {
   page: {
     name: string;
