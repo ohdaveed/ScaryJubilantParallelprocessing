@@ -619,6 +619,11 @@
   .field-textarea:focus {
     border-color: rgba(125, 151, 255, 0.55);
     background: rgba(255, 255, 255, 0.08);
+  }
+
+  .field-input:focus-visible,
+  .field-select:focus-visible,
+  .field-textarea:focus-visible {
     box-shadow: 0 0 0 3px rgba(73, 94, 212, 0.16);
   }
 
@@ -945,7 +950,10 @@
     justify-content: center;
     cursor: pointer;
     opacity: 0;
-    transition: all 0.12s ease;
+    transition:
+      opacity 0.12s ease,
+      color 0.12s ease,
+      background-color 0.12s ease;
     flex-shrink: 0;
     padding: 0;
     margin-right: 5px;
@@ -996,7 +1004,10 @@
     padding: 3px 8px;
     border-radius: 5px;
     cursor: pointer;
-    transition: all 0.12s ease;
+    transition:
+      background-color 0.12s ease,
+      border-color 0.12s ease,
+      color 0.12s ease;
   }
 
   .confirm-yes {
@@ -1622,5 +1633,32 @@
 
   .sf-cdt .stream-footer-meta {
     display: none;
+  }
+}
+
+/* Web Interface Guidelines: honor reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .sf-cdt .confirm-row {
+    animation: none;
+  }
+
+  .sf-cdt .status-dot {
+    animation: none;
+  }
+
+  .sf-cdt .anim-fade-up {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .sf-cdt .page-item:nth-child(1),
+  .sf-cdt .page-item:nth-child(2),
+  .sf-cdt .page-item:nth-child(3),
+  .sf-cdt .page-item:nth-child(4),
+  .sf-cdt .page-item:nth-child(5) {
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
 }

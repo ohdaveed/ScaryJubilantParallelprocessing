@@ -70,7 +70,7 @@ export function LibraryTab(props: LibraryTabProps) {
   return (
     <div style={{ marginTop: 20 }}>
       <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
-        <input className={`${UI_INPUT_CLASS} ui-input--search`} placeholder="Search pages..." value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search pages" />
+        <input className={`${UI_INPUT_CLASS} ui-input--search`} placeholder="Search pages…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search pages" />
         <select className={`${UI_INPUT_CLASS} ui-input--filter`} value={filterType} onChange={(e) => setFilterType(e.target.value)} aria-label="Filter by page type">
           <option>All</option>
           {PAGE_TYPES.map((t) => <option key={t}>{t}</option>)}
@@ -89,20 +89,32 @@ export function LibraryTab(props: LibraryTabProps) {
       </div>
 
       {selectedPageIds.size > 0 && (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 12px", background: "#3a1a1a", border: "1px solid #e53e3e", borderRadius: 6, marginBottom: 12 }}>
+        <div
+          className="library-selection-bar"
+          style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 12px", background: "#3a1a1a", border: "1px solid #e53e3e", borderRadius: 6, marginBottom: 12 }}
+        >
           <span style={{ color: "#e53e3e", fontWeight: 600, fontSize: 13 }}>{selectedPageIds.size} selected</span>
-          <span style={{ color: "#555" }}>|</span>
-          <button onClick={selectAllPages} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer", fontSize: 12, padding: 0 }}>Select all ({filteredCount})</button>
-          <span style={{ color: "#555" }}>|</span>
-          <button onClick={clearPageSelection} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer", fontSize: 12, padding: 0 }}>Clear</button>
+          <span style={{ color: "#555" }} aria-hidden>|</span>
+          <button type="button" className="library-selection-bar__btn" onClick={selectAllPages}>
+            Select all ({filteredCount})
+          </button>
+          <span style={{ color: "#555" }} aria-hidden>|</span>
+          <button type="button" className="library-selection-bar__btn" onClick={clearPageSelection}>
+            Clear
+          </button>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
-            <button type="button" onClick={onDownloadPNG} style={{ background: "none", border: "1px solid #aaa", color: "#ccc", borderRadius: 4, padding: "4px 12px", cursor: "pointer", fontSize: 12 }}>
+            <button type="button" className="library-selection-bar__btn--border" onClick={onDownloadPNG}>
               Download PNG
             </button>
-            <button type="button" onClick={onDownloadPDF} style={{ background: "none", border: "1px solid #aaa", color: "#ccc", borderRadius: 4, padding: "4px 12px", cursor: "pointer", fontSize: 12 }}>
+            <button type="button" className="library-selection-bar__btn--border" onClick={onDownloadPDF}>
               Download PDF
             </button>
-            <button type="button" onClick={onRequestBulkDelete} style={{ background: "#e53e3e", color: "white", border: "none", borderRadius: 4, padding: "4px 12px", cursor: "pointer", fontSize: 12 }}>
+            <button
+              type="button"
+              className="library-selection-bar__btn--danger"
+              onClick={onRequestBulkDelete}
+              aria-label={`Delete ${selectedPageIds.size} selected pages`}
+            >
               🗑 Delete ({selectedPageIds.size})
             </button>
           </div>
@@ -111,16 +123,16 @@ export function LibraryTab(props: LibraryTabProps) {
 
       {seeding && (
         <div style={{ textAlign: "center", padding: "24px 0 12px", color: "#6B21A8" }}>
-          <div style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid #6B21A833", borderTopColor: "#6B21A8", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
-          <p style={{ fontSize: 13, margin: 0, fontWeight: 500 }}>Seeding HHVC site map skeleton...</p>
+          <div className="library-tab-spinner library-tab-spinner--accent" aria-hidden />
+          <p style={{ fontSize: 13, margin: 0, fontWeight: 500 }}>Seeding HHVC site map skeleton…</p>
           <p style={{ fontSize: 12, margin: "4px 0 0", color: "var(--color-text-tertiary)" }}>Creating the new HHVC planned pages and skeleton drafts</p>
         </div>
       )}
 
       {pagesLoading && !seeding && (
         <div style={{ textAlign: "center", padding: "56px 0", color: "var(--color-text-tertiary)" }}>
-          <div style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid var(--color-border-secondary)", borderTopColor: "var(--color-text-secondary)", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
-          <p style={{ fontSize: 13, margin: 0 }}>Loading pages...</p>
+          <div className="library-tab-spinner library-tab-spinner--neutral" aria-hidden />
+          <p style={{ fontSize: 13, margin: 0 }}>Loading pages…</p>
         </div>
       )}
 

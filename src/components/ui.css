@@ -44,6 +44,10 @@
   border-color: var(--color-border-primary);
 }
 
+.ui-input:focus-visible {
+  box-shadow: 0 0 0 2px rgba(24, 95, 165, 0.35);
+}
+
 .ui-input--search {
   max-width: 220px;
 }

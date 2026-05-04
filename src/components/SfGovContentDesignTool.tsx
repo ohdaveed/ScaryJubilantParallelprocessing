@@ -4,6 +4,9 @@ import { pageTypeToDotClass } from "./sfGovContentDesignTool/pageTypeDots";
 
 export { normalizePageTypeKey, pageTypeToDotClass } from "./sfGovContentDesignTool/pageTypeDots";
 
+/** Skip link + tabpanel `aria-controls` target (single shell instance). */
+export const MAIN_WORKSPACE_PANEL_ID = "main-workspace";
+
 export type ContentDesignTab = { id: string; label: string; /** One-line wayfinding under tabs (Hick’s / cognitive load) */ description?: string };
 
 export type KarlCheckStatus = "pass" | "warn" | "fail";
@@ -275,6 +278,34 @@ export function SfGovContentDesignTool({
 
   const activeTabMeta = useMemo(() => tabs.find((t) => t.id === activeTabId), [tabs, activeTabId]);
 
+  const handleWorkspaceTabKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLButtonElement>, tabIndex: number) => {
+      if (!onTabChange || tabs.length === 0) return;
+      const { key } = e;
+      if (key === "ArrowRight" || key === "ArrowLeft") {
+        e.preventDefault();
+        const delta = key === "ArrowRight" ? 1 : -1;
+        const nextIndex = (tabIndex + delta + tabs.length) % tabs.length;
+        const next = tabs[nextIndex];
+        onTabChange(next.id);
+        queueMicrotask(() => {
+          document.getElementById(`${baseId}-tab-${next.id}`)?.focus();
+        });
+      } else if (key === "Home") {
+        e.preventDefault();
+        const first = tabs[0];
+        onTabChange(first.id);
+        queueMicrotask(() => document.getElementById(`${baseId}-tab-${first.id}`)?.focus());
+      } else if (key === "End") {
+        e.preventDefault();
+        const last = tabs[tabs.length - 1];
+        onTabChange(last.id);
+        queueMicrotask(() => document.getElementById(`${baseId}-tab-${last.id}`)?.focus());
+      }
+    },
+    [tabs, onTabChange, baseId]
+  );
+
   const pageTypeOverflow = pageTypeOptions.length > PAGE_TYPE_CHIP_PRIMARY_COUNT;
   const pageTypesVisible = useMemo(() => {
     if (!pageTypeOverflow || pageTypesExpanded) return [...pageTypeOptions];
@@ -360,7 +391,7 @@ export function SfGovContentDesignTool({
           </div>
 
           <div className="tabs" role="tablist" aria-label="Workspace">
-            {tabs.map((tab) => {
+            {tabs.map((tab, tabIndex) => {
               const isActive = tab.id === activeTabId;
               const tabId = `${baseId}-tab-${tab.id}`;
               const tabClass = `tab${isActive ? " active" : ""}`;
@@ -368,13 +399,35 @@ export function SfGovContentDesignTool({
               // WebHint/Edge Tools treats `aria-selected={expr}` as invalid; use static literals per branch.
               if (isActive) {
                 return (
-                  <button key={tab.id} type="button" role="tab" id={tabId} aria-selected="true" className={tabClass} onClick={onTabClick}>
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    id={tabId}
+                    aria-controls={MAIN_WORKSPACE_PANEL_ID}
+                    aria-selected="true"
+                    tabIndex={0}
+                    className={tabClass}
+                    onClick={onTabClick}
+                    onKeyDown={(e) => handleWorkspaceTabKeyDown(e, tabIndex)}
+                  >
                     {tab.label}
                   </button>
                 );
               }
               return (
-                <button key={tab.id} type="button" role="tab" id={tabId} aria-selected="false" className={tabClass} onClick={onTabClick}>
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  id={tabId}
+                  aria-controls={MAIN_WORKSPACE_PANEL_ID}
+                  aria-selected="false"
+                  tabIndex={-1}
+                  className={tabClass}
+                  onClick={onTabClick}
+                  onKeyDown={(e) => handleWorkspaceTabKeyDown(e, tabIndex)}
+                >
                   {tab.label}
                 </button>
               );
@@ -415,7 +468,13 @@ export function SfGovContentDesignTool({
           </p>
         ) : null}
 
-        <div className="main editorial-main" role="tabpanel" aria-label="Editor and preview" aria-labelledby={`${baseId}-tab-${activeTabId}`}>
+        <div
+          className="main editorial-main"
+          role="tabpanel"
+          id={MAIN_WORKSPACE_PANEL_ID}
+          aria-label="Editor and preview"
+          aria-labelledby={`${baseId}-tab-${activeTabId}`}
+        >
           {!leftPanelHidden ? (
           <aside className="left-panel authoring-rail" aria-label="Editor controls">
             <section className="panel-section panel-band">

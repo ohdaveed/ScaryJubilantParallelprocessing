@@ -9,7 +9,7 @@ import { usePlanMap } from "./hooks/usePlanMap";
 import { useVersionHistory } from "./hooks/useVersionHistory";
 import { usePageGeneration } from "./hooks/usePageGeneration";
 import { useQueueRunner } from "./hooks/useQueueRunner";
-import { SfGovContentDesignTool, type ContentDesignTab } from "./components/SfGovContentDesignTool";
+import { SfGovContentDesignTool, MAIN_WORKSPACE_PANEL_ID, type ContentDesignTab } from "./components/SfGovContentDesignTool";
 import packageJson from "../package.json";
 import "./App.css";
 
@@ -902,6 +902,9 @@ export default function App() {
 
   return (
     <div className="app-root-sf-studio">
+      <a href={`#${MAIN_WORKSPACE_PANEL_ID}`} className="skip-link">
+        Skip to main content
+      </a>
       <SfGovContentDesignTool
         className="app-sf-studio-shell"
         brandTitle="HHVC Page Builder"
@@ -963,7 +966,17 @@ export default function App() {
                   <div className="app-pending-type-banner">
                     <Badge type={pendingPageType} small />
                     <span>from plan</span>
-                    <button type="button" className="app-icon-btn" onClick={() => { setPendingPageType(""); setPendingPlannedId(null); }}>&#10005;</button>
+                    <button
+                      type="button"
+                      className="app-icon-btn"
+                      aria-label="Clear planned page type from plan"
+                      onClick={() => {
+                        setPendingPageType("");
+                        setPendingPlannedId(null);
+                      }}
+                    >
+                      &#10005;
+                    </button>
                   </div>
                 )}
               </Card>

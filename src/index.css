@@ -74,6 +74,31 @@ html, body {
   border-width: 0;
 }
 
+/* Skip to main (Web Interface Guidelines) */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 10000;
+  padding: 8px 14px;
+  background: var(--color-background-primary);
+  color: var(--color-text-primary);
+  border: 0.5px solid var(--color-border-secondary);
+  border-radius: var(--border-radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  left: 12px;
+  top: 12px;
+  outline: 2px solid #185fa5;
+  outline-offset: 2px;
+}
+
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -131,4 +156,11 @@ html, body {
   margin-left: 2px;
   vertical-align: middle;
   animation: blink 1s step-end infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .streamRenderer__cursor {
+    animation: none;
+    opacity: 1;
+  }
 }
