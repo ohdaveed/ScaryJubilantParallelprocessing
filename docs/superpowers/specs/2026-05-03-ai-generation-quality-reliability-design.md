@@ -394,3 +394,113 @@ Live Karl MCP may be intermittently unavailable or not exposed in some runtimes.
 - prioritize compliance and structure over polish
 - consult live Karl MCP only after a failing evaluation
 - automatically rewrite the page after Karl MCP guidance is fetched
+
+---
+
+## Plan design review (gstack /plan-design-review, 2026-05-04)
+
+**Plan:** `docs/superpowers/plans/2026-05-03-ai-generation-quality-reliability.md`  
+**DESIGN.md:** Present at repo root — UI changes must align with global tokens (`index.css`, `ui.css`) and studio chrome (`SfGovContentDesignTool.css`) where generation UI lives.
+
+### Scope classifier
+
+**App UI** (orchestration + status). No new marketing surfaces. UI work is **progress messaging, error surfacing, and optional degraded outcome** inside existing Generate workspace.
+
+### Step 0 — Design completeness
+
+| Metric | Score | What a 10 would include |
+|--------|-------|-------------------------|
+| Initial rating | **6/10** | Every lifecycle phase mapped to a visible surface, component, and accessibility behavior |
+| Target after amendments below | **8/10** | Interaction table + placement + a11y locked; remaining 2 points need implementation QA |
+
+### Pass 1 — Information architecture
+
+**Finding:** Progress labels are listed in prose but **not anchored to UI regions** (stream panel vs footer status vs modal).
+
+**Add to implementation:**
+
+1. **Primary progress:** Map each label to `progressLabel` / footer strip already used in Generate flow — single source of truth so the user never sees two conflicting statuses.
+2. **Secondary context:** Keep stream (`StreamRenderer`) for model output; prepend or pin a one-line **phase chip** when phase changes (e.g. `Validating…`) so retries do not look like a frozen stream.
+
+**ASCII flow (user eye path):**
+
+```
+[ Tabs ]     [ Settings | Export ]
+------------------------------------
+| Rail config |  [ phase chip: Validating against Karl rules ]
+|             |  [ stream continues OR skeleton if suppressed ]
+------------------------------------
+[ Footer: Connected · single-line status mirrors progressLabel ]
+```
+
+### Pass 2 — Interaction state coverage
+
+| Feature | Loading | Empty | Error | Success | Partial |
+|---------|---------|-------|-------|---------|---------|
+| Deterministic validation | Show phase + optional indeterminate indicator on CTA row | N/A | Summarize **validation.failures** in banner; offer **Copy details** for support | Silent transition to evaluation | **Warnings only:** pass but log warnings in eval panel |
+| Retry loop | Replace generic spinner copy with **`Retrying generation (n/2)`** exactly | N/A | After max retries: **blocking banner** with numbered failure reasons (not toast-only) | N/A | Degraded: show draft only if product chooses “best effort” — **specify in Task 3** |
+| Karl MCP escalation | **`Consulting Karl…`** must match Task 6 labels | N/A | **`Karl unavailable, using stored standards`** (honest fallback string from spec) | Transition to **Applying final quality corrections** | Evaluation fails twice: surface **`review_required`** with explicit next step |
+| Evaluation gate | **`Running Karl evaluation`** | N/A | Evaluator HTTP failure: existing `review_required` path | Grade + success panel | Low grade but saved: badge state per existing `SuccessState` |
+
+### Pass 3 — User journey / emotional arc
+
+| Step | User feels | Design support |
+|------|------------|----------------|
+| Validation retry | “Is this stuck?” | Show **elapsed-safe** copy: retries include attempt index and link to failure summary |
+| Karl consultation | “Silent failure?” | **`Consulting Karl…`** must appear **before** long network wait; if timeout, swap to fallback string |
+| Exhausted retries | Frustration | **Empathetic headline** + bullet list of failures + **Try again** (re-run generation) secondary |
+
+### Pass 4 — AI slop risk
+
+**9/10** — Plan avoids generic SaaS patterns; copy is utility-first. Watch **emoji** in evaluation stats elsewhere in app (`DESIGN.md` finding); keep new strings text-only.
+
+### Pass 5 — Design system alignment
+
+- Progress and errors use **`--color-text-*`**, **`--color-background-warning`** for retry, **`--color-border-info`** for Karl-related emphasis (`DESIGN.md` §3).
+- Studio shell: ensure light-on-dark footer/rail contrast remains **WCAG AA** for new chips.
+
+### Pass 6 — Responsive and accessibility
+
+- **`aria-live="polite"`** on the container that shows phase transitions; **`assertive`** only when generation stops with error.
+- **Focus:** After error banner appears, move focus to banner heading or first **Copy details** control (implementation choice — pick one).
+- **Touch:** No new controls below **44px** height on retry/error actions.
+- **`prefers-reduced-motion`:** Respect for spinners / pulse already noted in `DESIGN.md`; apply to any new retry animation.
+
+### Pass 7 — Unresolved decisions (must pick during implementation)
+
+| Decision | If deferred |
+|----------|----------------|
+| Suppress stream text during retry vs show failure report inline | Engineer may show duplicate or confusing output |
+| Block primary **Generate** until dismissal of fatal validation vs allow refine | Users may click refine on invalid partial |
+| **`review_required`** vs hide draft when evaluation fails post-remediation | Inconsistent Library entries |
+
+### NOT in scope (design)
+
+- Full Generate tab layout redesign (explicit non-goal).
+- New illustration or empty-state art for retries (use existing empty patterns).
+
+### What already exists (reuse)
+
+- `StreamRenderer`, `EvaluatingState`, `SuccessState`, footer status patterns (`App.tsx` / studio shell).
+- Token vocabulary in **`DESIGN.md`** and **`src/components/ui.css`**.
+
+### Recommended TODOS.md additions (optional)
+
+1. **A11y:** `aria-live` + focus management for validation failure banner — tracked under this feature.
+2. **Design QA:** After ship, run **`/design-review`** on Generate tab for contrast and focus ring completeness.
+
+### Review scores summary
+
+| Pass | Before | After amendments |
+|------|--------|------------------|
+| Info architecture | 5 | 8 |
+| Interaction states | 5 | 8 |
+| Journey | 6 | 8 |
+| AI slop | 9 | 9 |
+| Design system | 7 | 9 |
+| Responsive / a11y | 4 | 8 |
+| Unresolved decisions | 3 listed | **Requires PM/engineer answers** |
+
+**Overall design completeness:** **6/10 → 8/10** once unresolved decisions are answered and implementation follows the table above.
+
+**Next:** Run **`/plan-eng-review`** on the same plan for orchestration and test boundaries; run **`/design-review`** after implementation for pixel QA.
