@@ -1,19 +1,19 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { Suspense, lazy, useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { PageDraft, TodoItem, KarlEvaluation, PlannedPage, UserPreference, ReviewStatus, VerificationState } from "./types";
 import { USER_TYPES, PAGE_TYPES, TYPE_META } from "./constants";
 import { clean, pagesApi, replacePageDraftInRaw, todosApi, preferencesApi, renderPageAsPNG, renderPageAsPDF, generateZip, findOverlappingPageIds, getVerificationState, VERIFICATION_FILTERS } from "./utils";
 import { Badge, Divider, Btn, Card, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar, DeleteConfirmationModal } from "./components/ui";
 import { SfGovPagePreview } from "./components/SfGovPreview";
-import { toPng } from "html-to-image";
 import { usePagesData } from "./hooks/usePagesData";
 import { usePlanMap } from "./hooks/usePlanMap";
 import { useVersionHistory } from "./hooks/useVersionHistory";
 import { usePageGeneration } from "./hooks/usePageGeneration";
 import { useQueueRunner } from "./hooks/useQueueRunner";
-import { MapTab } from "./components/tabs/MapTab";
-import { LibraryTab } from "./components/tabs/LibraryTab";
 import { SfGovContentDesignTool, type ContentDesignTab, type KarlEvaluationView } from "./components/SfGovContentDesignTool";
 import "./App.css";
+
+const LazyMapTab = lazy(() => import("./components/tabs/MapTab").then((m) => ({ default: m.MapTab })));
+const LazyLibraryTab = lazy(() => import("./components/tabs/LibraryTab").then((m) => ({ default: m.LibraryTab })));
 
 
 function StreamRenderer({ text }: { text: string }) {
@@ -734,6 +734,7 @@ export default function App() {
     await document.fonts.ready;
     const filename = (clean(pageName) || "page").toLowerCase().replace(/\s+/g, "-") + ".png";
     try {
+      const { toPng } = await import("html-to-image");
       const dataUrl = await toPng(screenshotRef.current, { backgroundColor: "#ffffff" });
       const a = document.createElement("a");
       a.href = dataUrl;
@@ -1141,7 +1142,8 @@ export default function App() {
           </div>
         </div>
           ) : workspaceTab === "library" ? (
-        <LibraryTab
+        <Suspense fallback={<Card className="app-card-pad--20-24"><p className="app-loading-p">Loading library…</p></Card>}>
+        <LazyLibraryTab
           search={search}
           setSearch={setSearch}
           filterType={filterType}
@@ -1171,9 +1173,11 @@ export default function App() {
           onUpdateReviewStatus={handleUpdateReviewStatus}
           onOpenHistory={openHistory}
         />
+        </Suspense>
           ) : (
         <div className="app-studio-tab-pad">
-        <MapTab
+        <Suspense fallback={<Card className="app-card-pad--20-24"><p className="app-loading-p">Loading map…</p></Card>}>
+        <LazyMapTab
           mapMode={mapMode}
           setMapMode={setMapMode}
           pages={pages}
@@ -1191,6 +1195,7 @@ export default function App() {
           TodoPanelComponent={TodoPanel}
           onOpenQueuedPage={selectById}
         />
+        </Suspense>
         </div>
           )
         }

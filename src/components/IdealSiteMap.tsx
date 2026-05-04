@@ -1,5 +1,4 @@
 import React, { useCallback, useMemo, useRef } from "react";
-import { toPng } from "html-to-image";
 import { PageDraft } from "../types";
 import { clean } from "../utils";
 import { TYPE_META } from "../constants";
@@ -84,6 +83,7 @@ export default function IdealSiteMap({ pages, onSelect }: { pages: PageDraft[]; 
     if (!mapRef.current) return;
     await document.fonts.ready;
     try {
+      const { toPng } = await import("html-to-image");
       const dataUrl = await toPng(mapRef.current, { backgroundColor: "#ffffff" });
       const a = document.createElement("a");
       a.href = dataUrl;

@@ -1,8 +1,8 @@
-import React, { useCallback, useMemo } from "react";
+import React, { Suspense, lazy, useCallback, useMemo } from "react";
 import { PAGE_TYPES, TYPE_META } from "../../constants";
 import { PageDraft, PlannedPage, TodoItem } from "../../types";
 import { Card } from "../ui";
-import IdealSiteMap from "../IdealSiteMap";
+const LazyIdealSiteMap = lazy(() => import("../IdealSiteMap"));
 
 type MapTabProps = {
   mapMode: "plan" | "view";
@@ -104,7 +104,9 @@ export function MapTab(props: MapTabProps) {
           <>
             <div>
               <Card className="ui-card--map">
-                <IdealSiteMap pages={pages} onSelect={selectById} />
+                <Suspense fallback={<div style={{ textAlign: "center", padding: "56px 0", color: "var(--color-text-tertiary)" }}>Loading site map…</div>}>
+                  <LazyIdealSiteMap pages={pages} onSelect={selectById} />
+                </Suspense>
               </Card>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
                 {pageTypeLegend}
