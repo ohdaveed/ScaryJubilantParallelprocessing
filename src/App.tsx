@@ -375,7 +375,8 @@ const STUDIO_PAGE_TYPE_CHIPS = [
   "Topic",
   "Step by step",
   "Location",
-  "Resource Collection"
+  "Resource Collection",
+  "Campaign"
 ] as const;
 
 function studioPageTypes(): string[] {
