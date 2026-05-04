@@ -1196,9 +1196,9 @@ export default function App() {
                   <>
                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M9 12h6M12 9v6" /></svg>
                     <div className="app-builder-empty__center">
-                      <p className="app-builder-empty__title">
+                      <h2 className="app-builder-empty__title">
                         {pages.length === 0 ? "Start your first draft" : "Start a new draft or open a saved page"}
-                      </p>
+                      </h2>
                       <p className="app-builder-empty__sub">
                         {pages.length === 0
                           ? "Add a page goal in the left panel, then generate. You can also browse the Library when you have saved pages."
