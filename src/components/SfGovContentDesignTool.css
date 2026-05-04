@@ -919,7 +919,7 @@
 
   .workbench-surface {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 240px;
+    grid-template-columns: minmax(0, 1fr);
     gap: 18px;
     padding: 24px;
     min-height: 100%;
@@ -952,7 +952,7 @@
   }
 
   .preview-sheet-frame::after {
-    content: "Proof copy";
+    content: "";
     position: absolute;
     top: 16px;
     right: 22px;

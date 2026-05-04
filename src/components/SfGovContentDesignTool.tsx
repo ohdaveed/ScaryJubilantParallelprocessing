@@ -557,17 +557,6 @@ export function SfGovContentDesignTool({
             <div className="preview-scroll anim-fade-up">
               <div className="workbench-surface">
                 <div className="preview-sheet-frame">{previewSlot}</div>
-                <aside className="preview-notes" aria-label="Editorial notes">
-                  <div className="preview-note preview-note--status">
-                    <div className="preview-note-label">Draft board</div>
-                    <div className="preview-note-title">Ready for Karl review</div>
-                    <p className="preview-note-copy">Check the service promise, page title, and front-door summary before export.</p>
-                  </div>
-                  <div className="preview-note preview-note--pin">
-                    <div className="preview-note-kicker">Proof copy</div>
-                    <p className="preview-note-copy">Lead with the resident task, then confirm timing, eligibility, and what happens next.</p>
-                  </div>
-                </aside>
               </div>
             </div>
           </section>

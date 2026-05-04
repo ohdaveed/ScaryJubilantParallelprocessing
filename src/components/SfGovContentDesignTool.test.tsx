@@ -63,9 +63,9 @@ describe("SfGovContentDesignTool", () => {
     expect(html).toContain("editorial-shell");
     expect(html).toContain("authoring-rail");
     expect(html).toContain("preview-workbench");
-    expect(html).toContain("preview-notes");
-    expect(html).toContain("Draft board");
-    expect(html).toContain("Ready for Karl review");
+    expect(html).not.toContain("preview-notes");
+    expect(html).not.toContain("Draft board");
+    expect(html).not.toContain("Ready for Karl review");
   });
 
   it("keeps the generate workspace controls visible after shell restyling", () => {

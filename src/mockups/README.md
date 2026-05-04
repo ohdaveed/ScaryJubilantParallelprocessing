@@ -1,6 +1,6 @@
 # HHVC workspace mockups — React mapping
 
-This folder documents how [hhvc-karl-mockups-spec.md](../../hhvc-karl-mockups-spec.md) maps onto the production app. Static HTML references live in [.superdesign/design_iterations/](../../.superdesign/design_iterations/).
+This folder documents how [hhvc-karl-mockups-spec.md](../../docs/specs/hhvc-karl-mockups-spec.md) maps onto the production app. Static HTML references live in [.superdesign/design_iterations/](../../.superdesign/design_iterations/).
 
 ## Current shell
 
