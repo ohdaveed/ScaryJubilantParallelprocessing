@@ -3,7 +3,7 @@ import {
   REPORT_TRANSACTION_BEFORE_311_BODY,
   REPORT_TRANSACTION_POST_CTA_ROUTING_BODY
 } from "./constants";
-import { ParseStructuredResult, ParsedPageFields, RelMap, StructuredPageOutput } from "./types";
+import { ParseStructuredResult, ParsedPageFields, RelMap, StructuredPageOutput, PageDraft, VerificationState } from "./types";
 
 export const isPest = (t: string): boolean => {
   return PEST_KW.some(k => t.toLowerCase().includes(k));
@@ -445,6 +445,60 @@ export const evaluateQualityGate = (
     status: reasons.length === 0 ? "pass" : "review_required",
     reasons: reasons.length === 0 ? ["Meets automatic quality gate."] : reasons
   };
+};
+
+export const VERIFICATION_FILTERS: ReadonlyArray<{ id: VerificationState | "all"; label: string }> = [
+  { id: "all", label: "All verification states" },
+  { id: "verified", label: "Verified" },
+  { id: "review_required", label: "Needs manual review" },
+  { id: "import_pending_review", label: "Import pending review" },
+  { id: "import_approved", label: "Import approved" },
+  { id: "import_rejected", label: "Import rejected" },
+  { id: "not_checked", label: "Not checked" }
+];
+
+export const getVerificationState = (page: PageDraft): VerificationState => {
+  if (page.imported) {
+    if (page.reviewStatus === "approved") return "import_approved";
+    if (page.reviewStatus === "rejected") return "import_rejected";
+    return "import_pending_review";
+  }
+  if (page.qualityGate?.status === "review_required") return "review_required";
+  if (page.karlEvaluation) return "verified";
+  return "not_checked";
+};
+
+export const getVerificationLabel = (state: VerificationState): string => {
+  switch (state) {
+    case "verified":
+      return "verified";
+    case "review_required":
+      return "needs review";
+    case "import_pending_review":
+      return "import: pending";
+    case "import_approved":
+      return "import: approved";
+    case "import_rejected":
+      return "import: rejected";
+    default:
+      return "not checked";
+  }
+};
+
+export const findOverlappingPageIds = (pages: PageDraft[]): Set<string> => {
+  const byTitle = new Map<string, string[]>();
+  for (const page of pages) {
+    const key = clean(page.name).toLowerCase().replace(/\s+/g, " ").trim();
+    if (!key) continue;
+    const existing = byTitle.get(key);
+    if (existing) existing.push(page.id);
+    else byTitle.set(key, [page.id]);
+  }
+  const overlapIds = new Set<string>();
+  byTitle.forEach((ids) => {
+    if (ids.length > 1) ids.forEach((id) => overlapIds.add(id));
+  });
+  return overlapIds;
 };
 
 export const plannedPagesApi = {

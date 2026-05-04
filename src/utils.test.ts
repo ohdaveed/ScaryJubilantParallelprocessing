@@ -2,7 +2,10 @@ import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import { buildGenerationUserPrompt, PROMPT_CONTRACT_VERSION } from "./constants";
 import {
   evaluateQualityGate,
+  findOverlappingPageIds,
   formatVersionOrMonth,
+  getVerificationLabel,
+  getVerificationState,
   generateZip,
   parsePage,
   parseStructuredPage,
@@ -132,6 +135,56 @@ describe("quality gate", () => {
       confidence: "high"
     });
     expect(result.status).toBe("pass");
+  });
+});
+
+describe("verification state helpers", () => {
+  it("classifies imported pages by review status", () => {
+    const pending = getVerificationState({ imported: true } as PageDraft);
+    const approved = getVerificationState({ imported: true, reviewStatus: "approved" } as PageDraft);
+    const rejected = getVerificationState({ imported: true, reviewStatus: "rejected" } as PageDraft);
+    expect(pending).toBe("import_pending_review");
+    expect(approved).toBe("import_approved");
+    expect(rejected).toBe("import_rejected");
+  });
+
+  it("classifies generated pages by quality and Karl evaluation", () => {
+    const reviewRequired = getVerificationState({
+      qualityGate: { status: "review_required", reasons: ["low score"] }
+    } as PageDraft);
+    const verified = getVerificationState({
+      karlEvaluation: {
+        score: 90,
+        grade: "A",
+        summary: "ok",
+        passed: [],
+        warnings: [],
+        failed: []
+      }
+    } as PageDraft);
+    const notChecked = getVerificationState({} as PageDraft);
+    expect(reviewRequired).toBe("review_required");
+    expect(verified).toBe("verified");
+    expect(notChecked).toBe("not_checked");
+  });
+
+  it("returns friendly labels", () => {
+    expect(getVerificationLabel("verified")).toBe("verified");
+    expect(getVerificationLabel("review_required")).toBe("needs review");
+    expect(getVerificationLabel("import_pending_review")).toBe("import: pending");
+  });
+});
+
+describe("overlap detection", () => {
+  it("finds pages with duplicate normalized names", () => {
+    const overlaps = findOverlappingPageIds([
+      { id: "1", name: "Report Pests" } as PageDraft,
+      { id: "2", name: " report pests " } as PageDraft,
+      { id: "3", name: "Get help" } as PageDraft
+    ]);
+    expect(overlaps.has("1")).toBe(true);
+    expect(overlaps.has("2")).toBe(true);
+    expect(overlaps.has("3")).toBe(false);
   });
 });
 

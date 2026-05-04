@@ -75,6 +75,13 @@ export interface StructuredPageOutput {
 }
 
 export type ReviewStatus = "pending" | "approved" | "rejected";
+export type VerificationState =
+  | "verified"
+  | "review_required"
+  | "import_pending_review"
+  | "import_approved"
+  | "import_rejected"
+  | "not_checked";
 
 export interface PageDraft {
   id: string;

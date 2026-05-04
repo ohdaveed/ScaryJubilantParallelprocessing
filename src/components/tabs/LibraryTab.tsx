@@ -1,14 +1,20 @@
 import React from "react";
 import { PAGE_TYPES, TYPE_META } from "../../constants";
-import { PageDraft, ReviewStatus } from "../../types";
+import { PageDraft, ReviewStatus, VerificationState } from "../../types";
 import { Badge, Btn, Card, UI_INPUT_CLASS } from "../ui";
-import { clean } from "../../utils";
+import { clean, getVerificationLabel, getVerificationState } from "../../utils";
 
 type LibraryTabProps = {
   search: string;
   setSearch: React.Dispatch<React.SetStateAction<string>>;
   filterType: string;
   setFilterType: React.Dispatch<React.SetStateAction<string>>;
+  verificationFilter: VerificationState | "all";
+  setVerificationFilter: React.Dispatch<React.SetStateAction<VerificationState | "all">>;
+  verificationFilters: ReadonlyArray<{ id: VerificationState | "all"; label: string }>;
+  showOverlapsOnly: boolean;
+  setShowOverlapsOnly: React.Dispatch<React.SetStateAction<boolean>>;
+  overlapCount: number;
   sortNewest: boolean;
   setSortNewest: React.Dispatch<React.SetStateAction<boolean>>;
   pagesLoading: boolean;
@@ -35,6 +41,12 @@ export function LibraryTab(props: LibraryTabProps) {
     setSearch,
     filterType,
     setFilterType,
+    verificationFilter,
+    setVerificationFilter,
+    verificationFilters,
+    showOverlapsOnly,
+    setShowOverlapsOnly,
+    overlapCount,
     sortNewest,
     setSortNewest,
     pagesLoading,
@@ -63,6 +75,12 @@ export function LibraryTab(props: LibraryTabProps) {
           <option>All</option>
           {PAGE_TYPES.map((t) => <option key={t}>{t}</option>)}
         </select>
+        <select className={`${UI_INPUT_CLASS} ui-input--filter`} value={verificationFilter} onChange={(e) => setVerificationFilter(e.target.value as VerificationState | "all")} aria-label="Filter by verification state">
+          {verificationFilters.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
+        </select>
+        <Btn onClick={() => setShowOverlapsOnly((s) => !s)} variant="ghost" size="sm">
+          {showOverlapsOnly ? "Showing overlaps only" : `Show overlaps only (${overlapCount})`}
+        </Btn>
         <Btn onClick={() => setSortNewest((s) => !s)} variant="ghost" size="sm">{sortNewest ? "Newest first" : "Oldest first"}</Btn>
         {pages.length > 0 && <Btn onClick={() => onDownloadText(pages.map((p) => p.raw).join("\n\n---\n\n"), "hhvc-pages-export.txt")} variant="ghost" size="sm">Export all</Btn>}
         {pages.some((p) => p.skeleton) && (
@@ -118,6 +136,7 @@ export function LibraryTab(props: LibraryTabProps) {
         {sorted.map((p) => {
           const c = TYPE_META[clean(p.pageType)] || { dot: "#888" };
           const ev = p.karlEvaluation;
+          const verificationState = getVerificationState(p);
           const gradeColor: Record<string, string> = { A: "#0F6E56", B: "#185FA5", C: "#854F0B", D: "#A32D2D", F: "#A32D2D" };
           return (
             <Card key={p.id} onClick={() => onSelectPage(p)} className={["ui-card--lib", selectedPageIds.has(p.id) ? "ui-card--bulk-selected" : ""].filter(Boolean).join(" ")}>
@@ -131,6 +150,9 @@ export function LibraryTab(props: LibraryTabProps) {
                 <Badge type={clean(p.pageType)} small />
                 {p.skeleton && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#F3E8FF", color: "#6B21A8", border: "1px dashed #6B21A866" }}>skeleton</span>}
                 {p.imported && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#F1EFE8", color: "#6B4C00", border: "0.5px solid #6B4C0033" }}>imported</span>}
+                <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#eef2f6", color: "#334155", border: "0.5px solid #cbd5e1" }}>
+                  {getVerificationLabel(verificationState)}
+                </span>
                 {p.currentVersionNumber != null && p.currentVersionNumber > 0 && (
                   <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#E8EFFA", color: "#185FA5", border: "0.5px solid #185FA533", fontWeight: 600 }}>v{p.currentVersionNumber}</span>
                 )}

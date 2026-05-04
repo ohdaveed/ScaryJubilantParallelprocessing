@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { PageDraft, TodoItem, KarlEvaluation, PlannedPage, UserPreference, ReviewStatus } from "./types";
+import { PageDraft, TodoItem, KarlEvaluation, PlannedPage, UserPreference, ReviewStatus, VerificationState } from "./types";
 import { USER_TYPES, PAGE_TYPES, TYPE_META } from "./constants";
-import { clean, pagesApi, replacePageDraftInRaw, todosApi, preferencesApi, renderPageAsPNG, renderPageAsPDF, generateZip } from "./utils";
+import { clean, pagesApi, replacePageDraftInRaw, todosApi, preferencesApi, renderPageAsPNG, renderPageAsPDF, generateZip, findOverlappingPageIds, getVerificationState, VERIFICATION_FILTERS } from "./utils";
 import { Badge, Divider, Btn, Card, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar, DeleteConfirmationModal } from "./components/ui";
 import { SfGovPagePreview } from "./components/SfGovPreview";
 import { toPng } from "html-to-image";
@@ -488,6 +488,8 @@ export default function App() {
   const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTab>("generate");
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("All");
+  const [verificationFilter, setVerificationFilter] = useState<VerificationState | "all">("all");
+  const [showOverlapsOnly, setShowOverlapsOnly] = useState(false);
   const [sortNewest, setSortNewest] = useState(true);
   const [copied, setCopied] = useState(false);
   const [selectedPageIds, setSelectedPageIds] = useState<Set<string>>(new Set());
@@ -763,9 +765,26 @@ export default function App() {
     }
   };
 
-  const filtered = pages.filter(p => { const ms = !search || (clean(p.name) || "").toLowerCase().includes(search.toLowerCase()) || (p.draft || "").toLowerCase().includes(search.toLowerCase()); return ms && (filterType === "All" || clean(p.pageType) === filterType); });
+  const overlapIds = useMemo(() => findOverlappingPageIds(pages), [pages]);
+  const filtered = useMemo(() => {
+    const query = search.toLowerCase().trim();
+    const base = pages.filter((p) => {
+      const verificationState = getVerificationState(p);
+      const matchesSearch =
+        !query ||
+        (clean(p.name) || "").toLowerCase().includes(query) ||
+        (p.draft || "").toLowerCase().includes(query) ||
+        (p.userGoal || "").toLowerCase().includes(query);
+      const matchesType = filterType === "All" || clean(p.pageType) === filterType;
+      const matchesVerification =
+        verificationFilter === "all" || verificationState === verificationFilter;
+      return matchesSearch && matchesType && matchesVerification;
+    });
+    if (!showOverlapsOnly) return base;
+    return base.filter((p) => overlapIds.has(p.id));
+  }, [pages, search, filterType, verificationFilter, showOverlapsOnly, overlapIds]);
   const sorted = sortNewest ? [...filtered].reverse() : filtered;
-  useEffect(() => { setSelectedPageIds(new Set()); }, [search, filterType]);
+  useEffect(() => { setSelectedPageIds(new Set()); }, [search, filterType, verificationFilter, showOverlapsOnly]);
   const topicError = topicTouched && !topic.trim();
 
   const handleUpdateReviewStatus = useCallback(async (id: string, status: ReviewStatus) => {
@@ -1147,6 +1166,12 @@ export default function App() {
           setSearch={setSearch}
           filterType={filterType}
           setFilterType={setFilterType}
+          verificationFilter={verificationFilter}
+          setVerificationFilter={setVerificationFilter}
+          verificationFilters={VERIFICATION_FILTERS}
+          showOverlapsOnly={showOverlapsOnly}
+          setShowOverlapsOnly={setShowOverlapsOnly}
+          overlapCount={overlapIds.size}
           sortNewest={sortNewest}
           setSortNewest={setSortNewest}
           pagesLoading={pagesLoading}
