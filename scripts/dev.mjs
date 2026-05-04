@@ -6,7 +6,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = resolve(__filename, "..");
 const root = resolve(__dirname, "..");
 const viteBin = resolve(root, "node_modules", "vite", "bin", "vite.js");
-const viteArgs = process.argv.slice(2);
+const rawViteArgs = process.argv.slice(2);
+const isHookLikeRun =
+  !process.stdout.isTTY ||
+  process.env.CI === "true" ||
+  process.env.CURSOR_IS_HOOK === "1";
+
+let viteArgs = rawViteArgs;
+if (isHookLikeRun) {
+  viteArgs = rawViteArgs.filter((arg) => arg !== "--open");
+  if (!viteArgs.includes("--no-open")) {
+    viteArgs.push("--no-open");
+  }
+}
 
 const children = [];
 const activeChildren = new Set();
