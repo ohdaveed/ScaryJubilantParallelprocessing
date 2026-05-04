@@ -610,7 +610,8 @@ export default function App() {
   const selectAllPages = () => setSelectedPageIds(new Set(filtered.map(p => p.id)));
   const clearPageSelection = () => setSelectedPageIds(new Set());
   const deleteSelectedPages = async () => {
-    for (const id of selectedPageIds) { await deletePage(id); }
+    const ids = Array.from(selectedPageIds);
+    await Promise.all(ids.map((id) => deletePage(id)));
     setSelectedPageIds(new Set());
   };
   const handleConfirmDelete = async () => {
@@ -619,30 +620,38 @@ export default function App() {
     setIsDeleteLoading(false);
     setShowDeleteModal(false);
   };
-  const handleDownloadPNG = async () => {
+  const exportSelectedPagesAsZip = async (format: "png" | "pdf") => {
     const selectedPages = pages.filter(p => p.id && selectedPageIds.has(p.id));
-    const pngFiles: Array<{ blob: Blob; filename: string }> = [];
+    const files: Array<{ blob: Blob; filename: string }> = [];
     const failedNames: string[] = [];
 
-    for (const page of selectedPages) {
-      try {
+    const renderResults = await Promise.allSettled(
+      selectedPages.map(async (page) => {
         const elementId = `page-preview-${page.id}`;
-        const result = await renderPageAsPNG(page, elementId);
-        pngFiles.push(result);
-      } catch (err) {
-        console.error(`Failed to render ${page.name} as PNG:`, err);
+        return format === "png"
+          ? renderPageAsPNG(page, elementId)
+          : renderPageAsPDF(page, elementId);
+      })
+    );
+
+    renderResults.forEach((result, index) => {
+      const page = selectedPages[index];
+      if (result.status === "fulfilled") {
+        files.push(result.value);
+      } else {
+        console.error(`Failed to render ${page.name} as ${format.toUpperCase()}:`, result.reason);
         failedNames.push(page.name);
       }
-    }
+    });
 
-    if (pngFiles.length === 0) {
-      console.error("No pages could be rendered as PNG", failedNames);
+    if (files.length === 0) {
+      console.error(`No pages could be rendered as ${format.toUpperCase()}`, failedNames);
       return;
     }
 
     try {
       const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, "-");
-      const zipBlob = await generateZip(pngFiles);
+      const zipBlob = await generateZip(files);
       const url = URL.createObjectURL(zipBlob);
       const a = document.createElement("a");
       a.href = url;
@@ -654,40 +663,11 @@ export default function App() {
       console.error("Failed to create ZIP:", err);
     }
   };
+  const handleDownloadPNG = async () => {
+    await exportSelectedPagesAsZip("png");
+  };
   const handleDownloadPDF = async () => {
-    const selectedPages = pages.filter(p => p.id && selectedPageIds.has(p.id));
-    const pdfFiles: Array<{ blob: Blob; filename: string }> = [];
-    const failedNames: string[] = [];
-
-    for (const page of selectedPages) {
-      try {
-        const elementId = `page-preview-${page.id}`;
-        const result = await renderPageAsPDF(page, elementId);
-        pdfFiles.push(result);
-      } catch (err) {
-        console.error(`Failed to render ${page.name} as PDF:`, err);
-        failedNames.push(page.name);
-      }
-    }
-
-    if (pdfFiles.length === 0) {
-      console.error("No pages could be rendered as PDF", failedNames);
-      return;
-    }
-
-    try {
-      const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, "-");
-      const zipBlob = await generateZip(pdfFiles);
-      const url = URL.createObjectURL(zipBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `pages-export-${timestamp}.zip`;
-      a.click();
-      URL.revokeObjectURL(url);
-      clearPageSelection();
-    } catch (err) {
-      console.error("Failed to create ZIP:", err);
-    }
+    await exportSelectedPagesAsZip("pdf");
   };
   const selectById = (id: string) => { const p = pages.find(x => x.id === id); if (p) { setSelected(p); setShowSuccess(false); setWorkspaceTab("generate"); } };
 

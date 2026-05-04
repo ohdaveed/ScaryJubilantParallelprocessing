@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useMemo } from "react";
 import { PAGE_TYPES, TYPE_META } from "../../constants";
 import { PageDraft, PlannedPage, TodoItem } from "../../types";
 import { Card } from "../ui";
@@ -55,12 +55,36 @@ export function MapTab(props: MapTabProps) {
     TodoPanelComponent
   } = props;
 
+  const pageTypeLegend = useMemo(() => PAGE_TYPES.map((t) => {
+      const c = TYPE_META[t];
+      return (
+        <span
+          key={t}
+          style={{
+            fontSize: 11,
+            padding: "3px 10px",
+            borderRadius: 20,
+            background: c.fill,
+            color: c.text,
+            border: `1px solid ${c.stroke}`
+          }}
+        >
+          {t}
+        </span>
+      );
+    }), []);
+
+  const handleMapModeChange = useCallback(
+    (mode: "plan" | "view") => setMapMode(mode),
+    [setMapMode]
+  );
+
   return (
     <div style={{ marginTop: 20 }}>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginBottom: 16 }}>
         <div style={{ display: "flex", gap: 2, background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-md)", padding: 3, width: "fit-content" }}>
-          {(["plan", "view"] as const).map((m) => (
-            <button key={m} onClick={() => setMapMode(m)}
+                {(["plan", "view"] as const).map((m) => (
+            <button key={m} onClick={() => handleMapModeChange(m)}
               style={{
                 fontSize: 12, fontWeight: mapMode === m ? 500 : 400,
                 color: mapMode === m ? "var(--color-text-primary)" : "var(--color-text-tertiary)",
@@ -83,7 +107,7 @@ export function MapTab(props: MapTabProps) {
                 <IdealSiteMap pages={pages} onSelect={selectById} />
               </Card>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-                {PAGE_TYPES.map((t) => { const c = TYPE_META[t]; return <span key={t} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: c.fill, color: c.text, border: `1px solid ${c.stroke}` }}>{t}</span>; })}
+                {pageTypeLegend}
                 <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "var(--color-background-secondary)", color: "var(--color-text-tertiary)", border: "0.5px dashed var(--color-border-secondary)" }}>orphan</span>
               </div>
             </div>
@@ -103,7 +127,7 @@ export function MapTab(props: MapTabProps) {
                 )}
               </Card>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-                {PAGE_TYPES.map((t) => { const c = TYPE_META[t]; return <span key={t} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: c.fill, color: c.text, border: `1px solid ${c.stroke}` }}>{t}</span>; })}
+                {pageTypeLegend}
                 <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "var(--color-background-primary)", color: "var(--color-text-tertiary)", border: "0.5px dashed var(--color-border-secondary)" }}>planned</span>
                 <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "var(--color-background-secondary)", color: "#0F6E56", border: "1px solid #0F6E5640" }}>built</span>
               </div>

@@ -1,10 +1,10 @@
-import React, { useRef } from "react";
+import React, { useCallback, useMemo, useRef } from "react";
 import { toPng } from "html-to-image";
 import { PageDraft } from "../types";
 import { clean } from "../utils";
 import { TYPE_META } from "../constants";
 
-export type Hub =
+type Hub =
   | "main"
   | "report"
   | "fix"
@@ -65,15 +65,22 @@ const REVIEW_COLORS: Record<string, { bg: string; color: string }> = {
   rejected: { bg: "#FCEBEB", color: "#A32D2D" },
 };
 
+const HUB_ORDER: Hub[] = ["main", "report", "fix", "prevent", "programs", "tools", "fees", "resources", "unplaced"];
+
 export default function IdealSiteMap({ pages, onSelect }: { pages: PageDraft[]; onSelect: (id: string) => void }) {
   const mapRef = useRef<HTMLDivElement>(null);
 
-  const grouped: Record<Hub, PageDraft[]> = {
-    main: [], report: [], fix: [], prevent: [], programs: [], tools: [], fees: [], resources: [], unplaced: []
-  };
-  pages.forEach(p => grouped[assignHub(p)].push(p));
+  const grouped = useMemo(() => {
+    const byHub: Record<Hub, PageDraft[]> = {
+      main: [], report: [], fix: [], prevent: [], programs: [], tools: [], fees: [], resources: [], unplaced: []
+    };
+    pages.forEach((p) => {
+      byHub[assignHub(p)].push(p);
+    });
+    return byHub;
+  }, [pages]);
 
-  const handleDownload = async () => {
+  const handleDownload = useCallback(async () => {
     if (!mapRef.current) return;
     await document.fonts.ready;
     try {
@@ -85,7 +92,7 @@ export default function IdealSiteMap({ pages, onSelect }: { pages: PageDraft[]; 
     } catch (err) {
       console.error("Site map download failed:", err);
     }
-  };
+  }, []);
 
   if (!pages.length) {
     return (
@@ -117,7 +124,7 @@ export default function IdealSiteMap({ pages, onSelect }: { pages: PageDraft[]; 
           HHVC Site Map · {pages.length} page{pages.length !== 1 ? "s" : ""}
         </p>
 
-        {(["main", "report", "fix", "prevent", "programs", "tools", "fees", "resources", "unplaced"] as Hub[]).map(hub => {
+        {HUB_ORDER.map(hub => {
           const hubPages = grouped[hub];
           if (!hubPages.length) return null;
           const meta = HUB_META[hub];
