@@ -14,13 +14,13 @@ vi.mock('../utils', () => ({
 describe('runQueue (pure function)', () => {
   it('should process pending todos and skip non-pending ones', async () => {
     const todos: TodoItem[] = [
-      { id: 1, topic: 'A', userType: 'U', status: 'pending', done: false, errorMessage: null, builtPageId: null, karlGrade: null },
-      { id: 2, topic: 'B', userType: 'U', status: 'done', done: true, errorMessage: null, builtPageId: 'page_B', karlGrade: 'A' },
-      { id: 3, topic: 'C', userType: 'U', status: 'pending', done: false, errorMessage: null, builtPageId: null, karlGrade: null },
+      { id: 1, topic: 'A', userType: 'U', status: 'pending', done: false, errorMessage: null, builtPageId: null, karlGrade: null, plannedId: null },
+      { id: 2, topic: 'B', userType: 'U', status: 'done', done: true, errorMessage: null, builtPageId: 'page_B', karlGrade: 'A', plannedId: null },
+      { id: 3, topic: 'C', userType: 'U', status: 'pending', done: false, errorMessage: null, builtPageId: null, karlGrade: null, plannedId: null },
     ];
     
-    const generate = vi.fn().mockImplementation(async (topic) => {
-      return { id: `page_${topic}`, karlEvaluation: { grade: 'A' } } as unknown as PageDraft;
+    const generate = vi.fn().mockImplementation(async (todo: TodoItem) => {
+      return { id: `page_${todo.topic}`, karlEvaluation: { grade: 'A' } } as unknown as PageDraft;
     });
     
     const onUpdate = vi.fn();
@@ -30,8 +30,8 @@ describe('runQueue (pure function)', () => {
     
     expect(result).toEqual({ attempted: 2, succeeded: 2, failed: 0 });
     expect(generate).toHaveBeenCalledTimes(2);
-    expect(generate).toHaveBeenCalledWith('A', 'U');
-    expect(generate).toHaveBeenCalledWith('C', 'U');
+    expect(generate).toHaveBeenCalledWith(expect.objectContaining({ id: 1, topic: 'A', userType: 'U' }));
+    expect(generate).toHaveBeenCalledWith(expect.objectContaining({ id: 3, topic: 'C', userType: 'U' }));
     
     expect(onUpdate).toHaveBeenCalledWith(1, { status: 'generating' });
     expect(onUpdate).toHaveBeenCalledWith(1, { status: 'done', builtPageId: 'page_A', karlGrade: 'A' });
@@ -41,8 +41,8 @@ describe('runQueue (pure function)', () => {
 
   it('should stop early when shouldStop returns true', async () => {
     const todos: TodoItem[] = [
-      { id: 1, topic: 'A', userType: 'U', status: 'pending', done: false, errorMessage: null, builtPageId: null, karlGrade: null },
-      { id: 2, topic: 'B', userType: 'U', status: 'pending', done: false, errorMessage: null, builtPageId: null, karlGrade: null },
+      { id: 1, topic: 'A', userType: 'U', status: 'pending', done: false, errorMessage: null, builtPageId: null, karlGrade: null, plannedId: null },
+      { id: 2, topic: 'B', userType: 'U', status: 'pending', done: false, errorMessage: null, builtPageId: null, karlGrade: null, plannedId: null },
     ];
     
     const generate = vi.fn().mockResolvedValue({ id: 'page' } as PageDraft);
@@ -64,7 +64,7 @@ describe('runQueue (pure function)', () => {
 
   it('should handle generate failures gracefully', async () => {
     const todos: TodoItem[] = [
-      { id: 1, topic: 'A', userType: 'U', status: 'pending', done: false, name: '' },
+      { id: 1, topic: 'A', userType: 'U', status: 'pending', done: false, errorMessage: null, builtPageId: null, karlGrade: null, plannedId: null },
     ];
     
     const generate = vi.fn().mockRejectedValue(new Error('Network error'));
@@ -86,7 +86,7 @@ describe('useQueueRunner', () => {
 
   it('should manage queue state correctly', async () => {
     const todos: TodoItem[] = [
-      { id: 1, topic: 'A', userType: 'U', status: 'pending', done: false, name: '' },
+      { id: 1, topic: 'A', userType: 'U', status: 'pending', done: false, errorMessage: null, builtPageId: null, karlGrade: null, plannedId: null },
     ];
     const setTodos = vi.fn();
     const generate = vi.fn().mockResolvedValue({ id: 'page_A', karlEvaluation: { grade: 'B' } } as unknown as PageDraft);

@@ -565,10 +565,12 @@ app.get("/api/todos", async (req, res) => {
 });
 
 app.post("/api/todos", async (req, res) => {
-  const { topic, userType } = req.body;
+  const { topic, userType, plannedId } = req.body;
   if (!topic) return res.status(400).json({ error: "Missing topic" });
   try {
-    const todo = await db.createTodo(topic, userType || "General public");
+    const todo = await db.createTodo(topic, userType || "General public", {
+      plannedId: plannedId != null && plannedId !== "" ? Number(plannedId) : undefined
+    });
     res.json(todo);
   } catch (err) {
     console.error("POST /api/todos error:", getErrorMessage(err));

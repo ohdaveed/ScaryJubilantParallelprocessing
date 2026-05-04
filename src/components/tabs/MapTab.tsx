@@ -1,6 +1,6 @@
 import React from "react";
 import { PAGE_TYPES, TYPE_META } from "../../constants";
-import { PageDraft, PlannedPage } from "../../types";
+import { PageDraft, PlannedPage, TodoItem } from "../../types";
 import { Card } from "../ui";
 import IdealSiteMap from "../IdealSiteMap";
 
@@ -15,8 +15,9 @@ type MapTabProps = {
   addPlannedPage: (name: string, pageType: string, userType: string, parentId: number | null) => Promise<void>;
   deletePlannedPage: (id: number) => Promise<void>;
   selectById: (id: string) => void;
-  generateFromPlanned: (p: PlannedPage) => void;
-  onTodoGenerate: (topic: string, userType: string) => void;
+  generateFromPlanned: (p: PlannedPage) => void | Promise<void>;
+  generateForQueue: (todo: TodoItem) => Promise<PageDraft | null>;
+  onOpenQueuedPage: (pageId: string) => void;
   PlanDiagramComponent: React.ComponentType<{ planned: PlannedPage[]; pages: PageDraft[]; onSelectPlanned: (p: PlannedPage) => void }>;
   PlanSidebarComponent: React.ComponentType<{
     planned: PlannedPage[];
@@ -25,10 +26,13 @@ type MapTabProps = {
     onSelectPlanned: (p: PlannedPage | null) => void;
     onAdd: (name: string, pageType: string, userType: string, parentId: number | null) => void;
     onDelete: (id: number) => void;
-    onGenerate: (p: PlannedPage) => void;
+    onGenerate: (p: PlannedPage) => void | Promise<void>;
     onViewPage: (pageId: string) => void;
   }>;
-  TodoPanelComponent: React.ComponentType<{ onGenerate: (topic: string, userType: string) => void }>;
+  TodoPanelComponent: React.ComponentType<{
+    generateForQueue: (todo: TodoItem) => Promise<PageDraft | null>;
+    onOpenPage: (pageId: string) => void;
+  }>;
 };
 
 export function MapTab(props: MapTabProps) {
@@ -44,7 +48,8 @@ export function MapTab(props: MapTabProps) {
     deletePlannedPage,
     selectById,
     generateFromPlanned,
-    onTodoGenerate,
+    generateForQueue,
+    onOpenQueuedPage,
     PlanDiagramComponent,
     PlanSidebarComponent,
     TodoPanelComponent
@@ -82,7 +87,7 @@ export function MapTab(props: MapTabProps) {
                 <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "var(--color-background-secondary)", color: "var(--color-text-tertiary)", border: "0.5px dashed var(--color-border-secondary)" }}>orphan</span>
               </div>
             </div>
-            <TodoPanelComponent onGenerate={onTodoGenerate} />
+            <TodoPanelComponent generateForQueue={generateForQueue} onOpenPage={onOpenQueuedPage} />
           </>
         ) : (
           <>

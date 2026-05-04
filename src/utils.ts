@@ -311,11 +311,15 @@ export const todosApi = {
     const data = await res.json();
     return data.todos || [];
   },
-  create: async (topic: string, userType: string): Promise<import("./types").TodoItem> => {
+  create: async (
+    topic: string,
+    userType: string,
+    opts?: { plannedId?: number }
+  ): Promise<import("./types").TodoItem> => {
     const res = await fetch(`${API_BASE}/todos`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ topic, userType })
+      body: JSON.stringify({ topic, userType, ...(opts?.plannedId != null ? { plannedId: opts.plannedId } : {}) })
     });
     if (!res.ok) throw new Error(`Failed to create todo: ${res.status}`);
     return res.json();

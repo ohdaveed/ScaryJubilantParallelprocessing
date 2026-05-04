@@ -35,7 +35,7 @@ export function usePagesData() {
             let allOk = true;
             for (const t of lsTodos) {
               try {
-                await todosApi.create(t.topic, t.userType);
+                await todosApi.create(t.topic, t.userType, t.plannedId != null ? { plannedId: t.plannedId } : undefined);
               } catch {
                 allOk = false;
               }

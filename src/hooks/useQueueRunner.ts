@@ -17,7 +17,7 @@ type QueueUpdate = {
  */
 export async function runQueue(
   todos: TodoItem[],
-  generate: (topic: string, userType: string) => Promise<PageDraft | null>,
+  generate: (todo: TodoItem) => Promise<PageDraft | null>,
   onUpdate: (id: number, fields: QueueUpdate) => void,
   shouldStop: () => boolean
 ): Promise<{ attempted: number; succeeded: number; failed: number }> {
@@ -31,7 +31,7 @@ export async function runQueue(
     onUpdate(todo.id, { status: "generating" });
 
     try {
-      const page = await generate(todo.topic, todo.userType);
+      const page = await generate(todo);
       if (page) {
         onUpdate(todo.id, {
           status: "done",
@@ -56,13 +56,15 @@ export async function runQueue(
 type UseQueueRunnerParams = {
   todos: TodoItem[];
   setTodos: Dispatch<SetStateAction<TodoItem[]>>;
-  generate: (topic: string, userType: string) => Promise<PageDraft | null>;
+  generate: (todo: TodoItem) => Promise<PageDraft | null>;
 };
 
 export function useQueueRunner({ todos, setTodos, generate }: UseQueueRunnerParams) {
   const [running, setRunning] = useState(false);
   const [currentItemId, setCurrentItemId] = useState<number | null>(null);
   const stopRef = useRef(false);
+  const todosRef = useRef(todos);
+  todosRef.current = todos;
 
   const applyUpdate = useCallback((id: number, fields: QueueUpdate) => {
     setCurrentItemId(fields.status === "generating" ? id : null);
@@ -87,10 +89,10 @@ export function useQueueRunner({ todos, setTodos, generate }: UseQueueRunnerPara
     if (running) return;
     stopRef.current = false;
     setRunning(true);
-    await runQueue(todos, generate, applyUpdate, () => stopRef.current);
+    await runQueue(todosRef.current, generate, applyUpdate, () => stopRef.current);
     setRunning(false);
     setCurrentItemId(null);
-  }, [running, todos, generate, applyUpdate]);
+  }, [running, generate, applyUpdate]);
 
   const stop = useCallback(() => {
     stopRef.current = true;

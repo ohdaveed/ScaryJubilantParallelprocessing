@@ -111,6 +111,20 @@ describe("file-backed fallback persistence", () => {
     expect(todo.status).toBe("failed");
     expect(todo.errorMessage).toBe("Model timeout");
   });
+
+  it("creates a todo with plannedId when a planned page exists", async () => {
+    const plan = await request(app)
+      .post("/api/planned-pages")
+      .send({ name: "Todo link target", pageType: "Topic", userType: "Tenant", parentId: null });
+    expect(plan.status).toBe(200);
+    const plannedId = plan.body.id;
+
+    const todoRes = await request(app)
+      .post("/api/todos")
+      .send({ topic: "Queued from plan", userType: "Tenant", plannedId });
+    expect(todoRes.status).toBe(200);
+    expect(todoRes.body.plannedId).toBe(plannedId);
+  });
 });
 
 describe("page version tracking", () => {

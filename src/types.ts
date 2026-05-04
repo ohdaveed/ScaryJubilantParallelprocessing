@@ -156,6 +156,8 @@ export interface TodoItem {
   errorMessage: string | null;
   builtPageId: string | null;
   karlGrade: string | null;
+  /** When set, queue generation links this build to the planned page row. */
+  plannedId: number | null;
 }
 
 export interface UserPreference {

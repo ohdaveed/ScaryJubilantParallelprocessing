@@ -9,6 +9,7 @@ import { usePagesData } from "./hooks/usePagesData";
 import { usePlanMap } from "./hooks/usePlanMap";
 import { useVersionHistory } from "./hooks/useVersionHistory";
 import { usePageGeneration } from "./hooks/usePageGeneration";
+import { useQueueRunner } from "./hooks/useQueueRunner";
 import { MapTab } from "./components/tabs/MapTab";
 import { LibraryTab } from "./components/tabs/LibraryTab";
 import { SfGovContentDesignTool, type ContentDesignTab, type KarlEvaluationView } from "./components/SfGovContentDesignTool";
@@ -167,7 +168,7 @@ function PlanSidebar({ planned, pages, selectedPlanned, onSelectPlanned, onAdd, 
   onSelectPlanned: (p: PlannedPage | null) => void;
   onAdd: (name: string, pageType: string, userType: string, parentId: number | null) => void;
   onDelete: (id: number) => void;
-  onGenerate: (p: PlannedPage) => void;
+  onGenerate: (p: PlannedPage) => void | Promise<void>;
   onViewPage: (pageId: string) => void;
 }) {
   const [adding, setAdding] = useState(false);
@@ -213,7 +214,7 @@ function PlanSidebar({ planned, pages, selectedPlanned, onSelectPlanned, onAdd, 
               <Btn onClick={() => onViewPage(builtPage.id)} variant="primary" size="md" fullWidth>View page &rarr;</Btn>
             </div>
           ) : (
-            <Btn onClick={() => onGenerate(selectedPlanned)} variant="primary" size="md" fullWidth>Generate content &rarr;</Btn>
+            <Btn onClick={() => void onGenerate(selectedPlanned)} variant="primary" size="md" fullWidth>Add to build queue &rarr;</Btn>
           )}
           <Divider variant="plan" />
           <Btn onClick={() => onDelete(selectedPlanned.id)} variant="danger" size="sm">Delete from plan</Btn>
@@ -265,12 +266,20 @@ function PlanSidebar({ planned, pages, selectedPlanned, onSelectPlanned, onAdd, 
   );
 }
 
-function TodoPanel({ onGenerate }: { onGenerate: (topic: string, userType: string) => void }) {
+function TodoPanel({
+  generateForQueue,
+  onOpenPage
+}: {
+  generateForQueue: (todo: TodoItem) => Promise<PageDraft | null>;
+  onOpenPage: (pageId: string) => void;
+}) {
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [newTopic, setNewTopic] = useState("");
   const [newUT, setNewUT] = useState(USER_TYPES[0]);
   const [adding, setAdding] = useState(false);
   const [loadingTodos, setLoadingTodos] = useState(true);
+
+  const { running, start, stop, currentItemId } = useQueueRunner({ todos, setTodos, generate: generateForQueue });
 
   useEffect(() => {
     todosApi.list()
@@ -298,7 +307,25 @@ function TodoPanel({ onGenerate }: { onGenerate: (topic: string, userType: strin
     try { await todosApi.delete(id); } catch {}
   };
 
-  const pending = todos.filter(t => !t.done), done = todos.filter(t => t.done);
+  const retryFailed = async (id: number) => {
+    setTodos(prev =>
+      prev.map(t => (t.id === id ? { ...t, status: "pending", errorMessage: null } : t))
+    );
+    try {
+      await todosApi.updateQueue(id, { status: "pending", errorMessage: null });
+    } catch {}
+  };
+
+  const pending = todos.filter(t => !t.done);
+  const done = todos.filter(t => t.done);
+  const runnablePending = todos.filter(t => t.status === "pending").length;
+
+  const statusLabel = (t: TodoItem) => {
+    if (t.status === "generating") return "Generating";
+    if (t.status === "failed") return "Failed";
+    if (t.status === "done") return "Built";
+    return "Pending";
+  };
 
   return (
     <Card className="app-card-pad--16-18">
@@ -306,6 +333,19 @@ function TodoPanel({ onGenerate }: { onGenerate: (topic: string, userType: strin
         <p className="app-up-label app-up-label--flush">Pages to build</p>
         {pending.length > 0 && <span className="app-pending-badge">{pending.length}</span>}
       </div>
+
+      {!loadingTodos && runnablePending > 0 && (
+        <div className="app-row-gap-6" style={{ marginBottom: 12, flexWrap: "wrap" }}>
+          <Btn onClick={() => void start()} variant="primary" size="sm" disabled={running}>
+            {running ? "Running queue…" : "Run queue"}
+          </Btn>
+          {running && (
+            <Btn onClick={stop} variant="ghost" size="sm">
+              Stop
+            </Btn>
+          )}
+        </div>
+      )}
 
       {loadingTodos && <p className="app-loading-p">Loading…</p>}
 
@@ -322,9 +362,35 @@ function TodoPanel({ onGenerate }: { onGenerate: (topic: string, userType: strin
           <div className="app-todo-body">
             <p className="app-todo-topic">{t.topic}</p>
             <p className="app-todo-ut">{t.userType}</p>
+            <p className="app-todo-ut" style={{ fontSize: 11, marginTop: 4 }}>
+              <span style={{ opacity: 0.85 }}>{statusLabel(t)}</span>
+              {t.plannedId != null && <span style={{ marginLeft: 8, opacity: 0.7 }}>· Planned #{t.plannedId}</span>}
+              {t.karlGrade && t.status === "done" && (
+                <span style={{ marginLeft: 8 }}>· Karl {t.karlGrade}</span>
+              )}
+              {currentItemId === t.id && <span style={{ marginLeft: 8 }}>· In progress</span>}
+            </p>
+            {t.status === "failed" && t.errorMessage && (
+              <p className="app-todo-ut" style={{ color: "var(--color-text-danger, #b42318)", marginTop: 4, fontSize: 12 }}>
+                {t.errorMessage}
+              </p>
+            )}
+            {t.status === "done" && t.builtPageId && (
+              <div style={{ marginTop: 8 }}>
+                <Btn onClick={() => onOpenPage(t.builtPageId!)} variant="ghost" size="sm">
+                  Open page
+                </Btn>
+              </div>
+            )}
+            {t.status === "failed" && (
+              <div style={{ marginTop: 8 }}>
+                <Btn onClick={() => void retryFailed(t.id)} variant="ghost" size="sm">
+                  Retry
+                </Btn>
+              </div>
+            )}
           </div>
           <div className="app-todo-actions">
-            <Btn onClick={() => onGenerate(t.topic, t.userType)} variant="primary" size="sm">Build</Btn>
             <button type="button" className="app-ghost-x" onClick={() => remove(t.id)}>✕</button>
           </div>
         </div>
@@ -335,7 +401,21 @@ function TodoPanel({ onGenerate }: { onGenerate: (topic: string, userType: strin
           <button type="button" className="app-todo-done-check" onClick={() => toggle(t.id, t.done)} aria-label="Unmark">
             <svg width="9" height="9" viewBox="0 0 10 10"><path d="M1.5 5l3 3 4-5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" /></svg>
           </button>
-          <p className="app-todo-done-topic">{t.topic}</p>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p className="app-todo-done-topic">{t.topic}</p>
+            {(t.builtPageId || t.karlGrade) && (
+              <p className="app-todo-ut" style={{ fontSize: 11, marginTop: 2 }}>
+                {t.karlGrade && <span>Karl {t.karlGrade}</span>}
+                {t.builtPageId && (
+                  <span style={{ marginLeft: 4 }}>
+                    <Btn onClick={() => onOpenPage(t.builtPageId!)} variant="ghost" size="sm">
+                      Open
+                    </Btn>
+                  </span>
+                )}
+              </p>
+            )}
+          </div>
           <button type="button" className="app-ghost-x app-ghost-x--tight" onClick={() => remove(t.id)}>✕</button>
         </div>
       ))}
@@ -608,6 +688,28 @@ export default function App() {
     }
   };
   const selectById = (id: string) => { const p = pages.find(x => x.id === id); if (p) { setSelected(p); setShowSuccess(false); setWorkspaceTab("generate"); } };
+
+  const generateForQueue = useCallback(
+    async (todo: TodoItem) => {
+      const planned =
+        todo.plannedId != null ? plannedPages.find((p) => p.id === todo.plannedId) : undefined;
+      return generate({
+        topic: todo.topic,
+        userType: todo.userType,
+        quiet: true,
+        ...(planned ? { pageType: planned.pageType, plannedId: planned.id } : {})
+      });
+    },
+    [generate, plannedPages]
+  );
+
+  const generateFromPlanned = useCallback(async (p: PlannedPage) => {
+    try {
+      await todosApi.create(p.name, p.userType, { plannedId: p.id });
+    } catch (err) {
+      console.error("Failed to enqueue planned page:", err);
+    }
+  }, []);
   const handleCopy = (text: string) => { navigator.clipboard.writeText(text).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); };
   const handleDownload = (text: string, name: string) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "text/plain" })); a.download = name; a.click(); };
 
@@ -659,20 +761,6 @@ export default function App() {
       console.error("Screenshot export failed:", err);
       handleDownload(selected?.draft ?? "", filename.replace(".png", "-draft.txt"));
     }
-  };
-
-  const generateFromPlanned = (p: PlannedPage) => {
-    setTopic(p.name);
-    setUserType(p.userType);
-    setPendingPlannedId(p.id);
-    setPendingPageType(p.pageType);
-    setWorkspaceTab("generate");
-    void generate({
-      topic: p.name,
-      userType: p.userType,
-      pageType: p.pageType,
-      plannedId: p.id
-    });
   };
 
   const filtered = pages.filter(p => { const ms = !search || (clean(p.name) || "").toLowerCase().includes(search.toLowerCase()) || (p.draft || "").toLowerCase().includes(search.toLowerCase()); return ms && (filterType === "All" || clean(p.pageType) === filterType); });
@@ -1092,17 +1180,11 @@ export default function App() {
           deletePlannedPage={deletePlannedPage}
           selectById={selectById}
           generateFromPlanned={generateFromPlanned}
-          onTodoGenerate={(t, u) => {
-            setTopic(t);
-            setUserType(u);
-            setPendingPlannedId(null);
-            setPendingPageType("");
-            setWorkspaceTab("generate");
-            void generate({ topic: t, userType: u });
-          }}
+          generateForQueue={generateForQueue}
           PlanDiagramComponent={PlanDiagram}
           PlanSidebarComponent={PlanSidebar}
           TodoPanelComponent={TodoPanel}
+          onOpenQueuedPage={selectById}
         />
         </div>
           )
