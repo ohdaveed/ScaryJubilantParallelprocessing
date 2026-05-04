@@ -10,10 +10,22 @@
 
 ## Status
 
-**DONE_WITH_CONCERNS**
+**DONE** (findings 001–003 fixed and verified 2026-05-04)
 
 - **Evidence:** Full-page PNGs under `.gstack/design-reports/` (see below). Console clean aside from Vite + React DevTools info.
-- **Blocker for fix loop:** Working tree was **not clean** (`DESIGN.md`, `docs/superpowers/specs/…` modified). Per `/design-review`, **no atomic fix commits** were made. Re-run after **commit or stash** if you want the full fix → verify → commit loop.
+- **Fix loop:** Three atomic commits on `main`: `876f7eb` (FINDING-001), `ca96648` (FINDING-002), `35b7614` (FINDING-003). Browser DevTools: `http://localhost:5001/` — tab/chip/icon/collapse controls measure **44px** height; empty-state title is **`h2.app-builder-empty__title`**.
+
+---
+
+## Fixes applied (follow-up)
+
+| ID | Commit | Change |
+|----|--------|--------|
+| FINDING-001 | `876f7eb` | `SfGovContentDesignTool.css`: tabs `min-height: 44px`, chips `min-height: 44px` + flex centering, `icon-btn` / `icon-btn--preview` / `panel-collapse-btn` **44×44** (mobile override no longer shrinks collapse to 26px). `:focus-visible` on tab, chip, icon-btn. |
+| FINDING-002 | `ca96648` | `ui.css`: `:focus-visible` outline on `.ui-btn`, variant outlines for `--primary` / `--danger`. |
+| FINDING-003 | `35b7614` | `App.tsx`: empty preview main line promoted from `<p>` to `<h2 className="app-builder-empty__title">`. |
+
+**Deferred:** FINDING-004 (10px labels) unchanged — polish tier.
 
 ---
 
@@ -104,7 +116,7 @@ Not run (Codex / subagent parallel block). Optional follow-up: `codex exec` sour
 
 ## PR-style summary
 
-> Design review (quick): **B / AI slop A**. Main gap is **44px touch targets** on chips and header tabs; semantics/focus per existing `DESIGN.md` gaps. **Fixes not committed** — tree was dirty.
+> Design review follow-up: fixed **FINDING-001–003** (44px chrome, `ui-btn` focus-visible, empty-state `h2`). **B→~B+** interaction category; FINDING-004 still open (label polish).
 
 ---
 
@@ -116,5 +128,5 @@ Not run (Codex / subagent parallel block). Optional follow-up: `codex exec` sour
 
 ## Next steps
 
-1. `git stash` or **commit** pending doc edits, then re-invoke `/design-review` for the **fix loop** if you want verified commits per finding.  
+1. Optional: FINDING-004 label contrast / size pass vs `DESIGN.md` §9 F2.  
 2. Optional: add `.gstack/` to `.gitignore` if local audit artifacts should stay out of git.
