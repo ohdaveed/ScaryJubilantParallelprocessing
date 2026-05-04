@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { PageDraft, TodoItem, KarlEvaluation, PlannedPage, UserPreference, ReviewStatus } from "./types";
 import { USER_TYPES, PAGE_TYPES, TYPE_META } from "./constants";
-import { clean, pagesApi, replacePageDraftInRaw, todosApi, preferencesApi } from "./utils";
-import { Badge, Divider, Btn, Card, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar } from "./components/ui";
+import { clean, pagesApi, replacePageDraftInRaw, todosApi, preferencesApi, renderPageAsPNG, renderPageAsPDF, generateZip } from "./utils";
+import { Badge, Divider, Btn, Card, ComponentChips, RelPanel, KarlStatus, KarlEvalPanel, ProgressBar, DeleteConfirmationModal } from "./components/ui";
 import { SfGovPagePreview } from "./components/SfGovPreview";
 import { toPng } from "html-to-image";
 import { usePagesData } from "./hooks/usePagesData";
@@ -410,6 +410,8 @@ export default function App() {
   const [sortNewest, setSortNewest] = useState(true);
   const [copied, setCopied] = useState(false);
   const [selectedPageIds, setSelectedPageIds] = useState<Set<string>>(new Set());
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const [newPref, setNewPref] = useState("");
   const [mockupEditOpen, setMockupEditOpen] = useState(false);
   const [draftEditBuffer, setDraftEditBuffer] = useState("");
@@ -525,10 +527,84 @@ export default function App() {
   const selectAllPages = () => setSelectedPageIds(new Set(filtered.map(p => p.id)));
   const clearPageSelection = () => setSelectedPageIds(new Set());
   const deleteSelectedPages = async () => {
-    const count = selectedPageIds.size;
-    if (!window.confirm(`Delete ${count} page${count !== 1 ? "s" : ""}? This cannot be undone.`)) return;
     for (const id of selectedPageIds) { await deletePage(id); }
     setSelectedPageIds(new Set());
+  };
+  const handleConfirmDelete = async () => {
+    setIsDeleteLoading(true);
+    await deleteSelectedPages();
+    setIsDeleteLoading(false);
+    setShowDeleteModal(false);
+  };
+  const handleDownloadPNG = async () => {
+    const selectedPages = pages.filter(p => p.id && selectedPageIds.has(p.id));
+    const pngFiles: Array<{ blob: Blob; filename: string }> = [];
+    const failedNames: string[] = [];
+
+    for (const page of selectedPages) {
+      try {
+        const elementId = `page-preview-${page.id}`;
+        const result = await renderPageAsPNG(page, elementId);
+        pngFiles.push(result);
+      } catch (err) {
+        console.error(`Failed to render ${page.name} as PNG:`, err);
+        failedNames.push(page.name);
+      }
+    }
+
+    if (pngFiles.length === 0) {
+      console.error("No pages could be rendered as PNG", failedNames);
+      return;
+    }
+
+    try {
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, "-");
+      const zipBlob = await generateZip(pngFiles);
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `pages-export-${timestamp}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      clearPageSelection();
+    } catch (err) {
+      console.error("Failed to create ZIP:", err);
+    }
+  };
+  const handleDownloadPDF = async () => {
+    const selectedPages = pages.filter(p => p.id && selectedPageIds.has(p.id));
+    const pdfFiles: Array<{ blob: Blob; filename: string }> = [];
+    const failedNames: string[] = [];
+
+    for (const page of selectedPages) {
+      try {
+        const elementId = `page-preview-${page.id}`;
+        const result = await renderPageAsPDF(page, elementId);
+        pdfFiles.push(result);
+      } catch (err) {
+        console.error(`Failed to render ${page.name} as PDF:`, err);
+        failedNames.push(page.name);
+      }
+    }
+
+    if (pdfFiles.length === 0) {
+      console.error("No pages could be rendered as PDF", failedNames);
+      return;
+    }
+
+    try {
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, "-");
+      const zipBlob = await generateZip(pdfFiles);
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `pages-export-${timestamp}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      clearPageSelection();
+    } catch (err) {
+      console.error("Failed to create ZIP:", err);
+    }
   };
   const selectById = (id: string) => { const p = pages.find(x => x.id === id); if (p) { setSelected(p); setShowSuccess(false); setWorkspaceTab("generate"); } };
   const handleCopy = (text: string) => { navigator.clipboard.writeText(text).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); };
@@ -992,7 +1068,9 @@ export default function App() {
           selectedPageIds={selectedPageIds}
           selectAllPages={selectAllPages}
           clearPageSelection={clearPageSelection}
-          deleteSelectedPages={deleteSelectedPages}
+          onRequestBulkDelete={() => setShowDeleteModal(true)}
+          onDownloadPNG={() => void handleDownloadPNG()}
+          onDownloadPDF={() => void handleDownloadPDF()}
           onDownloadText={handleDownload}
           onSelectPage={(p) => { setSelected(p); setShowSuccess(false); setWorkspaceTab("generate"); }}
           onTogglePageSelection={togglePageSelection}
@@ -1066,6 +1144,21 @@ export default function App() {
           </div>
         </div>
       )}
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        count={selectedPageIds.size}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setShowDeleteModal(false)}
+        isLoading={isDeleteLoading}
+      />
+      {/* Hidden page previews for bulk PNG/PDF export */}
+      <div style={{ position: "absolute", top: 0, left: 0, width: 800, visibility: "hidden", pointerEvents: "none", zIndex: -1 }}>
+        {pages.filter(p => p.id && selectedPageIds.has(p.id)).map(p => (
+          <div key={p.id} id={`page-preview-${p.id}`}>
+            <SfGovPagePreview draft={p.draft} pageType={p.pageType} pageTitle={clean(p.name)} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

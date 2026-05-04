@@ -1,6 +1,17 @@
-import { describe, expect, it } from "vitest";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import { buildGenerationUserPrompt, PROMPT_CONTRACT_VERSION } from "./constants";
-import { evaluateQualityGate, parsePage, parseStructuredPage, replacePageDraftInRaw, structuredToRawPage } from "./utils";
+import {
+  evaluateQualityGate,
+  formatVersionOrMonth,
+  generateZip,
+  parsePage,
+  parseStructuredPage,
+  replacePageDraftInRaw,
+  renderPageAsPDF,
+  renderPageAsPNG,
+  sanitizeFilename,
+  structuredToRawPage
+} from "./utils";
 import type { PageDraft, StructuredPageOutput } from "./types";
 import goldenPages from "./fixtures/golden-pages.json";
 
@@ -151,3 +162,80 @@ describe("golden fixtures", () => {
   });
 });
 
+describe('formatVersionOrMonth', () => {
+  it('should return version if provided', () => {
+    const page = { version: 'v1.2.3', created_at: '2026-01-15' };
+    expect(formatVersionOrMonth(page as any)).toBe('v1.2.3');
+  });
+  it('should return formatted month if version is empty', () => {
+    const page = { version: '', created_at: '2026-04-17' };
+    expect(formatVersionOrMonth(page as any)).toBe('April 2026');
+  });
+  it('should return formatted month if version is undefined', () => {
+    const page = { version: undefined, created_at: '2026-02-28' };
+    expect(formatVersionOrMonth(page as any)).toBe('February 2026');
+  });
+  it('should fall back to createdAt (camelCase) when created_at is absent', () => {
+    const page = { createdAt: '2026-03-10' };
+    expect(formatVersionOrMonth(page as any)).toBe('March 2026');
+  });
+  it('should return Unknown for missing date', () => {
+    const page = { version: undefined };
+    expect(formatVersionOrMonth(page as any)).toBe('Unknown');
+  });
+});
+
+describe('sanitizeFilename', () => {
+  it('should remove invalid filename characters', () => {
+    expect(sanitizeFilename('Page: "v1"')).toBe('Page v1');
+    expect(sanitizeFilename('File|Name')).toBe('FileName');
+  });
+  it('should preserve valid characters', () => {
+    expect(sanitizeFilename('SF-Housing_Authority.v1')).toBe('SF-Housing_Authority.v1');
+  });
+  it('should collapse multiple spaces', () => {
+    expect(sanitizeFilename('SF  Housing')).toBe('SF Housing');
+  });
+  it('should remove all invalid characters: \\ / * ? < >', () => {
+    expect(sanitizeFilename('a\\b/c*d?e<f>g')).toBe('abcdefg');
+  });
+  it('should trim leading and trailing whitespace', () => {
+    expect(sanitizeFilename('  hello  ')).toBe('hello');
+  });
+});
+
+describe('generateZip', () => {
+  it('should create zip blob with content', async () => {
+    const files = [
+      { blob: new Blob(['content1'], { type: 'image/png' }), filename: 'page1.png' },
+      { blob: new Blob(['content2'], { type: 'image/png' }), filename: 'page2.png' }
+    ];
+    const zipBlob = await generateZip(files);
+    expect(zipBlob).toBeInstanceOf(Blob);
+    expect(zipBlob.size).toBeGreaterThan(0);
+  });
+});
+
+describe('renderPageAsPNG', () => {
+  beforeEach(() => {
+    vi.stubGlobal('document', { getElementById: () => null });
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+  it('should throw if element not found', async () => {
+    await expect(renderPageAsPNG({ name: 'Test', created_at: '2026-01-01' }, 'nonexistent-id-xyz')).rejects.toThrow('Element not found');
+  });
+});
+
+describe('renderPageAsPDF', () => {
+  beforeEach(() => {
+    vi.stubGlobal('document', { getElementById: () => null });
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+  it('should throw if element not found', async () => {
+    await expect(renderPageAsPDF({ name: 'Test', created_at: '2026-01-01' }, 'nonexistent-id-xyz')).rejects.toThrow('Element not found');
+  });
+});

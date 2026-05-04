@@ -19,7 +19,9 @@ type LibraryTabProps = {
   selectedPageIds: Set<string>;
   selectAllPages: () => void;
   clearPageSelection: () => void;
-  deleteSelectedPages: () => Promise<void>;
+  onRequestBulkDelete: () => void;
+  onDownloadPNG: () => void;
+  onDownloadPDF: () => void;
   onDownloadText: (text: string, name: string) => void;
   onSelectPage: (page: PageDraft) => void;
   onTogglePageSelection: (id: string, e: React.MouseEvent) => void;
@@ -43,7 +45,9 @@ export function LibraryTab(props: LibraryTabProps) {
     selectedPageIds,
     selectAllPages,
     clearPageSelection,
-    deleteSelectedPages,
+    onRequestBulkDelete,
+    onDownloadPNG,
+    onDownloadPDF,
     onDownloadText,
     onSelectPage,
     onTogglePageSelection,
@@ -73,8 +77,14 @@ export function LibraryTab(props: LibraryTabProps) {
           <button onClick={selectAllPages} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer", fontSize: 12, padding: 0 }}>Select all ({filteredCount})</button>
           <span style={{ color: "#555" }}>|</span>
           <button onClick={clearPageSelection} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer", fontSize: 12, padding: 0 }}>Clear</button>
-          <div style={{ marginLeft: "auto" }}>
-            <button onClick={deleteSelectedPages} style={{ background: "#e53e3e", color: "white", border: "none", borderRadius: 4, padding: "4px 12px", cursor: "pointer", fontSize: 12 }}>
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+            <button type="button" onClick={onDownloadPNG} style={{ background: "none", border: "1px solid #aaa", color: "#ccc", borderRadius: 4, padding: "4px 12px", cursor: "pointer", fontSize: 12 }}>
+              Download PNG
+            </button>
+            <button type="button" onClick={onDownloadPDF} style={{ background: "none", border: "1px solid #aaa", color: "#ccc", borderRadius: 4, padding: "4px 12px", cursor: "pointer", fontSize: 12 }}>
+              Download PDF
+            </button>
+            <button type="button" onClick={onRequestBulkDelete} style={{ background: "#e53e3e", color: "white", border: "none", borderRadius: 4, padding: "4px 12px", cursor: "pointer", fontSize: 12 }}>
               🗑 Delete ({selectedPageIds.size})
             </button>
           </div>
