@@ -51,8 +51,8 @@ describe("API validation guards", () => {
 
   it("rejects invalid /api/improve-structure payloads", async () => {
     const res = await request(app).post("/api/improve-structure").send({
-      raw: "",
-      preferences: []
+      raw: "Valid raw content",
+      preferences: "bad"
     });
     expect(res.status).toBe(400);
     expect(res.body.error).toBe("Invalid request body for /api/improve-structure");
