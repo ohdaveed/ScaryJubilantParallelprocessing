@@ -1,7 +1,11 @@
 import request from "supertest";
 import { beforeAll, describe, expect, it } from "vitest";
+import packageJson from "../package.json";
 
 let app: any;
+
+expect(packageJson.dependencies?.zod).toBeDefined();
+expect(packageJson.dependencies?.["express-rate-limit"]).toBeDefined();
 
 beforeAll(async () => {
   process.env.NODE_ENV = "test";
