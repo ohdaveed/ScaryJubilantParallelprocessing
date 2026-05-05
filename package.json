@@ -20,6 +20,9 @@
     "ui:audit": "node scripts/ui-audit-playwright.mjs"
   },
   "dependencies": {
+    "@fontsource/dm-serif-display": "^5.2.8",
+    "@fontsource/jetbrains-mono": "^5.2.8",
+    "@fontsource/plus-jakarta-sans": "^5.2.8",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "compression": "^1.8.1",
     "express": "^4.22.1",
