@@ -35,7 +35,7 @@ describe("API validation guards", () => {
 
   it("validates request schemas in process", () => {
     expect(chatRequestSchema.safeParse({
-      model: "claude",
+      model: "  claude  ",
       messages: []
     }).success).toBe(true);
     expect(chatRequestSchema.safeParse({
@@ -48,7 +48,7 @@ describe("API validation guards", () => {
     }).success).toBe(false);
 
     expect(evaluateRequestSchema.safeParse({
-      draft: "Valid draft",
+      draft: "  Valid draft  ",
       pageName: "Page",
       pageType: "Information",
       userType: "General public"
@@ -58,7 +58,7 @@ describe("API validation guards", () => {
     }).success).toBe(false);
 
     expect(improveStructureRequestSchema.safeParse({
-      raw: "Valid raw content",
+      raw: "  Valid raw content  ",
       evaluationFeedback: {}
     }).success).toBe(true);
     expect(improveStructureRequestSchema.safeParse({
@@ -69,6 +69,11 @@ describe("API validation guards", () => {
       raw: "Valid raw content",
       preferences: "bad"
     }).success).toBe(false);
+    expect(chatRequestSchema.safeParse({
+      model: "claude",
+      messages: [],
+      images: [{ foo: "bar" }, null]
+    }).success).toBe(true);
   });
 
   it("parses request bodies in process", () => {
@@ -79,12 +84,23 @@ describe("API validation guards", () => {
 
     const parsed = parseRequestBody(
       chatRequestSchema,
-      { body: { model: "claude", messages: [], extra: "keep me" } },
+      { body: { model: "  claude  ", messages: [], extra: "keep me" } },
       res as any,
       "/api/chat"
     );
 
-    expect(parsed).toEqual({ model: "claude", messages: [], extra: "keep me" });
+    expect(parsed).toEqual({ model: "  claude  ", messages: [], extra: "keep me" });
+    expect(res.status).not.toHaveBeenCalled();
+    expect(res.json).not.toHaveBeenCalled();
+
+    const evaluateParsed = parseRequestBody(
+      evaluateRequestSchema,
+      { body: { draft: "  Valid draft  ", extra: "keep me too" } },
+      res as any,
+      "/api/evaluate"
+    );
+
+    expect(evaluateParsed).toEqual({ draft: "  Valid draft  ", extra: "keep me too" });
     expect(res.status).not.toHaveBeenCalled();
     expect(res.json).not.toHaveBeenCalled();
 
