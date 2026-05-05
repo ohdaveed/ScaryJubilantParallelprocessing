@@ -1,4 +1,4 @@
-import { parsePage, parseStructuredPage } from "../utils";
+import { parsePage, parseStructuredPage } from "../utils/parsing";
 
 type ChatTextChunk = { type?: string; text?: string };
 

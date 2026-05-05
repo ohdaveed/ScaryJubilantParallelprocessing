@@ -2,7 +2,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { usePageGeneration } from './usePageGeneration';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { fetchKarlRemediation, improveStructure, parsePage, runKarlEvaluation } from '../utils';
+import { fetchKarlRemediation, improveStructure, pagesApi, preferencesApi, runKarlEvaluation, versionsApi, evaluateQualityGate } from '../utils/api';
+import { isPest } from '../utils/core';
+import { parsePage } from '../utils/parsing';
 import { validateGeneratedPage } from '../generationValidation';
 import { streamModelText } from '../services/chatStream';
 
@@ -18,8 +20,12 @@ vi.mock('../services/pageParser', () => ({
   })
 }));
 
-vi.mock('../utils', () => ({
+vi.mock('../utils/core', () => ({
   isPest: vi.fn().mockReturnValue(false),
+  clean: vi.fn((value: string) => value)
+}));
+
+vi.mock('../utils/api', () => ({
   pagesApi: { save: vi.fn().mockResolvedValue(undefined) },
   preferencesApi: { create: vi.fn().mockResolvedValue(undefined) },
   versionsApi: { list: vi.fn().mockResolvedValue([]) },
@@ -30,7 +36,10 @@ vi.mock('../utils', () => ({
   }),
   improveStructure: vi.fn().mockResolvedValue(null),
   runKarlEvaluation: vi.fn().mockResolvedValue({ grade: 'A' }),
-  evaluateQualityGate: vi.fn().mockReturnValue({ status: 'pass', reasons: ['Meets automatic quality gate.'] }),
+  evaluateQualityGate: vi.fn().mockReturnValue({ status: 'pass', reasons: ['Meets automatic quality gate.'] })
+}));
+
+vi.mock('../utils/parsing', () => ({
   parsePage: vi.fn().mockReturnValue({ valid: true })
 }));
 
@@ -74,7 +83,7 @@ describe('usePageGeneration', () => {
   it('should generate a page successfully', async () => {
     const { result } = renderHook(() => usePageGeneration(defaultParams));
 
-    let page;
+    let page: any;
     await act(async () => {
       // Set topic via actions first
       result.current.actions.setTopic('Test Topic');
@@ -139,7 +148,7 @@ describe('usePageGeneration', () => {
 
     const { result } = renderHook(() => usePageGeneration(defaultParams));
 
-    let page;
+    let page: any;
     await act(async () => {
       result.current.actions.setTopic('Test Topic');
     });
@@ -234,7 +243,7 @@ describe('usePageGeneration', () => {
         grade: 'D'
       })
     });
-    expect(fetchKarlRemediation.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(vi.mocked(fetchKarlRemediation).mock.invocationCallOrder[0]).toBeLessThan(
       vi.mocked(improveStructure).mock.invocationCallOrder[1]
     );
     expect(vi.mocked(improveStructure)).toHaveBeenLastCalledWith(
@@ -321,11 +330,17 @@ describe('usePageGeneration', () => {
       expect(result.current.progressLabel).toBe('Consulting Karl...');
     });
 
-    resolveKarlRemediation?.({
-      consulted: true,
-      guidance: ['Use a Transaction page with What to do and Related sections.'],
-      error: null
-    });
+    if (resolveKarlRemediation) {
+      (resolveKarlRemediation as (value: {
+        consulted: boolean;
+        guidance: string[];
+        error: null;
+      }) => void)({
+        consulted: true,
+        guidance: ['Use a Transaction page with What to do and Related sections.'],
+        error: null
+      });
+    }
 
     await act(async () => {
       await generationPromise;

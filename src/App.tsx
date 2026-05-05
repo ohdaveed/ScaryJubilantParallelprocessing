@@ -1,9 +1,11 @@
-import React, { Suspense, lazy, useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { Suspense, lazy, memo, useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { PageDraft, TodoItem, PlannedPage, UserPreference, ReviewStatus, VerificationState } from "./types";
 import { USER_TYPES, PAGE_TYPES, TYPE_META } from "./constants";
-import { clean, pagesApi, replacePageDraftInRaw, todosApi, preferencesApi, renderPageAsPNG, renderPageAsPDF, generateZip, findOverlappingPageIds, getVerificationState, VERIFICATION_FILTERS } from "./utils";
+import { clean, findOverlappingPageIds, getVerificationState, VERIFICATION_FILTERS } from "./utils/core";
+import { pagesApi, preferencesApi, todosApi } from "./utils/api";
+import { replacePageDraftInRaw } from "./utils/parsing";
+import { generateZip, renderPageAsPNG, renderPageAsPDF } from "./utils/export";
 import { Badge, Divider, Btn, Card, ComponentChips, RelPanel, KarlEvalPanel, ProgressBar, DeleteConfirmationModal } from "./components/ui";
-import { SfGovPagePreview } from "./components/SfGovPreview";
 import { usePagesData } from "./hooks/usePagesData";
 import { usePlanMap } from "./hooks/usePlanMap";
 import { useVersionHistory } from "./hooks/useVersionHistory";
@@ -15,9 +17,10 @@ import "./App.css";
 
 const LazyMapTab = lazy(() => import("./components/tabs/MapTab").then((m) => ({ default: m.MapTab })));
 const LazyLibraryTab = lazy(() => import("./components/tabs/LibraryTab").then((m) => ({ default: m.LibraryTab })));
+const LazySfGovPagePreview = lazy(() => import("./components/SfGovPreview").then((m) => ({ default: m.SfGovPagePreview })));
 
 
-function StreamRenderer({ text }: { text: string }) {
+const StreamRenderer = memo(function StreamRenderer({ text }: { text: string }) {
   return (
     <div className="streamRenderer">
       {text.split("\n").map((line, i) => {
@@ -40,9 +43,9 @@ function StreamRenderer({ text }: { text: string }) {
       <span className="streamRenderer__cursor" aria-hidden="true" />
     </div>
   );
-}
+});
 
-function EvaluatingState() {
+const EvaluatingState = memo(function EvaluatingState() {
   return (
     <div className="app-evaluating">
       <div className="app-evaluating__icon-wrap">
@@ -56,9 +59,9 @@ function EvaluatingState() {
       </div>
     </div>
   );
-}
+});
 
-function SuccessState({ page, onView }: { page: PageDraft; onView: () => void }) {
+const SuccessState = memo(function SuccessState({ page, onView }: { page: PageDraft; onView: () => void }) {
   const ev = page.karlEvaluation;
   const grade = ev?.grade || "—";
 
@@ -100,10 +103,10 @@ function SuccessState({ page, onView }: { page: PageDraft; onView: () => void })
       <Btn onClick={onView} variant="primary" size="md">View full page →</Btn>
     </div>
   );
-}
+});
 
 
-function PlanDiagram({ planned, pages, onSelectPlanned }: { planned: PlannedPage[]; pages: PageDraft[]; onSelectPlanned: (p: PlannedPage) => void }) {
+const PlanDiagram = memo(function PlanDiagram({ planned, pages, onSelectPlanned }: { planned: PlannedPage[]; pages: PageDraft[]; onSelectPlanned: (p: PlannedPage) => void }) {
   const W = 680, H = 400;
   if (!planned.length) return (
     <div className="app-plan-empty">
@@ -199,9 +202,9 @@ function PlanDiagram({ planned, pages, onSelectPlanned }: { planned: PlannedPage
       <text x={W / 2} y={H - 10} textAnchor="middle" fontSize="11" fill="#9A958A" fontWeight="500">{planned.length} planned · {nodes.filter(n => n.built).length} built · click a node to manage</text>
     </svg>
   );
-}
+});
 
-function PlanSidebar({ planned, pages, selectedPlanned, onSelectPlanned, onAdd, onDelete, onGenerate, onViewPage }: {
+const PlanSidebar = memo(function PlanSidebar({ planned, pages, selectedPlanned, onSelectPlanned, onAdd, onDelete, onGenerate, onViewPage }: {
   planned: PlannedPage[];
   pages: PageDraft[];
   selectedPlanned: PlannedPage | null;
@@ -304,9 +307,9 @@ function PlanSidebar({ planned, pages, selectedPlanned, onSelectPlanned, onAdd, 
       )}
     </Card>
   );
-}
+});
 
-function TodoPanel({
+const TodoPanel = memo(function TodoPanel({
   generateForQueue,
   onOpenPage
 }: {
@@ -478,7 +481,7 @@ function TodoPanel({
       )}
     </Card>
   );
-}
+});
 
 type WorkspaceTab = "plan" | "generate" | "library" | "ideal";
 
@@ -523,6 +526,7 @@ export default function App() {
   const [draftEditSaving, setDraftEditSaving] = useState(false);
   const [draftEditError, setDraftEditError] = useState("");
   const screenshotRef = useRef<HTMLDivElement>(null);
+  const pageTypeOptions = useMemo(() => studioPageTypes(), []);
 
   const { pages, setPages, pagesLoading, hydratePage, deletePage: deleteStoredPage } = usePagesData();
   const {
@@ -866,19 +870,19 @@ export default function App() {
   const previewSummaryLine = useMemo(() => {
     const max = 72;
     if (selected) {
-      const pt = clean(selected.pageType) || pendingPageType || studioPageTypes()[0] || "Transaction";
+      const pt = clean(selected.pageType) || pendingPageType || pageTypeOptions[0] || "Transaction";
       const name = clean(selected.name) || "Untitled";
       const display = name.length > max ? `${name.slice(0, max)}…` : name;
       const ev = selected.karlEvaluation;
       if (ev) return `${pt} · ${display} · Grade ${ev.grade} · ${ev.score}/100`;
       return `${pt} · ${display}`;
     }
-    const pt = pendingPageType || studioPageTypes()[0] || "Transaction";
+    const pt = pendingPageType || pageTypeOptions[0] || "Transaction";
     const goal = topic.trim();
     if (!goal) return `${pt} · Add a page goal in the left panel`;
     const trunc = goal.length > max ? `${goal.slice(0, max)}…` : goal;
     return `${pt} · ${trunc}`;
-  }, [selected, pendingPageType, topic]);
+  }, [selected, pendingPageType, topic, pageTypeOptions]);
 
   const libraryRows = useMemo(
     () =>
@@ -898,6 +902,32 @@ export default function App() {
     if (next === "ideal") setMapMode("view");
   }, [setMapMode]);
 
+  const handleBrowseLibraryClick = useCallback(() => {
+    setWorkspaceTab("library");
+  }, []);
+
+  const handleExportClick = useCallback(() => {
+    if (selected) void handleExportScreenshot(selected.name);
+  }, [selected, handleExportScreenshot]);
+
+  const handlePageTypeChange = useCallback((pt: string) => {
+    setPendingPageType(pt);
+    setPendingPlannedId(null);
+  }, []);
+
+  const handlePageGoalChange = useCallback((v: string) => {
+    setTopic(v);
+    setTopicTouched(true);
+  }, [setTopic, setTopicTouched]);
+
+  const handleGenerateClick = useCallback(() => {
+    void generate({ pageType: pendingPageType || pageTypeOptions[0] });
+  }, [generate, pendingPageType, pageTypeOptions]);
+
+  const handleOpenPage = useCallback((pageId: string) => {
+    void openPageById(pageId);
+  }, [openPageById]);
+
   const showGenerateContextRail = topicError || !!pendingPageType || !!selected;
 
   return (
@@ -916,29 +946,21 @@ export default function App() {
         tabs={WORKSPACE_TABS}
         activeTabId={workspaceTab}
         onTabChange={handleWorkspaceTab}
-        onBrowseLibraryClick={() => setWorkspaceTab("library")}
+        onBrowseLibraryClick={handleBrowseLibraryClick}
         headerExportDisabled={!selected}
         showPreviewExportButton={!!selected}
-        onExportClick={() => {
-          if (selected) void handleExportScreenshot(selected.name);
-        }}
+        onExportClick={handleExportClick}
         userType={userType}
         onUserTypeChange={setUserType}
         userTypeOptions={USER_TYPES}
-        pageTypeOptions={studioPageTypes()}
-        activePageType={pendingPageType || studioPageTypes()[0] || "Transaction"}
-        onPageTypeChange={(pt) => {
-          setPendingPageType(pt);
-          setPendingPlannedId(null);
-        }}
+        pageTypeOptions={pageTypeOptions}
+        activePageType={pendingPageType || pageTypeOptions[0] || "Transaction"}
+        onPageTypeChange={handlePageTypeChange}
         pageGoal={topic}
-        onPageGoalChange={(v) => {
-          setTopic(v);
-          setTopicTouched(true);
-        }}
+        onPageGoalChange={handlePageGoalChange}
         additionalContext={notes}
         onAdditionalContextChange={setNotes}
-        onGenerateClick={() => void generate({ pageType: pendingPageType || studioPageTypes()[0] })}
+        onGenerateClick={handleGenerateClick}
         generateLabel={
           loading ? (streaming ? "Generating…" : evaluating ? "Evaluating…" : "Working…") : "Generate page"
         }
@@ -1145,7 +1167,9 @@ export default function App() {
                       />
                     </div>
                   )}
-                  <SfGovPagePreview ref={screenshotRef} draft={mockupEditOpen ? draftEditBuffer : selected.draft} pageType={selected.pageType} pageTitle={clean(selected.name)} />
+                  <Suspense fallback={<div className="app-preview-loading">Loading preview…</div>}>
+                    <LazySfGovPagePreview ref={screenshotRef} draft={mockupEditOpen ? draftEditBuffer : selected.draft} pageType={selected.pageType} pageTitle={clean(selected.name)} />
+                  </Suspense>
                 </div>
 
                 {/* Enforcement & integration notes */}
@@ -1225,7 +1249,7 @@ export default function App() {
                           variant="primary"
                           size="md"
                           disabled={loading || topicError}
-                          onClick={() => void generate({ pageType: pendingPageType || studioPageTypes()[0] })}
+                          onClick={() => void generate({ pageType: pendingPageType || pageTypeOptions[0] })}
                         >
                           {loading ? "Working…" : "Generate draft"}
                         </Btn>
@@ -1381,7 +1405,9 @@ export default function App() {
       <div style={{ position: "absolute", top: 0, left: 0, width: 800, visibility: "hidden", pointerEvents: "none", zIndex: -1 }}>
         {pages.filter(p => p.id && selectedPageIds.has(p.id)).map(p => (
           <div key={p.id} id={`page-preview-${p.id}`}>
-            <SfGovPagePreview draft={p.draft} pageType={p.pageType} pageTitle={clean(p.name)} />
+            <Suspense fallback={null}>
+              <LazySfGovPagePreview draft={p.draft} pageType={p.pageType} pageTitle={clean(p.name)} />
+            </Suspense>
           </div>
         ))}
       </div>

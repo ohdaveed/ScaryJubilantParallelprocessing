@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { repairAndParseStructured } from "./pageParser";
-import * as utils from "../utils";
+import * as parsing from "../utils/parsing";
+import type { ParseErrorDetail } from "../types";
 
-vi.mock("../utils");
 global.fetch = vi.fn();
 
 describe("repairAndParseStructured", () => {
@@ -50,7 +50,7 @@ describe("repairAndParseStructured", () => {
   });
 
   it("should attempt repair when parse fails", async () => {
-    const parseError = { code: "invalid_json", message: "Invalid JSON" };
+    const parseError: ParseErrorDetail = { code: "invalid_json", message: "Invalid JSON" };
 
     vi.spyOn(utils, "parseStructuredPage")
       .mockReturnValueOnce({
@@ -90,7 +90,7 @@ describe("repairAndParseStructured", () => {
   });
 
   it("should send repair prompt with original invalid response", async () => {
-    const parseError = { code: "schema_invalid", message: "Schema mismatch" };
+    const parseError: ParseErrorDetail = { code: "schema_invalid", message: "Schema mismatch" };
 
     vi.spyOn(utils, "parseStructuredPage")
       .mockReturnValueOnce({
@@ -134,7 +134,7 @@ describe("repairAndParseStructured", () => {
   });
 
   it("should handle repair API errors gracefully", async () => {
-    const parseError = { code: "invalid_json", message: "Invalid JSON" };
+    const parseError: ParseErrorDetail = { code: "invalid_json", message: "Invalid JSON" };
 
     vi.spyOn(utils, "parseStructuredPage")
       .mockReturnValueOnce({
@@ -171,7 +171,7 @@ describe("repairAndParseStructured", () => {
   });
 
   it("should extract text_delta from repair response content blocks", async () => {
-    const parseError = { code: "invalid_json", message: "Invalid" };
+    const parseError: ParseErrorDetail = { code: "invalid_json", message: "Invalid" };
     const repairedText = mockStructuredOutput.rawText;
 
     vi.spyOn(utils, "parseStructuredPage")
@@ -210,7 +210,7 @@ describe("repairAndParseStructured", () => {
   });
 
   it("should use fallback rawText when parsed is null", async () => {
-    const parseError = { code: "invalid_json", message: "Invalid" };
+    const parseError: ParseErrorDetail = { code: "invalid_json", message: "Invalid" };
     const fallbackRawText = "fallback content";
 
     vi.spyOn(utils, "parseStructuredPage")
@@ -248,7 +248,7 @@ describe("repairAndParseStructured", () => {
   });
 
   it("should include model and max_tokens in repair request", async () => {
-    const parseError = { code: "invalid_json", message: "Invalid" };
+    const parseError: ParseErrorDetail = { code: "invalid_json", message: "Invalid" };
 
     vi.spyOn(utils, "parseStructuredPage")
       .mockReturnValueOnce({

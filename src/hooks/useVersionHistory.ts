@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { PageDraft, PageVersion } from "../types";
-import { versionsApi } from "../utils";
+import { versionsApi } from "../utils/api";
 
 export function useVersionHistory() {
   const [historyPageId, setHistoryPageId] = useState<string | null>(null);

@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef } from "react";
 import { PageDraft } from "../types";
-import { clean } from "../utils";
+import { clean } from "../utils/core";
 import { TYPE_META } from "../constants";
 
 type Hub =

@@ -14,7 +14,22 @@ This document is the **design source of truth** for the React/Vite app in `src/`
 | **Classifier** | **App UI** (task-focused workspace: generate, library, map, preview) — not a marketing landing page |
 | **Jobs-to-be-done** | Configure audience + page type → generate draft → preview “SF.gov-shaped” output → iterate with Karl checks |
 
-**Design intent:** Calm, government-credible surfaces; dense but readable controls; preview area that reads as **paper / browser frame**, not a generic card grid.
+**Design intent:** Calm, government-credible surfaces; dense but readable controls; preview area that reads as **paper / browser frame**, not a generic card grid. The preview should feel **Karl-template-centric**: the page anatomy itself should make the content model obvious, especially for Topic hubs, Transaction pages, and supporting Information pages.
+
+**Memorable thing to protect:** make it feel easy to produce content without hiding the structure that Karl requires.
+
+### Approved Karl content map used by the preview
+
+The preview should be grounded in the page families the HHVC team actually publishes:
+
+- **Root Topic / landing page:** `Get help with pests and housing problems`
+- **Action hub:** `Report a pest or housing problem`
+- **Follow-up hub:** `Fix a housing or pest problem`
+- **Prevention hub:** `Prevent pests and keep your home healthy`
+- **Services hub:** `Learn about programs and services`
+- **Tools hub:** `Find tools, fees, and help`
+
+Transaction pages in the preview should lean on Karl’s action-first anatomy: **Title**, **Description**, **What to know**, **What to do**, **Related pages**, and **Supporting information**. Information pages should show the **Part of** relationship back to the relevant Transaction page.
 
 ---
 
@@ -31,6 +46,8 @@ Used when `#root` is the standard centered layout (`max-width: 1100px`, padded).
 Full-bleed immersive shell when `.app-root-sf-studio` is mounted (`#root` expands to full viewport). **Typography:** **Segoe UI** (`--font-body`) for UI chrome; **Iowan Old Style** (`--font-display`) for editorial/display moments. **Background:** Deep slate gradient (`#05253d` → `#002b48`) with subtle grid overlay and soft blue radial accent — reads as a **studio**, not a generic SaaS purple gradient.
 
 **Rule for contributors:** When editing studio chrome, only use tokens under `.sf-cdt`. When editing shared primitives (`ui.css`), use `:root` variables unless a component is explicitly scoped to the studio.
+
+**Karl alignment note:** when this studio renders page previews, the right answer is not a generic dashboard widget. Use the studio to expose Karl page structure, especially the relationship between a Topic hub and its child Transaction / Information pages.
 
 ---
 
@@ -180,6 +197,16 @@ Global (`index.css`): `spin`, `blink`, `fadeUp`, `pulse`. Studio (`SfGovContentD
 - Prefer **token edits** over one-off hex in components.
 - New surfaces: decide **global vs `.sf-cdt`** before adding variables.
 - User-visible SF.gov **page copy** remains subject to **Karl / SF.gov editorial** standards (see `AGENTS.md`); this file covers **tool chrome** only.
+
+## 12. Karl-template preview guidance
+
+- Topic hubs should read like navigation and grouping surfaces, not content dumps.
+- Transaction previews should show the action path first, then the supporting details below.
+- Related pages belong in the right rail on Transaction pages.
+- Supporting information should sit below the main flow and feel secondary, not hidden.
+- Information pages should visibly point back to exactly one Transaction page via **Part of**.
+
+These rules exist so the preview teaches the content model while still feeling like a real SF.gov authoring surface.
 
 ---
 

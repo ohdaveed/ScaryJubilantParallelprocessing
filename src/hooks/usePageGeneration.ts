@@ -1,7 +1,9 @@
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from "react";
 import { PageDraft, PlannedPage, UserPreference } from "../types";
 import { SYSTEM_PROMPT, STRUCTURED_OUTPUT_RULES, buildGenerationUserPrompt, buildRefineUserPrompt, USER_TYPES } from "../constants";
-import { clean, evaluateQualityGate, fetchKarlRemediation, improveStructure, isPest, pagesApi, parsePage, preferencesApi, runKarlEvaluation, versionsApi } from "../utils";
+import { clean, isPest } from "../utils/core";
+import { evaluateQualityGate, fetchKarlRemediation, improveStructure, pagesApi, preferencesApi, runKarlEvaluation, versionsApi } from "../utils/api";
+import { parsePage } from "../utils/parsing";
 import { streamModelText as streamModelTextService } from "../services/chatStream";
 import { repairAndParseStructured as repairAndParseStructuredService } from "../services/pageParser";
 import { GenerationInputSnapshot } from "../state/appTypes";

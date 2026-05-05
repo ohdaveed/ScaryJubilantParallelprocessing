@@ -1,5 +1,6 @@
 import React from "react";
-import { clean, parseDraftSections } from "../utils";
+import { clean } from "../utils/core";
+import { parseDraftSections } from "../utils/parsing";
 import { TYPE_META } from "../constants";
 
 const SF = {
@@ -776,7 +777,7 @@ export const SfGovPagePreview = React.forwardRef<HTMLDivElement, { draft: string
                 <h2 style={{
                   fontFamily: SF.fontDisplay, fontSize: "clamp(1.45rem, 3vw, 1.65rem)", fontWeight: 700,
                   color: SF.slate4, margin: "0 0 6px", letterSpacing: "-0.02em",
-                }} title={karlTooltip(sec.title)}>{sec.title}</h2>
+                }} title={karlTooltip(sec.title || "")}>{sec.title}</h2>
                 <div style={{ width: 48, height: 4, background: `linear-gradient(90deg, ${SF.blue}, #2D8B84)`, borderRadius: 4, marginBottom: 18 }} />
                 {hasContent && renderSfGovLines(sec.lines, sec.title)}
               </div>

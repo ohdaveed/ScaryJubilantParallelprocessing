@@ -199,7 +199,7 @@ describe("page version tracking", () => {
   it("includes currentVersionNumber on list when versions exist", async () => {
     const list = await request(app).get("/api/pages");
     expect(list.status).toBe(200);
-    const cap = list.body.pages.find((p) => p.id === "cap-test-page");
+    const cap = list.body.pages.find((p: { id: string; currentVersionNumber?: number }) => p.id === "cap-test-page");
     expect(cap?.currentVersionNumber).toBe(PAGE_VERSION_RETENTION + 1);
   });
 });

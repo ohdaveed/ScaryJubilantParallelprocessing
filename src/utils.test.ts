@@ -152,7 +152,7 @@ describe("verification state helpers", () => {
     const reviewRequired = getVerificationState({
       qualityGate: { status: "review_required", reasons: ["low score"] }
     } as PageDraft);
-    const verified = getVerificationState({
+    const verified = getVerificationState(({
       karlEvaluation: {
         score: 90,
         grade: "A",
@@ -161,7 +161,7 @@ describe("verification state helpers", () => {
         warnings: [],
         failed: []
       }
-    } as PageDraft);
+    } as unknown) as PageDraft);
     const notChecked = getVerificationState({} as PageDraft);
     expect(reviewRequired).toBe("review_required");
     expect(verified).toBe("verified");

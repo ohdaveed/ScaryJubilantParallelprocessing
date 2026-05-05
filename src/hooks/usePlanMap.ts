@@ -1,7 +1,7 @@
 import { Dispatch, SetStateAction, useCallback, useEffect, useState } from "react";
 import { PageDraft, PlannedPage } from "../types";
 import { SITEMAP_SKELETON } from "../constants";
-import { pagesApi, plannedPagesApi, skeletonToPageDraft } from "../utils";
+import { pagesApi, plannedPagesApi, skeletonToPageDraft } from "../utils/api";
 
 export function usePlanMap(setPages: Dispatch<SetStateAction<PageDraft[]>>) {
   const [plannedPages, setPlannedPages] = useState<PlannedPage[]>([]);
@@ -13,7 +13,8 @@ export function usePlanMap(setPages: Dispatch<SetStateAction<PageDraft[]>>) {
   const [seeding, setSeeding] = useState(false);
 
   useEffect(() => {
-    plannedPagesApi.list()
+    plannedPagesApi
+      .list()
       .then(async (existing) => {
         if (existing.length > 0) {
           setPlannedPages(existing);
@@ -22,30 +23,30 @@ export function usePlanMap(setPages: Dispatch<SetStateAction<PageDraft[]>>) {
 
         setSeeding(true);
         try {
-          const hubRoots: Record<string, number> = {};
           const rootTemplates = SITEMAP_SKELETON.filter((t) => !t.parentName);
-          for (const tmpl of rootTemplates) {
-            const created = await plannedPagesApi.create(tmpl.name, tmpl.pageType, tmpl.userType, null);
-            hubRoots[tmpl.name] = created.id;
-          }
+          const createdRoots = await Promise.all(
+            rootTemplates.map(async (tmpl) => ({
+              tmpl,
+              created: await plannedPagesApi.create(tmpl.name, tmpl.pageType, tmpl.userType, null)
+            }))
+          );
+          const hubRoots = Object.fromEntries(createdRoots.map(({ tmpl, created }) => [tmpl.name, created.id]));
 
           const childTemplates = SITEMAP_SKELETON.filter((t) => t.parentName);
-          for (const tmpl of childTemplates) {
-            const parentId = hubRoots[tmpl.parentName!] || null;
-            await plannedPagesApi.create(tmpl.name, tmpl.pageType, tmpl.userType, parentId);
-          }
+          const createdChildren = await Promise.all(
+            childTemplates.map((tmpl) => {
+              const parentId = hubRoots[tmpl.parentName!] || null;
+              return plannedPagesApi.create(tmpl.name, tmpl.pageType, tmpl.userType, parentId);
+            })
+          );
 
-          const seeded = await plannedPagesApi.list();
+          const seeded = [...createdRoots.map(({ created }) => created), ...createdChildren];
           setPlannedPages(seeded);
 
           const skeletons = SITEMAP_SKELETON.map((tmpl) => skeletonToPageDraft(tmpl));
-          for (const skel of skeletons) {
-            try {
-              await pagesApi.save(skel.id, skel, { notes: "Site map skeleton", trigger: "generate" });
-            } catch {
-              // Keep seeding best-effort for existing items.
-            }
-          }
+          await Promise.allSettled(
+            skeletons.map((skel) => pagesApi.save(skel.id, skel, { notes: "Site map skeleton", trigger: "generate" }))
+          );
 
           setPages((prev) => {
             const existingIds = new Set(prev.map((p) => p.id));
@@ -53,16 +54,13 @@ export function usePlanMap(setPages: Dispatch<SetStateAction<PageDraft[]>>) {
             return [...prev, ...newSkels];
           });
 
-          for (const pp of seeded) {
-            const matchingSkel = skeletons.find((s) => s.inputs.topic === pp.name);
-            if (matchingSkel) {
-              try {
-                await plannedPagesApi.update(pp.id, { builtPageId: matchingSkel.id });
-              } catch {
-                // Continue linking remaining pages.
-              }
-            }
-          }
+          await Promise.allSettled(
+            seeded.map((pp) => {
+              const matchingSkel = skeletons.find((s) => s.inputs.topic === pp.name);
+              if (!matchingSkel) return Promise.resolve();
+              return plannedPagesApi.update(pp.id, { builtPageId: matchingSkel.id });
+            })
+          );
 
           const finalPlanned = await plannedPagesApi.list();
           setPlannedPages(finalPlanned);

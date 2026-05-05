@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "./ui.css";
 import { LEGACY_PAGE_TYPES, MILESTONE_DOTS } from "../constants";
-import { clean, parseRel } from "../utils";
+import { clean, parseRel } from "../utils/core";
 import { KarlEvaluation } from "../types";
 
 export const Badge: React.FC<{ type: string; small?: boolean }> = ({ type, small }) => {

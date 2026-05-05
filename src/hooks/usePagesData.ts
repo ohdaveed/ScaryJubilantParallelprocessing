@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { PageDraft, TodoItem } from "../types";
-import { lsLegacy, pagesApi, todosApi } from "../utils";
+import { lsLegacy } from "../utils/core";
+import { pagesApi, todosApi } from "../utils/api";
 
 export function usePagesData() {
   const [pages, setPages] = useState<PageDraft[]>([]);
@@ -11,36 +12,41 @@ export function usePagesData() {
         const dbPages = await pagesApi.list();
 
         const lsPageKeys = lsLegacy.listPageKeys();
-        const migrated: PageDraft[] = [];
-        for (const k of lsPageKeys) {
+        const migratedResults = await Promise.all(lsPageKeys.map(async (k) => {
           try {
             const val = lsLegacy.getPage(k);
-            if (val) {
-              const p = JSON.parse(val) as PageDraft;
-              const newId = p.id.startsWith("hhvc:") ? `page_${p.id.slice(5)}` : p.id;
-              const updated = { ...p, id: newId };
-              await pagesApi.save(newId, updated);
-              migrated.push(updated);
-              lsLegacy.removePage(k);
-            }
+            if (!val) return null;
+            const p = JSON.parse(val) as PageDraft;
+            const newId = p.id.startsWith("hhvc:") ? `page_${p.id.slice(5)}` : p.id;
+            const updated = { ...p, id: newId };
+            await pagesApi.save(newId, updated);
+            lsLegacy.removePage(k);
+            return updated;
           } catch {
             // Ignore malformed legacy records and continue migration.
+            return null;
           }
-        }
+        }));
+        const migrated: PageDraft[] = migratedResults.filter((page): page is PageDraft => page != null);
 
         const lsTodosRaw = lsLegacy.getTodos();
         if (lsTodosRaw) {
           try {
             const lsTodos = JSON.parse(lsTodosRaw) as TodoItem[];
-            let allOk = true;
-            for (const t of lsTodos) {
+            const todoResults = await Promise.all(lsTodos.map(async (t) => {
               try {
                 await todosApi.create(t.topic, t.userType, t.plannedId != null ? { plannedId: t.plannedId } : undefined);
+                return { ok: true as const };
               } catch {
-                allOk = false;
+                return { ok: false as const };
               }
+            }));
+            const failedTodos = lsTodos.filter((_, index) => !todoResults[index].ok);
+            if (failedTodos.length === 0) {
+              lsLegacy.removeTodos();
+            } else {
+              localStorage.setItem("hhvc:todos", JSON.stringify(failedTodos));
             }
-            if (allOk) lsLegacy.removeTodos();
           } catch {
             // Ignore malformed legacy todo payload.
           }
