@@ -1,7 +1,8 @@
 :root {
-  /* Rubik is loaded in index.html; reads clearer at UI sizes than ultra-light system UI. */
-  --font-sans: "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  /* UI sans: Plus Jakarta Sans — warm geometric, excellent at 12–14px */
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* Mono: JetBrains Mono — designed for readability at small sizes */
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 
   --color-text-primary: #1A1916;
   --color-text-secondary: #5F5E5A;
@@ -28,8 +29,31 @@
   --border-radius-md: 6px;
   --border-radius-lg: 10px;
 
-  /* DESIGN.md §9 F2: uppercase micro-labels — 11px + ≥4.5:1 on light surfaces */
-  --font-size-micro-label: 11px;
+  /* ── Type scale ─────────────────────────────────────────────────────── */
+  --text-xs:      11px;   /* micro-labels, uppercase section labels, pill badges */
+  --text-sm:      12px;   /* field labels, secondary metadata, Karl check items */
+  --text-base:    13px;   /* body text, inputs, buttons sm/md, chip text */
+  --text-md:      14px;   /* primary body, large buttons, tab labels */
+  --text-lg:      16px;   /* sub-headings, panel section titles */
+  --text-xl:      18px;   /* brand subtitle, display moments in preview */
+  --text-display: 22px;   /* brand title in topbar */
+
+  /* Line heights */
+  --leading-tight: 1.3;   /* headings, compact labels */
+  --leading-base:  1.5;   /* body text, inputs */
+  --leading-loose: 1.7;   /* mono/log output, stream renderer */
+
+  /* Backward-compat alias — existing references to --font-size-micro-label still resolve */
+  --font-size-micro-label: var(--text-xs);
+
+  /* ── Spacing scale (4px grid) ────────────────────────────────────────── */
+  --space-1: 4px;    /* tight gaps: icon-to-label, dot-to-text */
+  --space-2: 8px;    /* chip gap, small row gaps, button padding vertical (sm) */
+  --space-3: 12px;   /* field margin-bottom, button padding vertical (md) */
+  --space-4: 16px;   /* panel section padding horizontal, card padding */
+  --space-5: 20px;   /* panel section padding vertical */
+  --space-6: 24px;   /* workbench surface padding, topbar padding horizontal */
+  --space-7: 32px;   /* large section gaps */
 }
 
 *, *::before, *::after {

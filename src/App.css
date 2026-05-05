@@ -25,14 +25,14 @@
 }
 
 .app-evaluating__title {
-  font-size: 16px;
+  font-size: var(--text-lg);
   font-weight: 500;
   margin: 0 0 4px;
   color: var(--color-text-primary);
 }
 
 .app-evaluating__sub {
-  font-size: 13px;
+  font-size: var(--text-base);
   color: var(--color-text-secondary);
   margin: 0;
   line-height: 1.6;
@@ -65,14 +65,14 @@
 }
 
 .app-success__name {
-  font-size: 17px;
+  font-size: var(--text-xl);
   font-weight: 500;
   margin: 0 0 6px;
   color: var(--color-text-primary);
 }
 
 .app-success__desc {
-  font-size: 13px;
+  font-size: var(--text-base);
   color: var(--color-text-secondary);
   margin: 0;
   line-height: 1.6;
@@ -136,7 +136,7 @@
 }
 
 .app-success__eval-summary {
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--color-text-secondary);
   margin: 0 0 10px;
   line-height: 1.5;
@@ -228,7 +228,7 @@
 }
 
 .app-ps-title {
-  font-size: 15px;
+  font-size: var(--text-lg);
   font-weight: 500;
   margin: 0 0 10px;
   color: var(--color-text-primary);
@@ -248,7 +248,7 @@
 }
 
 .app-ps-muted {
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--color-text-secondary);
   margin: 0;
 }
@@ -358,7 +358,7 @@
 .app-input {
   width: 100%;
   padding: 8px 11px;
-  font-size: 13px;
+  font-size: var(--text-base);
   border: 0.5px solid var(--color-border-secondary);
   border-radius: var(--border-radius-md);
   background: var(--color-background-primary);
@@ -377,7 +377,7 @@
 }
 
 .app-input--sm {
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 
 .app-input--mb6 {
@@ -403,7 +403,7 @@
 
 .app-textarea-refine {
   resize: vertical;
-  font-size: 13px;
+  font-size: var(--text-base);
   line-height: 1.6;
   flex: 1;
   min-width: 0;
@@ -631,7 +631,7 @@
 }
 
 .app-shell__h1 {
-  font-size: 20px;
+  font-size: var(--text-display);
   font-weight: 500;
   margin: 0;
   letter-spacing: -0.3px;
@@ -644,7 +644,7 @@
 }
 
 .app-shell__lead {
-  font-size: 13px;
+  font-size: var(--text-base);
   color: var(--color-text-secondary);
   margin: 0;
   line-height: 1.5;
@@ -658,7 +658,7 @@
 }
 
 .app-tab {
-  font-size: 13px;
+  font-size: var(--text-base);
   font-weight: 400;
   color: var(--color-text-tertiary);
   background: none;
