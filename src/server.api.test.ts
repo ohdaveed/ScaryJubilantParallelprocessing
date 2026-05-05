@@ -24,19 +24,27 @@ describe("API validation guards", () => {
   });
 
   it("rejects invalid /api/chat payloads", async () => {
-    const res = await request(app).post("/api/chat").send([]);
+    const res = await request(app).post("/api/chat").send({
+      model: "",
+      messages: []
+    });
     expect(res.status).toBe(400);
     expect(res.body.error).toBe("Invalid request body for /api/chat");
   });
 
   it("rejects invalid /api/evaluate payloads", async () => {
-    const res = await request(app).post("/api/evaluate").send([]);
+    const res = await request(app).post("/api/evaluate").send({
+      draft: ""
+    });
     expect(res.status).toBe(400);
     expect(res.body.error).toBe("Invalid request body for /api/evaluate");
   });
 
   it("rejects invalid /api/improve-structure payloads", async () => {
-    const res = await request(app).post("/api/improve-structure").send([]);
+    const res = await request(app).post("/api/improve-structure").send({
+      raw: "",
+      preferences: []
+    });
     expect(res.status).toBe(400);
     expect(res.body.error).toBe("Invalid request body for /api/improve-structure");
   });
