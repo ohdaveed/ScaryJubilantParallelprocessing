@@ -132,6 +132,41 @@ describe("API validation guards", () => {
     expect(res.body.error).toBe("Invalid request body for /api/chat");
   });
 
+  it("rate limits repeated /api/chat requests", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async () => ({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        body: new ReadableStream({
+          start(controller) {
+            controller.close();
+          }
+        }),
+        json: async () => ({ ok: true }),
+        text: async () => ""
+      } as any))
+    );
+
+    const payload = {
+      model: "claude",
+      messages: [{ role: "user", content: "Hello" }]
+    };
+    const limiterHeaders = {
+      "X-Forwarded-For": "203.0.113.10"
+    };
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const res = await request(app).post("/api/chat").set(limiterHeaders).send(payload);
+      expect(res.status).toBe(200);
+    }
+
+    const limited = await request(app).post("/api/chat").set(limiterHeaders).send(payload);
+    expect(limited.status).toBe(429);
+    expect(limited.body.error).toBe("Too many requests. Please wait and try again.");
+  });
+
   it("rejects invalid /api/evaluate payloads", async () => {
     const res = await request(app).post("/api/evaluate").send({
       draft: ""
