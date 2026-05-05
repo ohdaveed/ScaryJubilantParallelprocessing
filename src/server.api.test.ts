@@ -1,5 +1,5 @@
 import request from "supertest";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import packageJson from "../package.json";
 
 let app: any;
@@ -9,6 +9,10 @@ beforeAll(async () => {
   process.env.ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "test-key";
   const mod = await import("../server.js");
   app = mod.app;
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe("API validation guards", () => {
@@ -24,8 +28,13 @@ describe("API validation guards", () => {
   });
 
   it("rejects invalid /api/chat payloads", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new Error("mock upstream failure"))
+    );
+
     const res = await request(app).post("/api/chat").send({
-      model: "",
+      model: "   ",
       messages: []
     });
     expect(res.status).toBe(400);
