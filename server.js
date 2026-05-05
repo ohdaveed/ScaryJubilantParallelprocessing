@@ -49,7 +49,8 @@ const createAiLimiter = (limit) => rateLimit({
 });
 
 const chatLimiter = createAiLimiter(5);
-const moderateAiLimiter = createAiLimiter(10);
+const evaluateLimiter = createAiLimiter(10);
+const improveStructureLimiter = createAiLimiter(10);
 
 app.use(compression({ threshold: 1024, filter: shouldCompressApiJson }));
 app.use(express.json({ limit: "20mb" }));
@@ -159,7 +160,7 @@ app.post("/api/chat", chatLimiter, async (req, res) => {
   if (!anthropicBody) return;
 
   const { driveContext, images, ...baseBody } = anthropicBody;
-  let body = baseBody;
+  let body = { ...baseBody };
 
   const msgs = Array.isArray(body.messages) ? [...body.messages] : [];
 
@@ -214,7 +215,7 @@ ${existingContent}`
     }
   }
 
-  body = { ...anthropicBody, messages: msgs };
+  body = { ...body, messages: msgs };
   const systemText = typeof body.system === "string" ? withKarlCitations(body.system) : withKarlCitations("");
   body.system = [{ type: "text", text: systemText, cache_control: { type: "ephemeral" } }];
 
@@ -251,7 +252,7 @@ ${existingContent}`
   }
 });
 
-app.post("/api/evaluate", moderateAiLimiter, async (req, res) => {
+app.post("/api/evaluate", evaluateLimiter, async (req, res) => {
   if (!ANTHROPIC_API_KEY) {
     return res.status(500).json({ error: "ANTHROPIC_API_KEY not configured" });
   }
@@ -396,7 +397,7 @@ ${textContent}`;
   }
 });
 
-app.post("/api/improve-structure", moderateAiLimiter, async (req, res) => {
+app.post("/api/improve-structure", improveStructureLimiter, async (req, res) => {
   if (!ANTHROPIC_API_KEY) {
     return res.status(500).json({ error: "ANTHROPIC_API_KEY not configured" });
   }
