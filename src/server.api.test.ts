@@ -2,6 +2,7 @@ import request from "supertest";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   chatRequestSchema,
+  evaluateRequestSchema,
   improveStructureRequestSchema,
   parseRequestBody
 } from "../lib/requestSchemas.js";
@@ -38,8 +39,22 @@ describe("API validation guards", () => {
       messages: []
     }).success).toBe(true);
     expect(chatRequestSchema.safeParse({
+      model: "   ",
+      messages: []
+    }).success).toBe(false);
+    expect(chatRequestSchema.safeParse({
       model: "claude",
       messages: {}
+    }).success).toBe(false);
+
+    expect(evaluateRequestSchema.safeParse({
+      draft: "Valid draft",
+      pageName: "Page",
+      pageType: "Information",
+      userType: "General public"
+    }).success).toBe(true);
+    expect(evaluateRequestSchema.safeParse({
+      draft: "   "
     }).success).toBe(false);
 
     expect(improveStructureRequestSchema.safeParse({
@@ -49,6 +64,10 @@ describe("API validation guards", () => {
     expect(improveStructureRequestSchema.safeParse({
       raw: "Valid raw content",
       evaluationFeedback: "bad"
+    }).success).toBe(false);
+    expect(improveStructureRequestSchema.safeParse({
+      raw: "Valid raw content",
+      preferences: "bad"
     }).success).toBe(false);
   });
 
@@ -60,12 +79,12 @@ describe("API validation guards", () => {
 
     const parsed = parseRequestBody(
       chatRequestSchema,
-      { body: { model: "claude", messages: [] } },
+      { body: { model: "claude", messages: [], extra: "keep me" } },
       res as any,
       "/api/chat"
     );
 
-    expect(parsed).toEqual({ model: "claude", messages: [] });
+    expect(parsed).toEqual({ model: "claude", messages: [], extra: "keep me" });
     expect(res.status).not.toHaveBeenCalled();
     expect(res.json).not.toHaveBeenCalled();
 
