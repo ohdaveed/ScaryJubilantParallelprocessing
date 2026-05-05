@@ -1,13 +1,12 @@
-# Progress Log
+# Progress Log: React Router + App Refactoring
 
-## Session: 2026-05-04
-
-### Started
-Typography & spacing redesign implementation. Spec approved by user.
-
-### Completed
-- [x] Spec written and committed: `docs/superpowers/specs/2026-05-04-typography-spacing-redesign.md`
-- [x] task_plan.md created
-
-### In Progress
-- Phase 1: Install Fontsource packages
+## Session 1 - 2026-05-04
+- Installed react-router-dom
+- Created extracted components: StreamRenderer, EvaluatingState, SuccessState, PlanDiagram, PlanSidebar, TodoPanel
+- Created shared state hook: useWorkspaceState
+- Created WorkspaceContext provider
+- Created 4 route pages: GeneratePage, LibraryPage, PlanPage, IdealPage
+- Created IdealTabQueuePanel component for build queue on Ideal tab
+- Refactored App.tsx from ~1456 lines to ~200 lines
+- Wired React Router in main.tsx with BrowserRouter + WorkspaceProvider
+- TypeScript check passes cleanly (no errors in source files)

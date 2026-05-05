@@ -1557,6 +1557,11 @@
   line-height: 1.5;
 }
 
+.app-error-banner__retry {
+  margin-top: 12px !important;
+}
+
+
 .app-parse-warn {
   margin-top: 12px;
   padding: 10px 14px;

@@ -622,24 +622,24 @@ export const SfGovPagePreview = React.forwardRef<HTMLDivElement, { draft: string
                 fontWeight: 400,
                 letterSpacing: "0.04em",
                 color: SF.slate2,
-                textTransform: "uppercase" as const,
               }}
             >
-              SF.gov layout mock
+              SF.gov / HHVC preview
             </span>
           </div>
           <span
             style={{
               fontFamily: SF.mono,
               fontSize: 10,
-              color: "#8A9BA8",
+              color: SF.blue,
               padding: "4px 10px",
               borderRadius: 999,
-              background: "rgba(255,255,255,0.65)",
-              border: `1px solid ${SF.lightBorder}`,
+              background: `${SF.blue}12`,
+              border: `1px solid ${SF.blue}30`,
+              fontWeight: 600,
             }}
           >
-            Read-only
+            Karl CMS reference
           </span>
         </div>
 
