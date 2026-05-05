@@ -1,5 +1,10 @@
 import request from "supertest";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  chatRequestSchema,
+  improveStructureRequestSchema,
+  parseRequestBody
+} from "../lib/requestSchemas.js";
 import packageJson from "../package.json";
 
 let app: any;
@@ -25,6 +30,57 @@ describe("API validation guards", () => {
 
     expect(zod.object).toBeDefined();
     expect(expressRateLimit.default).toBeDefined();
+  });
+
+  it("validates request schemas in process", () => {
+    expect(chatRequestSchema.safeParse({
+      model: "claude",
+      messages: []
+    }).success).toBe(true);
+    expect(chatRequestSchema.safeParse({
+      model: "claude",
+      messages: {}
+    }).success).toBe(false);
+
+    expect(improveStructureRequestSchema.safeParse({
+      raw: "Valid raw content",
+      evaluationFeedback: {}
+    }).success).toBe(true);
+    expect(improveStructureRequestSchema.safeParse({
+      raw: "Valid raw content",
+      evaluationFeedback: "bad"
+    }).success).toBe(false);
+  });
+
+  it("parses request bodies in process", () => {
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn()
+    };
+
+    const parsed = parseRequestBody(
+      chatRequestSchema,
+      { body: { model: "claude", messages: [] } },
+      res as any,
+      "/api/chat"
+    );
+
+    expect(parsed).toEqual({ model: "claude", messages: [] });
+    expect(res.status).not.toHaveBeenCalled();
+    expect(res.json).not.toHaveBeenCalled();
+
+    const invalid = parseRequestBody(
+      improveStructureRequestSchema,
+      { body: { raw: "Valid raw content", evaluationFeedback: "bad" } },
+      res as any,
+      "/api/improve-structure"
+    );
+
+    expect(invalid).toBeNull();
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      error: "Invalid request body for /api/improve-structure"
+    });
   });
 
   it("rejects invalid /api/chat payloads", async () => {
