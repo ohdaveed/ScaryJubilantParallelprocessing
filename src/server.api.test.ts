@@ -4,9 +4,6 @@ import packageJson from "../package.json";
 
 let app: any;
 
-expect(packageJson.dependencies?.zod).toBeDefined();
-expect(packageJson.dependencies?.["express-rate-limit"]).toBeDefined();
-
 beforeAll(async () => {
   process.env.NODE_ENV = "test";
   process.env.ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "test-key";
@@ -15,6 +12,17 @@ beforeAll(async () => {
 });
 
 describe("API validation guards", () => {
+  it("declares and imports server validation dependencies", async () => {
+    expect(packageJson.dependencies?.zod).toBeDefined();
+    expect(packageJson.dependencies?.["express-rate-limit"]).toBeDefined();
+
+    const zod = await import("zod");
+    const expressRateLimit = await import("express-rate-limit");
+
+    expect(zod.object).toBeDefined();
+    expect(expressRateLimit.default).toBeDefined();
+  });
+
   it("rejects invalid /api/chat payloads", async () => {
     const res = await request(app).post("/api/chat").send({ foo: "bar" });
     expect(res.status).toBe(400);
