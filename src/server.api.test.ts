@@ -24,20 +24,21 @@ describe("API validation guards", () => {
   });
 
   it("rejects invalid /api/chat payloads", async () => {
-    const res = await request(app).post("/api/chat").send({ foo: "bar" });
+    const res = await request(app).post("/api/chat").send([]);
     expect(res.status).toBe(400);
-    expect(res.body.error).toContain("Invalid request body");
+    expect(res.body.error).toBe("Invalid request body for /api/chat");
   });
 
-  it("rejects missing draft for /api/evaluate", async () => {
-    const res = await request(app).post("/api/evaluate").send({});
+  it("rejects invalid /api/evaluate payloads", async () => {
+    const res = await request(app).post("/api/evaluate").send([]);
     expect(res.status).toBe(400);
-    expect(res.body.error).toContain("Missing draft");
+    expect(res.body.error).toBe("Invalid request body for /api/evaluate");
   });
 
-  it("rejects invalid /api/improve-structure payload", async () => {
-    const res = await request(app).post("/api/improve-structure").send({ raw: "", preferences: "bad" });
+  it("rejects invalid /api/improve-structure payloads", async () => {
+    const res = await request(app).post("/api/improve-structure").send([]);
     expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Invalid request body for /api/improve-structure");
   });
 
   it("rejects invalid /api/karl-remediate payload", async () => {
