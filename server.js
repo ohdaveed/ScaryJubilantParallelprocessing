@@ -843,6 +843,170 @@ app.delete("/api/planned-pages/:id", async (req, res) => {
   }
 });
 
+app.get("/api/page-concepts", async (req, res) => {
+  try {
+    applyShortReadCache(res);
+    const concepts = await db.listPageConcepts();
+    res.json({ concepts });
+  } catch (err) {
+    console.error("GET /api/page-concepts error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
+  }
+});
+
+app.post("/api/page-concepts", async (req, res) => {
+  const {
+    taskStatement,
+    canonicalTitle,
+    contentType,
+    audience,
+    serviceArea = "hhvc",
+    status = "proposed",
+    summary = "",
+    parentConceptId = null
+  } = req.body;
+  if (!taskStatement || !canonicalTitle || !contentType || !audience) {
+    return res.status(400).json({ error: "Missing required concept fields" });
+  }
+  try {
+    const concept = await db.createPageConcept({
+      taskStatement,
+      canonicalTitle,
+      contentType,
+      audience,
+      serviceArea,
+      status,
+      summary,
+      parentConceptId
+    });
+    res.json(concept);
+  } catch (err) {
+    console.error("POST /api/page-concepts error:", getErrorMessage(err));
+    res.status(400).json({ error: getErrorMessage(err) });
+  }
+});
+
+app.patch("/api/page-concepts/:id", async (req, res) => {
+  try {
+    const concept = await db.updatePageConcept(req.params.id, req.body || {});
+    if (!concept) return res.status(404).json({ error: "Concept not found" });
+    res.json(concept);
+  } catch (err) {
+    console.error("PATCH /api/page-concepts error:", getErrorMessage(err));
+    res.status(400).json({ error: getErrorMessage(err) });
+  }
+});
+
+app.get("/api/ia-nodes", async (req, res) => {
+  const mapId = typeof req.query.mapId === "string" ? req.query.mapId : undefined;
+  try {
+    applyShortReadCache(res);
+    const nodes = await db.listIANodes(mapId);
+    res.json({ nodes });
+  } catch (err) {
+    console.error("GET /api/ia-nodes error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
+  }
+});
+
+app.get("/api/page-artifacts", async (req, res) => {
+  try {
+    applyShortReadCache(res);
+    const artifacts = await db.listPageArtifacts();
+    res.json({ artifacts });
+  } catch (err) {
+    console.error("GET /api/page-artifacts error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
+  }
+});
+
+app.get("/api/artifact-variants", async (req, res) => {
+  try {
+    applyShortReadCache(res);
+    const variants = await db.listArtifactVariants();
+    res.json({ variants });
+  } catch (err) {
+    console.error("GET /api/artifact-variants error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
+  }
+});
+
+app.post("/api/artifact-variants", async (req, res) => {
+  const { conceptId, baseArtifactId, artifactId, variantLabel, reason = "", status = "exploring" } = req.body;
+  if (!conceptId || !baseArtifactId || !artifactId || !variantLabel) {
+    return res.status(400).json({ error: "Missing required variant fields" });
+  }
+  try {
+    const variant = await db.createArtifactVariant({ conceptId, baseArtifactId, artifactId, variantLabel, reason, status });
+    res.json(variant);
+  } catch (err) {
+    console.error("POST /api/artifact-variants error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
+  }
+});
+
+app.get("/api/reference-examples", async (req, res) => {
+  try {
+    applyShortReadCache(res);
+    const references = await db.listReferenceExamples();
+    res.json({ references });
+  } catch (err) {
+    console.error("GET /api/reference-examples error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
+  }
+});
+
+app.get("/api/build-queue", async (req, res) => {
+  try {
+    const items = await db.listBuildQueueItems();
+    res.json({ items });
+  } catch (err) {
+    console.error("GET /api/build-queue error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
+  }
+});
+
+app.post("/api/build-queue", async (req, res) => {
+  const {
+    conceptId = null,
+    artifactId = null,
+    queueStatus = "queued",
+    priority = 50,
+    requestedBy = "manual",
+    topic,
+    audience = "General public"
+  } = req.body;
+  if (!topic) return res.status(400).json({ error: "Missing topic" });
+  try {
+    const item = await db.createBuildQueueItem({ conceptId, artifactId, queueStatus, priority, requestedBy, topic, audience });
+    res.json(item);
+  } catch (err) {
+    console.error("POST /api/build-queue error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
+  }
+});
+
+app.patch("/api/build-queue/:id", async (req, res) => {
+  try {
+    const item = await db.updateBuildQueueItem(req.params.id, req.body || {});
+    if (!item) return res.status(404).json({ error: "Queue item not found" });
+    res.json(item);
+  } catch (err) {
+    console.error("PATCH /api/build-queue error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
+  }
+});
+
+app.delete("/api/build-queue/:id", async (req, res) => {
+  try {
+    await db.deleteBuildQueueItem(req.params.id);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("DELETE /api/build-queue error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
+  }
+});
+
 const PORT = 3001;
 const MAX_PORT_RECOVERY_ATTEMPTS = 2;
 

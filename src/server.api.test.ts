@@ -98,4 +98,57 @@ describe("API validation guards", () => {
     expect(missingParentAttempt.status).toBe(400);
     expect(missingParentAttempt.body.error).toContain("Parent not found");
   });
+
+  it("exposes reference examples separately from working IA", async () => {
+    const res = await request(app).get("/api/reference-examples");
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.references)).toBe(true);
+    expect(res.body.references.length).toBeGreaterThan(0);
+    expect(res.body.references[0]).toEqual(
+      expect.objectContaining({
+        title: expect.any(String),
+        sourceSystem: expect.any(String)
+      })
+    );
+  });
+
+  it("rejects duplicate canonical concept titles", async () => {
+    const title = `Report a dead bird duplicate ${Date.now()}`;
+    const first = await request(app).post("/api/page-concepts").send({
+      taskStatement: `Complete the task: ${title}`,
+      canonicalTitle: title,
+      contentType: "transaction",
+      audience: "General public",
+      serviceArea: "hhvc",
+      status: "canonical",
+      summary: "First concept"
+    });
+    expect(first.status).toBe(200);
+
+    const second = await request(app).post("/api/page-concepts").send({
+      taskStatement: `Complete the task: ${title}`,
+      canonicalTitle: title,
+      contentType: "transaction",
+      audience: "General public",
+      serviceArea: "hhvc",
+      status: "canonical",
+      summary: "Second concept"
+    });
+    expect(second.status).toBe(400);
+    expect(second.body.error).toContain("duplicates");
+  });
+
+  it("rejects placeholder canonical concept titles", async () => {
+    const res = await request(app).post("/api/page-concepts").send({
+      taskStatement: "Complete the task: Placeholder page",
+      canonicalTitle: "Page A",
+      contentType: "information",
+      audience: "General public",
+      serviceArea: "hhvc",
+      status: "proposed",
+      summary: "Placeholder"
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("Placeholder");
+  });
 });

@@ -3,6 +3,7 @@ import { PageDraft, TodoItem, PlannedPage, UserPreference, ReviewStatus, Verific
 import { USER_TYPES, PAGE_TYPES, TYPE_META } from "./constants";
 import { clean, findOverlappingPageIds, getVerificationState, VERIFICATION_FILTERS } from "./utils/core";
 import { pagesApi, preferencesApi, todosApi } from "./utils/api";
+import { normalizeTitleForComparison } from "./utils/contentModel";
 import { replacePageDraftInRaw } from "./utils/parsing";
 import { generateZip, renderPageAsPNG, renderPageAsPDF } from "./utils/export";
 import { Badge, Divider, Btn, Card, ComponentChips, RelPanel, KarlEvalPanel, ProgressBar, DeleteConfirmationModal } from "./components/ui";
@@ -11,6 +12,7 @@ import { usePlanMap } from "./hooks/usePlanMap";
 import { useVersionHistory } from "./hooks/useVersionHistory";
 import { usePageGeneration } from "./hooks/usePageGeneration";
 import { useQueueRunner } from "./hooks/useQueueRunner";
+import { useProjectModel } from "./hooks/useProjectModel";
 import { SfGovContentDesignTool, MAIN_WORKSPACE_PANEL_ID, type ContentDesignTab } from "./components/SfGovContentDesignTool";
 import packageJson from "../package.json";
 import "./App.css";
@@ -239,11 +241,16 @@ const PlanSidebar = memo(function PlanSidebar({ planned, pages, selectedPlanned,
           <h3 className="app-ps-title">{selectedPlanned.name}</h3>
           <div className="app-ps-meta">
             <div className="app-ps-meta-row">
+              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 999, background: "#E8EFFA", color: "#185FA5", border: "1px solid #185FA533" }}>Concept</span>
               <Badge type={selectedPlanned.pageType} small />
             </div>
+            {selectedPlanned.taskStatement && <p className="app-ps-muted">Task: {selectedPlanned.taskStatement}</p>}
             <p className="app-ps-muted">User: {selectedPlanned.userType}</p>
             {selectedPlanned.parentId && (
               <p className="app-ps-muted">Parent: {planned.find(p => p.id === selectedPlanned.parentId)?.name || "Unknown"}</p>
+            )}
+            {!!selectedPlanned.governanceFlags?.length && (
+              <p className="app-ps-muted">Governance: {selectedPlanned.governanceFlags.map((flag) => flag.message).join(" · ")}</p>
             )}
           </div>
           {builtPage ? (
@@ -268,6 +275,7 @@ const PlanSidebar = memo(function PlanSidebar({ planned, pages, selectedPlanned,
             <p className="app-up-label app-up-label--flush">Site plan</p>
             <span className="app-ps-count">{planned.length} page{planned.length !== 1 ? "s" : ""}</span>
           </div>
+          <p className="app-ps-muted" style={{ marginTop: 0 }}>Canonical concepts only. Drafts, variants, and reference examples are excluded from this view.</p>
 
           {planned.map(p => {
             const isBuilt = !!p.builtPageId && pages.some(pg => pg.id === p.builtPageId);
@@ -275,6 +283,7 @@ const PlanSidebar = memo(function PlanSidebar({ planned, pages, selectedPlanned,
               <button key={p.id} type="button" className="app-plan-item" onClick={() => onSelectPlanned(p)}>
                 <span className="app-plan-item__dot" data-page-type={p.pageType} />
                 <span className="app-plan-item__label">{p.name}</span>
+                {!!p.governanceFlags?.length && <span className="app-plan-item__built" style={{ background: "#FAEEDA", color: "#854F0B" }}>review</span>}
                 {isBuilt && <span className="app-plan-item__built">built</span>}
               </button>
             );
@@ -376,6 +385,7 @@ const TodoPanel = memo(function TodoPanel({
         <p className="app-up-label app-up-label--flush">Pages to build</p>
         {pending.length > 0 && <span className="app-pending-badge">{pending.length}</span>}
       </div>
+      <p className="app-ps-muted" style={{ marginTop: 0 }}>Operational build queue only. Items here do not define canonical IA.</p>
 
       {!loadingTodos && runnablePending > 0 && (
         <div className="app-row-gap-6" style={{ marginBottom: 12, flexWrap: "wrap" }}>
@@ -486,10 +496,10 @@ const TodoPanel = memo(function TodoPanel({
 type WorkspaceTab = "plan" | "generate" | "library" | "ideal";
 
 const WORKSPACE_TABS: readonly ContentDesignTab[] = [
-  { id: "plan", label: "Site Plan", description: "Sketch site architecture and planned pages before you build." },
-  { id: "generate", label: "Generate", description: "Choose audience and page type, then generate and preview a draft." },
-  { id: "library", label: "Library", description: "Open, search, and manage pages you have already created." },
-  { id: "ideal", label: "Ideal Map", description: "Compare your plan to the reference information architecture." }
+  { id: "plan", label: "Site Plan", description: "Canonical concepts and working HHVC architecture only." },
+  { id: "generate", label: "Generate", description: "Generate a current draft or experiment without changing canonical IA." },
+  { id: "library", label: "Library", description: "Manage page artifacts, imports, and editorial drafts." },
+  { id: "ideal", label: "Ideal Map", description: "Reference benchmarks only, separate from working architecture." }
 ];
 
 const STUDIO_PAGE_TYPE_CHIPS = [
@@ -529,6 +539,7 @@ export default function App() {
   const pageTypeOptions = useMemo(() => studioPageTypes(), []);
 
   const { pages, setPages, pagesLoading, hydratePage, deletePage: deleteStoredPage } = usePagesData();
+  const { concepts, references, refreshModel } = useProjectModel();
   const {
     plannedPages,
     plannedLoading,
@@ -606,6 +617,10 @@ export default function App() {
       .then(prefs => setPreferences(prefs))
       .catch(() => {});
   }, [selected?.id]);
+
+  useEffect(() => {
+    void refreshModel().catch(() => {});
+  }, [pages, plannedPages, refreshModel]);
 
   useEffect(() => {
     setMockupEditOpen(false);
@@ -869,6 +884,7 @@ export default function App() {
 
   const previewSummaryLine = useMemo(() => {
     const max = 72;
+    const possibleConcept = concepts.find((concept) => normalizeTitleForComparison(concept.canonicalTitle) === normalizeTitleForComparison(topic.trim()));
     if (selected) {
       const pt = clean(selected.pageType) || pendingPageType || pageTypeOptions[0] || "Transaction";
       const name = clean(selected.name) || "Untitled";
@@ -881,8 +897,11 @@ export default function App() {
     const goal = topic.trim();
     if (!goal) return `${pt} · Add a page goal in the left panel`;
     const trunc = goal.length > max ? `${goal.slice(0, max)}…` : goal;
-    return `${pt} · ${trunc}`;
-  }, [selected, pendingPageType, topic, pageTypeOptions]);
+    if (possibleConcept) {
+      return `${pt} · ${trunc} · Canonical concept: ${possibleConcept.canonicalTitle}`;
+    }
+    return `${pt} · ${trunc} · No canonical concept linked yet`;
+  }, [selected, pendingPageType, topic, pageTypeOptions, concepts]);
 
   const libraryRows = useMemo(
     () =>
@@ -1318,6 +1337,7 @@ export default function App() {
           setMapMode={setMapMode}
           pages={pages}
           plannedPages={plannedPages}
+          references={references}
           plannedLoading={plannedLoading}
           selectedPlanned={selectedPlanned}
           setSelectedPlanned={setSelectedPlanned}

@@ -1,6 +1,26 @@
 import { SITEMAP_SKELETON, REPORT_TRANSACTION_BEFORE_311_BODY, REPORT_TRANSACTION_POST_CTA_ROUTING_BODY } from "../constants";
-import type { KarlEvaluation, PageDraft, PlannedPage, PageVersion, TodoItem, UserPreference } from "../types";
+import type {
+  ArtifactVariant,
+  BuildQueueItem,
+  IANode,
+  KarlEvaluation,
+  PageArtifact,
+  PageConcept,
+  PageDraft,
+  PlannedPage,
+  PageVersion,
+  ReferenceExample,
+  TodoItem,
+  UserPreference
+} from "../types";
 import { clean, lsLegacy, parseRel } from "./core";
+import {
+  artifactRoleLabel,
+  artifactWorkflowLabel,
+  contentTypeFromPageType,
+  contentTypeLabel,
+  normalizeTitleForComparison
+} from "./contentModel";
 import { parsePage, parseStructuredPage } from "./parsing";
 
 const API_BASE = "/api";
@@ -151,6 +171,158 @@ export const plannedPagesApi = {
     const res = await fetch(`${API_BASE}/planned-pages/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error(`Failed to delete planned page: ${res.status}`);
   }
+};
+
+export const pageConceptsApi = {
+  list: async (): Promise<PageConcept[]> => {
+    const res = await fetch(`${API_BASE}/page-concepts`);
+    if (!res.ok) throw new Error(`Failed to load page concepts: ${res.status}`);
+    const data = await res.json();
+    return data.concepts || [];
+  },
+  create: async (payload: Omit<PageConcept, "id" | "intentKey" | "createdAt" | "updatedAt" | "governanceFlags">): Promise<PageConcept> => {
+    const res = await fetch(`${API_BASE}/page-concepts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || `Failed to create page concept: ${res.status}`);
+    }
+    return res.json();
+  },
+  update: async (id: number, patch: Partial<Omit<PageConcept, "id" | "intentKey" | "createdAt" | "updatedAt">>): Promise<PageConcept> => {
+    const res = await fetch(`${API_BASE}/page-concepts/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch)
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || `Failed to update page concept: ${res.status}`);
+    }
+    return res.json();
+  }
+};
+
+export const iaNodesApi = {
+  list: async (mapId?: string): Promise<IANode[]> => {
+    const qs = mapId ? `?mapId=${encodeURIComponent(mapId)}` : "";
+    const res = await fetch(`${API_BASE}/ia-nodes${qs}`);
+    if (!res.ok) throw new Error(`Failed to load IA nodes: ${res.status}`);
+    const data = await res.json();
+    return data.nodes || [];
+  }
+};
+
+export const pageArtifactsApi = {
+  list: async (): Promise<PageArtifact[]> => {
+    const res = await fetch(`${API_BASE}/page-artifacts`);
+    if (!res.ok) throw new Error(`Failed to load page artifacts: ${res.status}`);
+    const data = await res.json();
+    return data.artifacts || [];
+  }
+};
+
+export const artifactVariantsApi = {
+  list: async (): Promise<ArtifactVariant[]> => {
+    const res = await fetch(`${API_BASE}/artifact-variants`);
+    if (!res.ok) throw new Error(`Failed to load artifact variants: ${res.status}`);
+    const data = await res.json();
+    return data.variants || [];
+  },
+  create: async (payload: Omit<ArtifactVariant, "id" | "createdAt" | "updatedAt">): Promise<ArtifactVariant> => {
+    const res = await fetch(`${API_BASE}/artifact-variants`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error(`Failed to create artifact variant: ${res.status}`);
+    return res.json();
+  }
+};
+
+export const referenceExamplesApi = {
+  list: async (): Promise<ReferenceExample[]> => {
+    const res = await fetch(`${API_BASE}/reference-examples`);
+    if (!res.ok) throw new Error(`Failed to load reference examples: ${res.status}`);
+    const data = await res.json();
+    return data.references || [];
+  }
+};
+
+export const buildQueueApi = {
+  list: async (): Promise<BuildQueueItem[]> => {
+    const res = await fetch(`${API_BASE}/build-queue`);
+    if (!res.ok) throw new Error(`Failed to load build queue: ${res.status}`);
+    const data = await res.json();
+    return data.items || [];
+  },
+  create: async (payload: Omit<BuildQueueItem, "id" | "createdAt" | "errorMessage" | "karlGrade">): Promise<BuildQueueItem> => {
+    const res = await fetch(`${API_BASE}/build-queue`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error(`Failed to create build queue item: ${res.status}`);
+    return res.json();
+  },
+  update: async (id: number, patch: Partial<BuildQueueItem> & { errorMessage?: string | null; karlGrade?: string | null }): Promise<BuildQueueItem> => {
+    const res = await fetch(`${API_BASE}/build-queue/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch)
+    });
+    if (!res.ok) throw new Error(`Failed to update build queue item: ${res.status}`);
+    return res.json();
+  },
+  delete: async (id: number): Promise<void> => {
+    const res = await fetch(`${API_BASE}/build-queue/${id}`, { method: "DELETE" });
+    if (!res.ok) throw new Error(`Failed to delete build queue item: ${res.status}`);
+  }
+};
+
+export const projectModelApi = {
+  load: async (): Promise<{
+    concepts: PageConcept[];
+    nodes: IANode[];
+    artifacts: PageArtifact[];
+    variants: ArtifactVariant[];
+    references: ReferenceExample[];
+    queue: BuildQueueItem[];
+  }> => {
+    const [concepts, nodes, artifacts, variants, references, queue] = await Promise.all([
+      pageConceptsApi.list(),
+      iaNodesApi.list(),
+      pageArtifactsApi.list(),
+      artifactVariantsApi.list(),
+      referenceExamplesApi.list(),
+      buildQueueApi.list()
+    ]);
+    return { concepts, nodes, artifacts, variants, references, queue };
+  }
+};
+
+export const buildArtifactSearchHints = (artifacts: PageArtifact[], concepts: PageConcept[]) => {
+  const conceptById = new Map(concepts.map((concept) => [concept.id, concept]));
+  return artifacts.map((artifact) => {
+    const concept = artifact.conceptId != null ? conceptById.get(artifact.conceptId) : undefined;
+    return {
+      artifactId: artifact.id,
+      title: artifact.title,
+      titleKey: normalizeTitleForComparison(artifact.title),
+      role: artifactRoleLabel(artifact.artifactKind),
+      workflow: artifactWorkflowLabel(artifact.workflowStatus),
+      conceptTitle: concept?.canonicalTitle || null,
+      contentTypeLabel: contentTypeLabel(artifact.contentType)
+    };
+  });
+};
+
+export const findPossibleConceptDuplicates = (concepts: PageConcept[], title: string) => {
+  const titleKey = normalizeTitleForComparison(title);
+  return concepts.filter((concept) => normalizeTitleForComparison(concept.canonicalTitle).includes(titleKey));
 };
 
 export const preferencesApi = {

@@ -2,6 +2,7 @@ import React from "react";
 import { PAGE_TYPES, TYPE_META } from "../../constants";
 import { PageDraft, ReviewStatus, VerificationState } from "../../types";
 import { Badge, Btn, Card, UI_INPUT_CLASS } from "../ui";
+import { artifactKindFromPage, artifactRoleLabel } from "../../utils/contentModel";
 import { clean, getVerificationLabel, getVerificationState } from "../../utils";
 
 type LibraryTabProps = {
@@ -149,6 +150,7 @@ export function LibraryTab(props: LibraryTabProps) {
           const c = TYPE_META[clean(p.pageType)] || { dot: "#888" };
           const ev = p.karlEvaluation;
           const verificationState = getVerificationState(p);
+          const objectRole = artifactRoleLabel(artifactKindFromPage(p));
           const gradeColor: Record<string, string> = { A: "#0F6E56", B: "#185FA5", C: "#854F0B", D: "#A32D2D", F: "#A32D2D" };
           return (
             <Card key={p.id} onClick={() => onSelectPage(p)} className={["ui-card--lib", selectedPageIds.has(p.id) ? "ui-card--bulk-selected" : ""].filter(Boolean).join(" ")}>
@@ -160,6 +162,9 @@ export function LibraryTab(props: LibraryTabProps) {
               <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 9, paddingLeft: 22 }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: c.dot, flexShrink: 0, ...(p.skeleton ? { border: "1.5px dashed #6B21A8", background: "transparent" } : {}) }} />
                 <Badge type={clean(p.pageType)} small />
+                <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#EEF4FA", color: "#185FA5", border: "0.5px solid #185FA533" }}>
+                  {objectRole}
+                </span>
                 {p.skeleton && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#F3E8FF", color: "#6B21A8", border: "1px dashed #6B21A866" }}>skeleton</span>}
                 {p.imported && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#F1EFE8", color: "#6B4C00", border: "0.5px solid #6B4C0033" }}>imported</span>}
                 <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#eef2f6", color: "#334155", border: "0.5px solid #cbd5e1" }}>
@@ -174,6 +179,9 @@ export function LibraryTab(props: LibraryTabProps) {
                 </div>
               </div>
               <p style={{ fontSize: 13, fontWeight: 500, margin: "0 0 6px", lineHeight: 1.4, color: "var(--color-text-primary)" }}>{clean(p.name) || "Untitled"}</p>
+              <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", margin: "0 0 6px", lineHeight: 1.4 }}>
+                {p.skeleton ? "Experiment draft not linked to canonical architecture." : p.imported ? "Imported artifact awaiting canonical mapping or review." : "Current page artifact managed separately from site architecture."}
+              </p>
               <p style={{ fontSize: 12, color: "var(--color-text-secondary)", margin: "0 0 12px", lineHeight: 1.5 }}>{(clean(p.userGoal) || "").slice(0, 70)}{(clean(p.userGoal) || "").length > 70 ? "…" : ""}</p>
               {ev && (
                 <div style={{ display: "flex", gap: 4, marginBottom: 10, flexWrap: "wrap" }}>

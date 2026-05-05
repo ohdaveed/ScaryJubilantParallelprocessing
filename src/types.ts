@@ -83,6 +83,123 @@ export type VerificationState =
   | "import_rejected"
   | "not_checked";
 
+export type ContentType = "topic" | "transaction" | "information" | "step_by_step";
+export type ConceptStatus = "proposed" | "canonical" | "deferred" | "archived";
+export type IAPlacementStatus = "placed" | "orphaned" | "deferred";
+export type ArtifactKind = "draft" | "imported" | "built" | "published_snapshot" | "experiment";
+export type ArtifactSource = "generate" | "import" | "manual";
+export type ArtifactWorkflowStatus = "draft" | "in_review" | "approved" | "built" | "archived";
+export type VariantStatus = "exploring" | "shortlisted" | "accepted" | "rejected";
+export type QueueStatus = "queued" | "generating" | "blocked" | "done" | "failed";
+
+export interface GovernanceFlag {
+  id: string;
+  severity: "warning" | "error";
+  message: string;
+}
+
+export interface PageConcept {
+  id: number;
+  intentKey: string;
+  taskStatement: string;
+  canonicalTitle: string;
+  contentType: ContentType;
+  audience: string;
+  serviceArea: string;
+  status: ConceptStatus;
+  summary: string;
+  parentConceptId: number | null;
+  createdAt: string;
+  updatedAt: string;
+  governanceFlags?: GovernanceFlag[];
+}
+
+export interface IANode {
+  id: number;
+  conceptId: number;
+  iaMapId: string;
+  parentNodeId: number | null;
+  position: number;
+  placementStatus: IAPlacementStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PageArtifact {
+  id: string;
+  conceptId: number | null;
+  artifactKind: ArtifactKind;
+  source: ArtifactSource;
+  title: string;
+  contentType: ContentType;
+  bodyRaw: string;
+  bodyStructured: Record<string, unknown>;
+  workflowStatus: ArtifactWorkflowStatus;
+  isCurrent: boolean;
+  createdAt: string;
+  updatedAt: string;
+  reviewStatus?: ReviewStatus;
+  inputs?: {
+    topic: string;
+    userType: string;
+    notes: string;
+  };
+  karlConnected?: boolean;
+  karlEvaluation?: KarlEvaluation;
+  skeleton?: boolean;
+  imported?: boolean;
+  qualityGate?: {
+    status: "pass" | "review_required";
+    reasons: string[];
+  };
+}
+
+export interface ArtifactVersion {
+  id: number;
+  artifactId: string;
+  versionNumber: number;
+  changeType: "generate" | "edit" | "refine" | "restore";
+  snapshot?: PageArtifact;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface ArtifactVariant {
+  id: number;
+  conceptId: number;
+  baseArtifactId: string;
+  artifactId: string;
+  variantLabel: string;
+  reason: string;
+  status: VariantStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReferenceExample {
+  id: number;
+  title: string;
+  sourceSystem: string;
+  referenceType: string;
+  notes: string;
+  mappedPattern: string;
+  referenceMapId: string;
+}
+
+export interface BuildQueueItem {
+  id: number;
+  conceptId: number | null;
+  artifactId: string | null;
+  queueStatus: QueueStatus;
+  priority: number;
+  requestedBy: string;
+  createdAt: string;
+  topic: string;
+  audience: string;
+  errorMessage?: string | null;
+  karlGrade?: string | null;
+}
+
 export interface PageDraft {
   id: string;
   name: string;
@@ -186,6 +303,11 @@ export interface PlannedPage {
   parentId: number | null;
   builtPageId: string | null;
   createdAt: string;
+  conceptId?: number;
+  status?: ConceptStatus;
+  objectRole?: "concept";
+  taskStatement?: string;
+  governanceFlags?: GovernanceFlag[];
 }
 
 export interface PageVersion {

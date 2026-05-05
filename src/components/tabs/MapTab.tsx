@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useCallback, useMemo } from "react";
 import { PAGE_TYPES, TYPE_META } from "../../constants";
-import { PageDraft, PlannedPage, TodoItem } from "../../types";
+import { PageDraft, PlannedPage, ReferenceExample, TodoItem } from "../../types";
 import { Card } from "../ui";
 const LazyIdealSiteMap = lazy(() => import("../IdealSiteMap"));
 
@@ -9,6 +9,7 @@ type MapTabProps = {
   setMapMode: React.Dispatch<React.SetStateAction<"plan" | "view">>;
   pages: PageDraft[];
   plannedPages: PlannedPage[];
+  references: ReferenceExample[];
   plannedLoading: boolean;
   selectedPlanned: PlannedPage | null;
   setSelectedPlanned: React.Dispatch<React.SetStateAction<PlannedPage | null>>;
@@ -41,6 +42,7 @@ export function MapTab(props: MapTabProps) {
     setMapMode,
     pages,
     plannedPages,
+    references,
     plannedLoading,
     selectedPlanned,
     setSelectedPlanned,
@@ -105,12 +107,12 @@ export function MapTab(props: MapTabProps) {
             <div>
               <Card className="ui-card--map">
                 <Suspense fallback={<div style={{ textAlign: "center", padding: "56px 0", color: "var(--color-text-tertiary)" }}>Loading site map…</div>}>
-                  <LazyIdealSiteMap pages={pages} onSelect={selectById} />
+                  <LazyIdealSiteMap references={references} />
                 </Suspense>
               </Card>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-                {pageTypeLegend}
-                <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "var(--color-background-secondary)", color: "var(--color-text-tertiary)", border: "0.5px dashed var(--color-border-secondary)" }}>orphan</span>
+                <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "#E8EFFA", color: "#185FA5", border: "1px solid #185FA533" }}>reference</span>
+                <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "var(--color-background-secondary)", color: "var(--color-text-tertiary)", border: "0.5px dashed var(--color-border-secondary)" }}>not working IA</span>
               </div>
             </div>
             <TodoPanelComponent generateForQueue={generateForQueue} onOpenPage={onOpenQueuedPage} />
@@ -122,7 +124,7 @@ export function MapTab(props: MapTabProps) {
                 {plannedLoading ? (
                   <div style={{ textAlign: "center", padding: "56px 0", color: "var(--color-text-tertiary)" }}>
                     <div style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid var(--color-border-secondary)", borderTopColor: "var(--color-text-secondary)", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
-                    <p style={{ fontSize: 13, margin: 0 }}>Loading plan…</p>
+                    <p style={{ fontSize: 13, margin: 0 }}>Loading canonical site plan…</p>
                   </div>
                 ) : (
                   <PlanDiagramComponent planned={plannedPages} pages={pages} onSelectPlanned={setSelectedPlanned} />
@@ -130,8 +132,8 @@ export function MapTab(props: MapTabProps) {
               </Card>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
                 {pageTypeLegend}
-                <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "var(--color-background-primary)", color: "var(--color-text-tertiary)", border: "0.5px dashed var(--color-border-secondary)" }}>planned</span>
-                <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "var(--color-background-secondary)", color: "#0F6E56", border: "1px solid #0F6E5640" }}>built</span>
+                <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "var(--color-background-primary)", color: "var(--color-text-tertiary)", border: "0.5px dashed var(--color-border-secondary)" }}>canonical concept</span>
+                <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "var(--color-background-secondary)", color: "#0F6E56", border: "1px solid #0F6E5640" }}>current artifact linked</span>
               </div>
             </div>
             <PlanSidebarComponent
