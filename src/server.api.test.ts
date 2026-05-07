@@ -1,5 +1,12 @@
 import request from "supertest";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  chatRequestSchema,
+  evaluateRequestSchema,
+  improveStructureRequestSchema,
+  parseRequestBody
+} from "../lib/requestSchemas.js";
+import packageJson from "../package.json";
 
 let app: any;
 
@@ -10,22 +17,242 @@ beforeAll(async () => {
   app = mod.app;
 });
 
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
 describe("API validation guards", () => {
+  it("declares and imports server validation dependencies", async () => {
+    expect(packageJson.dependencies?.zod).toBeDefined();
+    expect(packageJson.dependencies?.["express-rate-limit"]).toBeDefined();
+
+    const zod = await import("zod");
+    const expressRateLimit = await import("express-rate-limit");
+
+    expect(zod.object).toBeDefined();
+    expect(expressRateLimit.default).toBeDefined();
+  });
+
+  it("validates request schemas in process", () => {
+    expect(chatRequestSchema.safeParse({
+      model: "  claude  ",
+      messages: [{ role: "user", content: "Hello" }]
+    }).success).toBe(true);
+    expect(chatRequestSchema.safeParse({
+      model: "   ",
+      messages: [{ role: "user", content: "Hello" }]
+    }).success).toBe(false);
+    expect(chatRequestSchema.safeParse({
+      model: "claude",
+      messages: {}
+    }).success).toBe(false);
+    expect(chatRequestSchema.safeParse({
+      model: "claude",
+      messages: [{ role: "user" }]
+    }).success).toBe(false);
+    expect(chatRequestSchema.safeParse({
+      model: "claude",
+      messages: [{ role: "user", content: [{ type: "text", text: "Hello" }] }]
+    }).success).toBe(true);
+    expect(chatRequestSchema.safeParse({
+      model: "claude",
+      messages: [{ role: "user", content: [{ type: "text" }] }]
+    }).success).toBe(false);
+
+    expect(evaluateRequestSchema.safeParse({
+      draft: "  Valid draft  ",
+      pageName: "Page",
+      pageType: "Information",
+      userType: "General public"
+    }).success).toBe(true);
+    expect(evaluateRequestSchema.safeParse({
+      draft: "   "
+    }).success).toBe(false);
+
+    expect(improveStructureRequestSchema.safeParse({
+      raw: "  Valid raw content  ",
+      evaluationFeedback: {}
+    }).success).toBe(true);
+    expect(improveStructureRequestSchema.safeParse({
+      raw: "Valid raw content",
+      evaluationFeedback: "bad"
+    }).success).toBe(false);
+    expect(improveStructureRequestSchema.safeParse({
+      raw: "Valid raw content",
+      evaluationFeedback: { warnings: "bad" }
+    }).success).toBe(false);
+    expect(improveStructureRequestSchema.safeParse({
+      raw: "Valid raw content",
+      preferences: "bad"
+    }).success).toBe(false);
+    expect(chatRequestSchema.safeParse({
+      model: "claude",
+      messages: [{ role: "user", content: "Hello" }],
+      images: [{ base64: "abc123", mimeType: "image/png" }]
+    }).success).toBe(true);
+    expect(chatRequestSchema.safeParse({
+      model: "claude",
+      messages: [{ role: "user", content: "Hello" }],
+      images: [{ foo: "bar" }, null]
+    }).success).toBe(false);
+  });
+
+  it("parses request bodies in process", () => {
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn()
+    };
+
+    const parsed = parseRequestBody(
+      chatRequestSchema,
+      { body: { model: "  claude  ", messages: [{ role: "user", content: "Hello" }], extra: "keep me" } },
+      res as any,
+      "/api/chat"
+    );
+
+    expect(parsed).toEqual({ model: "  claude  ", messages: [{ role: "user", content: "Hello" }], extra: "keep me" });
+    expect(res.status).not.toHaveBeenCalled();
+    expect(res.json).not.toHaveBeenCalled();
+
+    const evaluateParsed = parseRequestBody(
+      evaluateRequestSchema,
+      { body: { draft: "  Valid draft  ", extra: "keep me too" } },
+      res as any,
+      "/api/evaluate"
+    );
+
+    expect(evaluateParsed).toEqual({ draft: "  Valid draft  ", extra: "keep me too" });
+    expect(res.status).not.toHaveBeenCalled();
+    expect(res.json).not.toHaveBeenCalled();
+
+    const invalid = parseRequestBody(
+      improveStructureRequestSchema,
+      { body: { raw: "Valid raw content", evaluationFeedback: "bad" } },
+      res as any,
+      "/api/improve-structure"
+    );
+
+    expect(invalid).toBeNull();
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      error: "Invalid request body for /api/improve-structure"
+    });
+  });
+
   it("rejects invalid /api/chat payloads", async () => {
-    const res = await request(app).post("/api/chat").send({ foo: "bar" });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new Error("mock upstream failure"))
+    );
+
+    const res = await request(app).post("/api/chat").send({
+      model: "   ",
+      messages: [{ role: "user", content: "Hello" }]
+    });
     expect(res.status).toBe(400);
-    expect(res.body.error).toContain("Invalid request body");
+    expect(res.body.error).toBe("Invalid request body for /api/chat");
   });
 
-  it("rejects missing draft for /api/evaluate", async () => {
-    const res = await request(app).post("/api/evaluate").send({});
+  it("rejects malformed nested /api/chat payloads", async () => {
+    const res = await request(app).post("/api/chat").send({
+      model: "claude",
+      messages: [{ role: "user" }],
+      images: [{ base64: "abc123" }]
+    });
     expect(res.status).toBe(400);
-    expect(res.body.error).toContain("Missing draft");
+    expect(res.body.error).toBe("Invalid request body for /api/chat");
   });
 
-  it("rejects invalid /api/improve-structure payload", async () => {
-    const res = await request(app).post("/api/improve-structure").send({ raw: "", preferences: "bad" });
+  it("allows a normal chat burst without rate limiting", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async () => ({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        body: new ReadableStream({
+          start(controller) {
+            controller.close();
+          }
+        }),
+        json: async () => ({ ok: true }),
+        text: async () => ""
+      } as any))
+    );
+
+    const payload = {
+      model: "claude",
+      messages: [{ role: "user", content: "Hello" }]
+    };
+    const limiterHeaders = {
+      "X-Forwarded-For": "203.0.113.20"
+    };
+
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const res = await request(app).post("/api/chat").set(limiterHeaders).send(payload);
+      expect(res.status).toBe(200);
+    }
+  });
+
+  it("rate limits repeated /api/chat requests", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async () => ({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        body: new ReadableStream({
+          start(controller) {
+            controller.close();
+          }
+        }),
+        json: async () => ({ ok: true }),
+        text: async () => ""
+      } as any))
+    );
+
+    const payload = {
+      model: "claude",
+      messages: [{ role: "user", content: "Hello" }]
+    };
+    const limiterHeaders = {
+      "X-Forwarded-For": "203.0.113.10"
+    };
+
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const res = await request(app).post("/api/chat").set(limiterHeaders).send(payload);
+      expect(res.status).toBe(200);
+    }
+
+    const limited = await request(app).post("/api/chat").set(limiterHeaders).send(payload);
+    expect(limited.status).toBe(429);
+    expect(limited.body.error).toBe("Too many requests. Please wait and try again.");
+  });
+
+  it("rejects invalid /api/evaluate payloads", async () => {
+    const res = await request(app).post("/api/evaluate").send({
+      draft: ""
+    });
     expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Invalid request body for /api/evaluate");
+  });
+
+  it("rejects invalid /api/improve-structure payloads", async () => {
+    const res = await request(app).post("/api/improve-structure").send({
+      raw: "Valid raw content",
+      preferences: "bad"
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Invalid request body for /api/improve-structure");
+  });
+
+  it("rejects invalid nested evaluation feedback for /api/improve-structure", async () => {
+    const res = await request(app).post("/api/improve-structure").send({
+      raw: "Valid raw content",
+      evaluationFeedback: { warnings: "bad" }
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Invalid request body for /api/improve-structure");
   });
 
   it("rejects invalid /api/karl-remediate payload", async () => {
