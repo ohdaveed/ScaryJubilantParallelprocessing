@@ -1,10 +1,11 @@
-import { Milestone, ComponentStyle, SkeletonTemplate } from "./types";
+import { Milestone, ComponentStyle, SkeletonTemplate, PageType, UserType } from "./types";
 import {
   TRANSACTION_REQUIRED_SECTION_LABELS,
   VALID_KARL_COMPONENTS,
   VALID_KARL_PAGE_TYPES
 } from "./karlStandards";
 
+// REFACTORED: Centralized typed page/user configuration for shared UI and logic consumers.
 export const KARL_PAGE_TYPES = [
   "Transaction",
   "Information",
@@ -107,7 +108,7 @@ OUTPUT FORMAT RULES:
 
 
 /** All Karl page types valid for HHVC content (excludes Agency). Used by Site Plan filter and Library filter. */
-export const PAGE_TYPES: string[] = KARL_PAGE_TYPES.filter((t) => t !== "Agency");
+export const PAGE_TYPES = KARL_PAGE_TYPES.filter((t) => t !== "Agency") as readonly PageType[];
 
 /**
  * Subset of `PAGE_TYPES` that the Generate page can produce drafts for.
@@ -118,7 +119,7 @@ export const PAGE_TYPES: string[] = KARL_PAGE_TYPES.filter((t) => t !== "Agency"
  * are tuned only for the page types listed here. Any type filtered out of this list
  * is "viewable / plannable but not generatable".
  */
-export const GENERATABLE_PAGE_TYPES: string[] = [
+export const GENERATABLE_PAGE_TYPES: readonly PageType[] = [
   "Transaction",
   "Information",
   "Topic",
@@ -127,7 +128,29 @@ export const GENERATABLE_PAGE_TYPES: string[] = [
   "Resource Collection",
   "Campaign"
 ];
-export const USER_TYPES = ["Resident / tenant", "Property owner / landlord", "General public", "Property manager", "HHVC staff"];
+export const USER_TYPES: readonly UserType[] = [
+  "Resident / tenant",
+  "Property owner / landlord",
+  "General public",
+  "Property manager",
+  "HHVC staff"
+];
+export const PAGE_TYPE_DESCRIPTIONS: Record<PageType, string> = {
+  Transaction: "Complete a task with steps and requirements",
+  Information: "Explain a policy, program, or process",
+  Topic: "Collect related services and guidance",
+  "Step by step": "Guide people through a multi-step process",
+  Location: "Share place details, hours, and services",
+  "Resource Collection": "Group links, forms, and references",
+  Campaign: "Promote a coordinated public initiative",
+  News: "Share timely updates",
+  Event: "Describe event details and participation",
+  About: "Explain a department service area",
+  Meeting: "Publish meeting information and notes",
+  Profile: "Highlight people or organizations",
+  "Data story": "Present findings with narrative context",
+  Reports: "Publish formal report content"
+};
 export const PEST_KW = ["rodent", "rat", "mouse", "mice", "cockroach", "roach", "flea", "mosquito", "fly", "flies", "bed bug", "bedbug", "tick", "ant", "wasp", "bee", "pest"];
 
 /** Body copy for the "Before you report to 311" section on every HHVC housing/pest report Transaction page. */

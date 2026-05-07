@@ -12,7 +12,8 @@ class FakePool {
 
     if (
       sql.startsWith("CREATE TABLE") ||
-      sql.startsWith("ALTER TABLE")
+      sql.startsWith("ALTER TABLE") ||
+      sql.startsWith("CREATE UNIQUE INDEX")
     ) {
       return { rows: [] };
     }

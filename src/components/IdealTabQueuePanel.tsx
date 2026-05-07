@@ -1,7 +1,7 @@
 import React, { memo, useState, useEffect } from "react";
-import { PageDraft, TodoItem } from "../types";
+import { PageDraft, TodoItem, UserType } from "../types";
 import { USER_TYPES } from "../constants";
-import { Btn, Card } from "./ui";
+import { APP_INPUT_SM_MB6_CLASS, APP_INPUT_SM_MB8_CLASS, Btn, Card } from "./ui";
 import { todosApi } from "../utils/api";
 import { useQueueRunner } from "../hooks/useQueueRunner";
 
@@ -12,9 +12,10 @@ export const IdealTabQueuePanel = memo(function IdealTabQueuePanel({
   generateForQueue: (todo: TodoItem) => Promise<PageDraft | null>;
   onOpenPage: (pageId: string) => void;
 }) {
+  // REFACTORED: Reused shared compact input/select class constants to remove duplicated className literals.
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [newTopic, setNewTopic] = useState("");
-  const [newUT, setNewUT] = useState(USER_TYPES[0]);
+  const [newUT, setNewUT] = useState<UserType>(USER_TYPES[0]);
   const [adding, setAdding] = useState(false);
   const [loadingTodos, setLoadingTodos] = useState(true);
 
@@ -53,7 +54,7 @@ export const IdealTabQueuePanel = memo(function IdealTabQueuePanel({
       {adding ? (
         <div style={{ marginBottom: 16 }}>
           <input
-            className="app-input app-input--sm app-input--mb6"
+            className={APP_INPUT_SM_MB6_CLASS}
             placeholder="Page name / topic…"
             value={newTopic}
             onChange={e => setNewTopic(e.target.value)}
@@ -61,11 +62,11 @@ export const IdealTabQueuePanel = memo(function IdealTabQueuePanel({
             autoFocus
           />
           <select
-            className="app-input app-input--sm app-input--mb8"
+            className={APP_INPUT_SM_MB8_CLASS}
             aria-label="Primary user"
             title="Primary user"
             value={newUT}
-            onChange={e => setNewUT(e.target.value)}
+            onChange={e => setNewUT(e.target.value as UserType)}
           >
             {USER_TYPES.map(u => <option key={u}>{u}</option>)}
           </select>

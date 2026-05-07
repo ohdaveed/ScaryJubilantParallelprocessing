@@ -6,6 +6,7 @@ import { Badge, Btn, Card, IssueResolutionPanel, ComponentChips, RelPanel, Progr
 import { StreamRenderer } from "../components/StreamRenderer";
 import { EvaluatingState } from "../components/EvaluatingState";
 import { SuccessState } from "../components/SuccessState";
+import { useGeneratePageActions } from "../hooks/useGeneratePageActions";
 import { useNavigate } from "react-router-dom";
 import { preferencesApi, pagesApi } from "../utils/api";
 import packageJson from "../../package.json";
@@ -13,6 +14,7 @@ import packageJson from "../../package.json";
 const LazySfGovPagePreview = lazy(() => import("../components/SfGovPreview").then((m) => ({ default: m.SfGovPagePreview })));
 
 export default function GeneratePage() {
+  // REFACTORED: Moved clipboard/download/screenshot action logic into a dedicated hook for readability.
   const ctx = useWorkspace();
   const navigate = useNavigate();
   const screenshotRef = useRef<HTMLDivElement>(null);
@@ -45,35 +47,11 @@ export default function GeneratePage() {
   const draftEditSaving = wsState.draftEditSaving;
   const draftEditError = wsState.draftEditError;
 
-  const handleCopy = useCallback((text: string) => {
-    navigator.clipboard.writeText(text).catch(() => {});
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }, [setCopied]);
-
-  const handleDownload = useCallback((text: string, name: string) => {
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
-    a.download = name;
-    a.click();
-  }, []);
-
-  const handleExportScreenshot = useCallback(async (pageName: string) => {
-    if (!screenshotRef.current) return;
-    await document.fonts.ready;
-    const filename = (clean(pageName) || "page").toLowerCase().replace(/\s+/g, "-") + ".png";
-    try {
-      const { toPng } = await import("html-to-image");
-      const dataUrl = await toPng(screenshotRef.current, { backgroundColor: "#ffffff" });
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = filename;
-      a.click();
-    } catch (err) {
-      console.error("Screenshot export failed:", err);
-      handleDownload(selected?.draft ?? "", filename.replace(".png", "-draft.txt"));
-    }
-  }, [selected, screenshotRef, handleDownload]);
+  const { handleCopy, handleDownload } = useGeneratePageActions({
+    selectedDraftText: selected?.draft,
+    screenshotRef,
+    setCopied
+  });
 
   const handleConfirmRegenerate = useCallback(() => {
     if (!selected) return;

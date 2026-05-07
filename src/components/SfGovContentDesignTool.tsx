@@ -1,6 +1,9 @@
 import React, { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import "./SfGovContentDesignTool.css";
 import { pageTypeToDotClass } from "./sfGovContentDesignTool/pageTypeDots";
+import { PAGE_TYPE_DESCRIPTIONS } from "../constants";
+import { PageTypeButton } from "./features/PageTypeButton";
+import { QuickPickItem } from "./features/QuickPickItem";
 
 export { normalizePageTypeKey, pageTypeToDotClass } from "./sfGovContentDesignTool/pageTypeDots";
 
@@ -166,62 +169,7 @@ type LibraryRowProps = {
   dismissSignal: number;
 };
 
-const LibraryPageItem = memo(function LibraryPageItem({ page, active, onSelect, onDelete, dismissSignal }: LibraryRowProps) {
-  const [confirming, setConfirming] = useState(false);
-
-  useEffect(() => {
-    setConfirming(false);
-  }, [dismissSignal]);
-
-  const dotClass = pageTypeToDotClass(page.pageType);
-
-  return (
-    <div className={`page-item${active ? " active" : ""}${confirming ? " confirming" : ""}`}>
-      <button type="button" className="page-main" onClick={onSelect}>
-        <span className={`page-dot ${dotClass}`} aria-hidden />
-        <span className="page-name">{page.title}</span>
-        {page.gradeLetter ? <span className="page-built">{page.gradeLetter}</span> : null}
-      </button>
-      {onDelete ? (
-        <button
-          type="button"
-          className="page-delete"
-          title="Delete page"
-          aria-label={`Delete ${page.title}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            setConfirming(true);
-          }}
-        >
-          <IconTrash />
-        </button>
-      ) : null}
-      <div className="confirm-row">
-        <span className="confirm-text">Delete this page?</span>
-        <button
-          type="button"
-          className="confirm-yes"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete?.();
-          }}
-        >
-          Delete
-        </button>
-        <button
-          type="button"
-          className="confirm-no"
-          onClick={(e) => {
-            e.stopPropagation();
-            setConfirming(false);
-          }}
-        >
-          Keep
-        </button>
-      </div>
-    </div>
-  );
-});
+// REFACTORED: Extracted repeated page type and quick-pick row rendering into shared feature components.
 
 export function SfGovContentDesignTool({
   className,
@@ -312,16 +260,6 @@ export function SfGovContentDesignTool({
     },
     [tabs, onTabChange, baseId]
   );
-
-  const pageTypeDescriptions: Record<string, string> = {
-    Transaction: "Complete a task with steps and requirements",
-    Information: "Explain a policy, program, or process",
-    Topic: "Collect related services and guidance",
-    "Step by step": "Guide people through a multi-step process",
-    Location: "Share place details, hours, and services",
-    "Resource Collection": "Group links, forms, and references",
-    Campaign: "Promote a coordinated public initiative"
-  };
 
   const shellStyle = useMemo(
     () =>
@@ -510,16 +448,14 @@ export function SfGovContentDesignTool({
                   Page type
                 </div>
                 <div className="page-type-grid" role="group" aria-labelledby={`${baseId}-page-type-label`}>
-                  {pageTypeOptions.map((pt) => (
-                    <button
-                      key={pt}
-                      type="button"
-                      className={`page-type-card${pt === activePageType ? " active" : ""}`}
-                      onClick={() => onPageTypeChange?.(pt)}
-                    >
-                      <span className="page-type-card__name">{pt}</span>
-                      <span className="page-type-card__meta">{pageTypeDescriptions[pt] ?? "Build this page format"}</span>
-                    </button>
+                  {pageTypeOptions.map((pageTypeOption) => (
+                    <PageTypeButton
+                      key={pageTypeOption}
+                      pageType={pageTypeOption}
+                      description={PAGE_TYPE_DESCRIPTIONS[pageTypeOption as keyof typeof PAGE_TYPE_DESCRIPTIONS] ?? "Build this page format"}
+                      active={pageTypeOption === activePageType}
+                      onSelect={(selectedPageType) => onPageTypeChange?.(selectedPageType)}
+                    />
                   ))}
                 </div>
               </div>
@@ -593,14 +529,14 @@ export function SfGovContentDesignTool({
                   {libraryPages.length === 0 ? (
                     <p className="panel-library-quickpick__empty">No saved pages yet. Generate one or add from Site Plan.</p>
                   ) : (
-                    libraryPages.map((p) => (
-                      <LibraryPageItem
-                        key={p.id}
-                        page={p}
-                        active={p.id === selectedLibraryPageId}
+                    libraryPages.map((page) => (
+                      <QuickPickItem
+                        key={page.id}
+                        page={page}
+                        active={page.id === selectedLibraryPageId}
                         dismissSignal={dismissConfirm}
-                        onSelect={() => onLibraryPageSelect?.(p.id)}
-                        onDelete={onLibraryPageDelete ? () => onLibraryPageDelete(p.id) : undefined}
+                        onSelect={() => onLibraryPageSelect?.(page.id)}
+                        onDelete={onLibraryPageDelete ? () => onLibraryPageDelete(page.id) : undefined}
                       />
                     ))
                   )}

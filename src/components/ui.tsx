@@ -39,6 +39,10 @@ export const Divider: React.FC<{ variant?: DividerVariant }> = ({ variant = "def
 
 /** Standard text field / select appearance — use with `className="ui-input"` (optional modifiers: `ui-input--search`, `ui-input--filter`). */
 export const UI_INPUT_CLASS = "ui-input";
+// REFACTORED: Shared className tokens for repeated compact form controls across side panels.
+export const APP_INPUT_SM_CLASS = "app-input app-input--sm";
+export const APP_INPUT_SM_MB6_CLASS = `${APP_INPUT_SM_CLASS} app-input--mb6`;
+export const APP_INPUT_SM_MB8_CLASS = `${APP_INPUT_SM_CLASS} app-input--mb8`;
 
 interface BtnProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "type" | "style"> {
   variant?: "primary" | "ghost" | "danger";

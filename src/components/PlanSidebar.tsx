@@ -1,7 +1,7 @@
 import React, { memo, useMemo, useState } from "react";
-import { PageDraft, PlannedPage } from "../types";
+import { PageDraft, PageType, PlannedPage, UserType } from "../types";
 import { PAGE_TYPES, USER_TYPES } from "../constants";
-import { Badge, Btn, Card, Divider } from "./ui";
+import { APP_INPUT_SM_MB6_CLASS, APP_INPUT_SM_MB8_CLASS, Badge, Btn, Card, Divider } from "./ui";
 import { clean } from "../utils";
 
 export const PlanSidebar = memo(function PlanSidebar({ planned, pages, selectedPlanned, onSelectPlanned, onAdd, onDelete, onGenerate, onViewPage, onLinkExistingPage, onUnlinkPage }: {
@@ -16,10 +16,11 @@ export const PlanSidebar = memo(function PlanSidebar({ planned, pages, selectedP
   onLinkExistingPage?: (plannedId: number, pageId: string) => void | Promise<void>;
   onUnlinkPage?: (plannedId: number) => void | Promise<void>;
 }) {
+  // REFACTORED: Consolidated repeated compact input/select class strings into shared UI constants.
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
-  const [pageType, setPageType] = useState(PAGE_TYPES[0]);
-  const [ut, setUt] = useState(USER_TYPES[0]);
+  const [pageType, setPageType] = useState<PageType>(PAGE_TYPES[0]);
+  const [ut, setUt] = useState<UserType>(USER_TYPES[0]);
   const [parentId, setParentId] = useState<number | null>(null);
   const [linkPickerOpen, setLinkPickerOpen] = useState(false);
   const [linkPickerSelection, setLinkPickerSelection] = useState<string>("");
@@ -90,7 +91,7 @@ export const PlanSidebar = memo(function PlanSidebar({ planned, pages, selectedP
                     <div className="app-ps-add-panel">
                       <p className="app-ps-muted" style={{ margin: "0 0 6px" }}>Pick a Library draft to link to this concept.</p>
                       <select
-                        className="app-input app-input--sm app-input--mb6"
+                        className={APP_INPUT_SM_MB6_CLASS}
                         aria-label="Library draft"
                         title="Library draft"
                         value={linkPickerSelection}
@@ -149,14 +150,14 @@ export const PlanSidebar = memo(function PlanSidebar({ planned, pages, selectedP
 
           {adding ? (
             <div className="app-ps-add-panel">
-              <input className="app-input app-input--sm app-input--mb6" placeholder="Page name…" value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === "Enter" && handleAdd()} autoFocus />
-              <select className="app-input app-input--sm app-input--mb6" aria-label="Page type" title="Page type" value={pageType} onChange={e => setPageType(e.target.value)}>
+              <input className={APP_INPUT_SM_MB6_CLASS} placeholder="Page name…" value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === "Enter" && handleAdd()} autoFocus />
+              <select className={APP_INPUT_SM_MB6_CLASS} aria-label="Page type" title="Page type" value={pageType} onChange={e => setPageType(e.target.value as PageType)}>
                 {PAGE_TYPES.map(t => <option key={t}>{t}</option>)}
               </select>
-              <select className="app-input app-input--sm app-input--mb6" aria-label="Primary user" title="Primary user" value={ut} onChange={e => setUt(e.target.value)}>
+              <select className={APP_INPUT_SM_MB6_CLASS} aria-label="Primary user" title="Primary user" value={ut} onChange={e => setUt(e.target.value as UserType)}>
                 {USER_TYPES.map(u => <option key={u}>{u}</option>)}
               </select>
-              <select className="app-input app-input--sm app-input--mb8" aria-label="Parent page" title="Parent page" value={parentId ?? ""} onChange={e => setParentId(e.target.value ? Number(e.target.value) : null)}>
+              <select className={APP_INPUT_SM_MB8_CLASS} aria-label="Parent page" title="Parent page" value={parentId ?? ""} onChange={e => setParentId(e.target.value ? Number(e.target.value) : null)}>
                 <option value="">No parent</option>
                 {planned.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>

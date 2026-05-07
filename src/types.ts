@@ -21,6 +21,30 @@ export interface ParseErrorDetail {
   message: string;
 }
 
+// REFACTORED: Added explicit unions for core constrained page/user values.
+export type PageType =
+  | "Transaction"
+  | "Information"
+  | "Topic"
+  | "Step by step"
+  | "Location"
+  | "Resource Collection"
+  | "Campaign"
+  | "News"
+  | "Event"
+  | "About"
+  | "Meeting"
+  | "Profile"
+  | "Data story"
+  | "Reports";
+
+export type UserType =
+  | "Resident / tenant"
+  | "Property owner / landlord"
+  | "General public"
+  | "Property manager"
+  | "HHVC staff";
+
 export interface ParsedPageFields {
   raw: string;
   name: string;

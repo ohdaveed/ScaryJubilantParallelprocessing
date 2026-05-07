@@ -1,7 +1,7 @@
 import React, { memo, useState, useEffect, useCallback } from "react";
-import { PageDraft, PlannedPage, TodoItem } from "../types";
+import { PageDraft, PlannedPage, TodoItem, UserType } from "../types";
 import { USER_TYPES } from "../constants";
-import { Btn, Card } from "./ui";
+import { APP_INPUT_SM_MB6_CLASS, APP_INPUT_SM_MB8_CLASS, Btn, Card } from "./ui";
 import { useQueueRunner } from "../hooks/useQueueRunner";
 import { todosApi } from "../utils/api";
 
@@ -14,10 +14,11 @@ export const TodoPanel = memo(function TodoPanel({
   onOpenPage: (pageId: string) => void;
   plannedPages?: PlannedPage[];
 }) {
+  // REFACTORED: Reused shared compact input/select class constants to remove duplicated className literals.
   const plannedNameById = new Map<number, string>(plannedPages.map((p) => [p.id, p.name]));
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [newTopic, setNewTopic] = useState("");
-  const [newUT, setNewUT] = useState(USER_TYPES[0]);
+  const [newUT, setNewUT] = useState<UserType>(USER_TYPES[0]);
   const [adding, setAdding] = useState(false);
   const [loadingTodos, setLoadingTodos] = useState(true);
 
@@ -169,8 +170,8 @@ export const TodoPanel = memo(function TodoPanel({
 
       {adding ? (
         <div className="app-todo-add-box">
-          <input className="app-input app-input--sm app-input--mb6" placeholder="Page topic…" value={newTopic} onChange={e => setNewTopic(e.target.value)} onKeyDown={e => e.key === "Enter" && addTodo()} autoFocus />
-          <select className="app-input app-input--sm app-input--mb8" aria-label="Primary user" title="Primary user" value={newUT} onChange={e => setNewUT(e.target.value)}>
+          <input className={APP_INPUT_SM_MB6_CLASS} placeholder="Page topic…" value={newTopic} onChange={e => setNewTopic(e.target.value)} onKeyDown={e => e.key === "Enter" && addTodo()} autoFocus />
+          <select className={APP_INPUT_SM_MB8_CLASS} aria-label="Primary user" title="Primary user" value={newUT} onChange={e => setNewUT(e.target.value as UserType)}>
             {USER_TYPES.map(u => <option key={u}>{u}</option>)}
           </select>
           <div className="app-row-gap-6">

@@ -6,7 +6,8 @@ import { PlanDiagram } from "../components/PlanDiagram";
 import { PlanSidebar } from "../components/PlanSidebar";
 import { TodoPanel } from "../components/TodoPanel";
 import { CanonicalIaInspector } from "../components/CanonicalIaInspector";
-import { ReferenceExample, TodoItem } from "../types";
+import { TodoItem } from "../types";
+import { useReferenceGenerationNavigation } from "../hooks/useReferenceGenerationNavigation";
 
 export default function PlanPage() {
   const ctx = useWorkspace();
@@ -56,23 +57,15 @@ export default function PlanPage() {
     [linkPlannedPage]
   );
 
-  const handleGenerateFromReference = useCallback(
-    (reference: ReferenceExample, suggestedPageType: string) => {
-      const goal = reference.title?.trim() || "";
-      const benchmarkNotes =
-        `Benchmark reference: ${reference.title} (source: ${reference.sourceSystem}, type: ${reference.referenceType.replace(/_/g, " ")}, pattern: ${reference.mappedPattern}).` +
-        (reference.notes ? `\n\nNotes: ${reference.notes}` : "");
-      if (goal) {
-        setTopic(goal);
-        setTopicTouched(true);
-      }
-      setNotes(benchmarkNotes);
-      if (suggestedPageType) setPendingPageType(suggestedPageType);
-      setPendingPlannedId(null);
-      navigate("/generate");
-    },
-    [navigate, setTopic, setTopicTouched, setNotes, setPendingPageType, setPendingPlannedId]
-  );
+  // REFACTORED: Reused shared hook for reference->generate navigation flow to remove duplicated page logic.
+  const handleGenerateFromReference = useReferenceGenerationNavigation({
+    navigate,
+    setTopic,
+    setTopicTouched,
+    setNotes,
+    setPendingPageType,
+    setPendingPlannedId
+  });
 
   return (
     <div className="app-studio-tab-pad">

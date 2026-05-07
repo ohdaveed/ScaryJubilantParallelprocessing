@@ -180,6 +180,84 @@ const SfGovFooter: React.FC = () => (
   </div>
 );
 
+type PreviewBrowserChromeProps = { titleText: string };
+
+function PreviewBrowserChrome({ titleText }: PreviewBrowserChromeProps) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+        padding: "10px 16px",
+        background: "linear-gradient(180deg, #F3F5F7 0%, #E8ECF0 100%)",
+        borderBottom: `1px solid ${SF.lightBorder}`,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ display: "flex", gap: 6, alignItems: "center" }} aria-hidden>
+          <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#FF5F57", boxShadow: "inset 0 -1px 1px rgba(0,0,0,0.15)" }} />
+          <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#FEBC2E", boxShadow: "inset 0 -1px 1px rgba(0,0,0,0.12)" }} />
+          <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#28C840", boxShadow: "inset 0 -1px 1px rgba(0,0,0,0.12)" }} />
+        </span>
+        <span
+          style={{
+            fontFamily: SF.mono,
+            fontSize: 11,
+            fontWeight: 400,
+            letterSpacing: "0.04em",
+            color: SF.slate2,
+          }}
+        >
+          {titleText}
+        </span>
+      </div>
+      <span
+        style={{
+          fontFamily: SF.mono,
+          fontSize: 10,
+          color: SF.blue,
+          padding: "4px 10px",
+          borderRadius: 999,
+          background: `${SF.blue}12`,
+          border: `1px solid ${SF.blue}30`,
+          fontWeight: 600,
+        }}
+      >
+        Karl CMS reference
+      </span>
+    </div>
+  );
+}
+
+type PreviewPageTypeBadgeProps = { typeLabel: string; typeColor: string };
+
+function PreviewPageTypeBadge({ typeLabel, typeColor }: PreviewPageTypeBadgeProps) {
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <span
+        style={{
+          display: "inline-block",
+          fontFamily: SF.font,
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: "0.14em",
+          color: typeColor,
+          textTransform: "uppercase" as const,
+          padding: "6px 12px",
+          borderRadius: 999,
+          background: `${typeColor}14`,
+          border: `1px solid ${typeColor}33`,
+          boxShadow: "0 2px 8px rgba(0,43,72,0.06)",
+        }}
+      >
+        {typeLabel}
+      </span>
+    </div>
+  );
+}
+
 function parseInlineLinks(text: string): React.ReactNode {
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
@@ -569,6 +647,7 @@ function renderSfGovLines(lines: string[], parentSection?: string): React.ReactN
 
 export const SfGovPagePreview = React.forwardRef<HTMLDivElement, { draft: string; pageType?: string; pageTitle?: string }>(
   ({ draft, pageType, pageTitle }, ref) => {
+  // REFACTORED: Extracted browser chrome and type badge UI sections to keep preview render flow easier to follow.
   if (!draft) return <p style={{ color: SF.slate2, fontSize: 14, fontFamily: SF.font }}>No draft content.</p>;
   const sections = parseDraftSections(draft);
 
@@ -598,50 +677,7 @@ export const SfGovPagePreview = React.forwardRef<HTMLDivElement, { draft: string
           border: "1px solid rgba(255,255,255,0.75)",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-            padding: "10px 16px",
-            background: "linear-gradient(180deg, #F3F5F7 0%, #E8ECF0 100%)",
-            borderBottom: `1px solid ${SF.lightBorder}`,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ display: "flex", gap: 6, alignItems: "center" }} aria-hidden>
-              <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#FF5F57", boxShadow: "inset 0 -1px 1px rgba(0,0,0,0.15)" }} />
-              <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#FEBC2E", boxShadow: "inset 0 -1px 1px rgba(0,0,0,0.12)" }} />
-              <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#28C840", boxShadow: "inset 0 -1px 1px rgba(0,0,0,0.12)" }} />
-            </span>
-            <span
-              style={{
-                fontFamily: SF.mono,
-                fontSize: 11,
-                fontWeight: 400,
-                letterSpacing: "0.04em",
-                color: SF.slate2,
-              }}
-            >
-              SF.gov / HHVC preview
-            </span>
-          </div>
-          <span
-            style={{
-              fontFamily: SF.mono,
-              fontSize: 10,
-              color: SF.blue,
-              padding: "4px 10px",
-              borderRadius: 999,
-              background: `${SF.blue}12`,
-              border: `1px solid ${SF.blue}30`,
-              fontWeight: 600,
-            }}
-          >
-            Karl CMS reference
-          </span>
-        </div>
+        <PreviewBrowserChrome titleText="SF.gov / HHVC preview" />
 
         <SfGovHeader />
 
@@ -655,28 +691,7 @@ export const SfGovPagePreview = React.forwardRef<HTMLDivElement, { draft: string
             backgroundSize: "22px 22px",
           }}
         >
-        {typeLabel && (
-          <div style={{ marginBottom: 20 }}>
-            <span
-              style={{
-                display: "inline-block",
-                fontFamily: SF.font,
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: "0.14em",
-                color: typeColor,
-                textTransform: "uppercase" as const,
-                padding: "6px 12px",
-                borderRadius: 999,
-                background: `${typeColor}14`,
-                border: `1px solid ${typeColor}33`,
-                boxShadow: "0 2px 8px rgba(0,43,72,0.06)",
-              }}
-            >
-              {typeLabel}
-            </span>
-          </div>
-        )}
+        {typeLabel && <PreviewPageTypeBadge typeLabel={typeLabel} typeColor={typeColor} />}
 
         {sections.map((sec, i) => {
           if (sec.type === "title") {
