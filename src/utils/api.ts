@@ -61,7 +61,7 @@ const toPageSummary = (page: Partial<PageDraft>): PageDraft => {
 
 export const pagesApi = {
   list: async (): Promise<PageDraft[]> => {
-    const summaryFields = ["id", "name", "pageType", "userType", "createdAt", "reviewStatus", "currentVersionNumber", "draftPreview"].join(",");
+    const summaryFields = ["id", "name", "pageType", "userType", "createdAt", "reviewStatus", "currentVersionNumber", "draftPreview", "karlConnected", "karlEvaluation", "qualityGate"].join(",");
     const res = await fetch(`${API_BASE}/pages?fields=${encodeURIComponent(summaryFields)}&includeDraft=false&includeRaw=false&includeDraftPreview=true`);
     if (!res.ok) throw new Error(`Failed to load pages: ${res.status}`);
     const data = await res.json();

@@ -1,7 +1,12 @@
 import React, { useCallback, useMemo, lazy, Suspense } from "react";
+import { createRoot } from "react-dom/client";
 import { useWorkspace } from "../context/WorkspaceContext";
 import { LibraryTab } from "../components/tabs/LibraryTab";
 import { clean, findOverlappingPageIds, getVerificationState, VERIFICATION_FILTERS } from "../utils";
+import { pagesApi } from "../utils/api";
+import { generateZip, renderPageAsPDF, renderPageAsPNG } from "../utils/export";
+import { SfGovPagePreview } from "../components/SfGovPreview";
+import type { ReviewStatus } from "../types";
 
 const LazySfGovPagePreview = lazy(() => import("../components/SfGovPreview").then((m) => ({ default: m.SfGovPagePreview })));
 
@@ -9,11 +14,15 @@ export default function LibraryPage() {
   const ctx = useWorkspace();
 
   const {
-    pages, pagesLoading, seeding, selected,
+    pages, setPages, pagesLoading, seeding, selected,
     wsState, wsActions, openHistory, deletePage, openPageById, setSelected
   } = ctx;
 
   const overlapIds = useMemo(() => findOverlappingPageIds(pages), [pages]);
+  const selectedPages = useMemo(
+    () => pages.filter((page) => wsState.selectedPageIds.has(page.id)),
+    [pages, wsState.selectedPageIds]
+  );
   
   const filtered = useMemo(() => {
     const query = wsState.search.toLowerCase().trim();
@@ -44,6 +53,84 @@ export default function LibraryPage() {
     await deletePage(id);
   }, [deletePage]);
 
+  const handleDownloadText = useCallback((text: string, name: string) => {
+    if (!text) return;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+    a.download = name;
+    a.click();
+  }, []);
+
+  const renderSelectedPreview = useCallback(async (page: (typeof pages)[number], format: "png" | "pdf") => {
+    const mountId = `library-export-${page.id}-${format}-${Date.now()}`;
+    const container = document.createElement("div");
+    container.id = mountId;
+    container.style.position = "fixed";
+    container.style.left = "-100000px";
+    container.style.top = "0";
+    container.style.width = "1200px";
+    container.style.background = "#ffffff";
+    container.style.pointerEvents = "none";
+    container.style.overflow = "hidden";
+    container.style.opacity = "0";
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    try {
+      root.render(
+        <div style={{ width: "1200px", background: "#ffffff" }}>
+          <SfGovPagePreview draft={page.draft} pageType={page.pageType} pageTitle={clean(page.name)} />
+        </div>
+      );
+
+      if (document.fonts?.ready) {
+        await document.fonts.ready.catch(() => {});
+      }
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+
+      return format === "png"
+        ? await renderPageAsPNG(page, mountId)
+        : await renderPageAsPDF(page, mountId);
+    } finally {
+      root.unmount();
+      container.remove();
+    }
+  }, []);
+
+  const handleDownloadSelected = useCallback(async (format: "png" | "pdf") => {
+    if (selectedPages.length === 0) return;
+
+    const files = await Promise.all(selectedPages.map((page) => renderSelectedPreview(page, format)));
+    if (files.length === 1) {
+      const { blob, filename } = files[0];
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+      return;
+    }
+
+    const zipBlob = await generateZip(files);
+    const zipName = format === "png" ? "hhvc-selected-pages-png.zip" : "hhvc-selected-pages-pdf.zip";
+    const url = URL.createObjectURL(zipBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = zipName;
+    a.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  }, [renderSelectedPreview, selectedPages]);
+
+  const handleUpdateReviewStatus = useCallback(async (id: string, status: ReviewStatus) => {
+    await pagesApi.updateReview(id, status);
+    setPages((prev) => prev.map((page) => (page.id === id ? { ...page, reviewStatus: status } : page)));
+    if (selected?.id === id) {
+      setSelected({ ...selected, reviewStatus: status });
+    }
+  }, [selected, setPages, setSelected]);
+
   return (
     <div style={{ display: "flex", height: "100%", gap: 0, overflow: "hidden" }}>
       {/* Library list - full width when no preview, half when preview open */}
@@ -70,12 +157,15 @@ export default function LibraryPage() {
           selectAllPages={() => wsActions.selectAllPages(pages.map(p => p.id))}
           clearPageSelection={wsActions.clearPageSelection}
           onRequestBulkDelete={() => wsActions.deleteSelectedPages(deletePage)}
-          onDownloadPNG={() => {}}
-          onDownloadPDF={() => {}}
-          onDownloadText={() => {}}
-          onSelectPage={(p) => { void openPageById(p.id); }}
+          onDownloadPNG={() => void handleDownloadSelected("png")}
+          onDownloadPDF={() => void handleDownloadSelected("pdf")}
+          onDownloadText={handleDownloadText}
+          onSelectPage={(p) => {
+            setSelected(p);
+            void openPageById(p.id);
+          }}
           onTogglePageSelection={wsActions.togglePageSelection}
-          onUpdateReviewStatus={async () => {}}
+          onUpdateReviewStatus={handleUpdateReviewStatus}
           onOpenHistory={handleOpenHistory}
         />
       </div>

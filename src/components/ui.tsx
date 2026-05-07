@@ -137,13 +137,13 @@ export const KarlStatus: React.FC<{ status: string }> = ({ status }) => {
   const keys = ["idle", "connecting", "active", "fallback"] as const;
   const key = keys.includes(status as (typeof keys)[number]) ? status : "idle";
   const labels: Record<string, string> = {
-    idle: "Content checks offline",
+    idle: "Content checks ready",
     connecting: "Connecting to content standards…",
     active: "Content checks connected",
     fallback: "Live standards unavailable — using baseline rules"
   };
   const hints: Record<string, string> = {
-    idle: "You can still generate drafts. Evaluation uses baseline SF.gov rules until the service connects.",
+    idle: "You can still generate drafts. Evaluation uses bundled SF.gov rules until live Karl guidance is consulted.",
     connecting: "Hang on — verifying against Karl content standards.",
     active: "Drafts are scored against live Karl guidance when you generate or regenerate.",
     fallback: "Generation and grading continue with bundled standards."

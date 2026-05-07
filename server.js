@@ -85,6 +85,9 @@ const ALLOWED_PAGE_FIELDS = new Set([
   "reviewStatus",
   "currentVersionNumber",
   "draftPreview",
+  "karlConnected",
+  "karlEvaluation",
+  "qualityGate",
   "draft",
   "raw"
 ]);

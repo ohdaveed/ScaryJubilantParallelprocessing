@@ -105,7 +105,7 @@ export default function GeneratePage() {
 
   const contentChecksFooter = useMemo(() => {
     const labels: Record<string, string> = {
-      idle: "Content checks offline",
+      idle: "Content checks ready",
       connecting: "Connecting to standards…",
       active: "Content checks on",
       fallback: "Baseline rules (live standards unavailable)"
