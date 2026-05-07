@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useCallback, useEffect, useRef, useMemo, Dispatch, SetStateAction } from "react";
-import { PageDraft, TodoItem, PlannedPage, UserPreference } from "../types";
+import type { IANode, PageConcept, PageDraft, PlannedPage, ReferenceExample, TodoItem, UserPreference } from "../types";
 import { usePagesData } from "../hooks/usePagesData";
 import { usePlanMap } from "../hooks/usePlanMap";
 import { usePageGeneration } from "../hooks/usePageGeneration";
@@ -74,15 +74,16 @@ export interface WorkspaceContextValue {
   wsState: WorkspaceState;
   wsActions: WorkspaceActions;
   openPageById: (id: string) => Promise<void>;
-  concepts: any[];
-  references: any[];
+  concepts: PageConcept[];
+  nodes: IANode[];
+  references: ReferenceExample[];
 }
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const { pages, setPages, pagesLoading, hydratePage: rawHydrate, deletePage: deleteStoredPage } = usePagesData();
-  const { concepts, references, refreshModel } = useProjectModel();
+  const { concepts, nodes, references, refreshModel } = useProjectModel();
   const {
     plannedPages,
     plannedLoading,
@@ -205,7 +206,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     openHistory, restoreVersion,
     wsState, wsActions,
     openPageById,
-    concepts, references
+    concepts, nodes, references
   };
 
   return (

@@ -4,6 +4,7 @@ import { MapTab } from "../components/tabs/MapTab";
 import { PlanDiagram } from "../components/PlanDiagram";
 import { PlanSidebar } from "../components/PlanSidebar";
 import { TodoPanel } from "../components/TodoPanel";
+import { CanonicalIaInspector } from "../components/CanonicalIaInspector";
 import { TodoItem } from "../types";
 
 export default function PlanPage() {
@@ -59,6 +60,9 @@ export default function PlanPage() {
         TodoPanelComponent={TodoPanel}
         onOpenQueuedPage={(id) => { void openPageById(id); }}
       />
+      <div style={{ marginTop: 20 }}>
+        <CanonicalIaInspector concepts={ctx.concepts} nodes={ctx.nodes} />
+      </div>
     </div>
   );
 }
