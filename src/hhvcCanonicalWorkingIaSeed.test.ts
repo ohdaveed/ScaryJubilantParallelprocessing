@@ -46,38 +46,75 @@ describe("HHVC canonical working IA seed", () => {
     expect(hhvcCanonicalWorkingKarlConnectionSummary.rootTopicSlug).toBe("hhvc-root");
     expect(hhvcCanonicalWorkingKarlConnectionSummary.childTopicSlugs).toHaveLength(5);
     expect(hhvcCanonicalWorkingKarlConnectionSummary.autoServiceSlugs).toHaveLength(15);
-    expect(hhvcCanonicalWorkingKarlConnectionSummary.manualSupportSlugs).toHaveLength(26);
+    expect(hhvcCanonicalWorkingKarlConnectionSummary.manualSectionSlugs).toHaveLength(26);
 
     const reportRats = hhvcCanonicalWorkingIaSeed.find((concept) => concept.slug === "report-rats-or-mice");
     const fixHub = hhvcCanonicalWorkingIaSeed.find((concept) => concept.slug === "fix-housing-or-pest-problem");
     const workshop = hhvcCanonicalWorkingIaSeed.find((concept) => concept.slug === "request-mosquito-education-workshop");
+    const fixInspection = hhvcCanonicalWorkingIaSeed.find((concept) => concept.slug === "get-ready-housing-inspection");
 
     expect(reportRats?.karlConnection).toEqual({
       placementKind: "auto_service",
+      placementMode: "auto_service",
       parentTopicSlug: "report-pest-or-housing-problem",
       topicTagSlug: "report-pest-or-housing-problem",
+      sectionSurface: "services",
+      sectionHeading: "More services",
+      sectionOrder: null,
       relatedEligible: true,
       resourcesEligible: false
     });
 
     expect(fixHub?.karlConnection).toEqual({
       placementKind: "child_topic",
+      placementMode: "none",
       parentTopicSlug: "hhvc-root",
       topicTagSlug: null,
+      sectionSurface: null,
+      sectionHeading: null,
+      sectionOrder: null,
       relatedEligible: true,
       resourcesEligible: true
     });
 
     expect(workshop?.karlConnection).toEqual({
-      placementKind: "manual_support",
+      placementKind: "manual_section",
+      placementMode: "manual_section",
       parentTopicSlug: "learn-about-programs-and-services",
       topicTagSlug: "learn-about-programs-and-services",
+      sectionSurface: "resources",
+      sectionHeading: "Programs and outreach",
+      sectionOrder: 3,
       relatedEligible: true,
       resourcesEligible: true
     });
+
+    expect(fixInspection?.karlConnection).toEqual({
+      placementKind: "manual_section",
+      placementMode: "manual_section",
+      parentTopicSlug: "fix-housing-or-pest-problem",
+      topicTagSlug: "fix-housing-or-pest-problem",
+      sectionSurface: "services",
+      sectionHeading: "Fix and follow-up",
+      sectionOrder: 0,
+      relatedEligible: true,
+      resourcesEligible: false
+    });
   });
 
-  it("tracks Karl related and resources eligibility by content type", () => {
+  it("tracks Karl section assignment and eligibility by content type", () => {
+    expect(hhvcCanonicalWorkingKarlConnectionSummary.servicesSectionSlugs).toContain("report-rats-or-mice");
+    expect(hhvcCanonicalWorkingKarlConnectionSummary.servicesSectionSlugs).toContain("get-ready-housing-inspection");
+    expect(hhvcCanonicalWorkingKarlConnectionSummary.servicesSectionSlugs).not.toContain("healthy-housing-guides-and-resources");
+
+    expect(hhvcCanonicalWorkingKarlConnectionSummary.resourcesSectionSlugs).toContain("request-mosquito-education-workshop");
+    expect(hhvcCanonicalWorkingKarlConnectionSummary.resourcesSectionSlugs).toContain("healthy-housing-guides-and-resources");
+    expect(hhvcCanonicalWorkingKarlConnectionSummary.resourcesSectionSlugs).not.toContain("report-rats-or-mice");
+
+    expect(hhvcCanonicalWorkingKarlConnectionSummary.manualSectionHeadings["Fix and follow-up"]).toContain("get-ready-housing-inspection");
+    expect(hhvcCanonicalWorkingKarlConnectionSummary.manualSectionHeadings["Programs and outreach"]).toContain("request-mosquito-education-workshop");
+    expect(hhvcCanonicalWorkingKarlConnectionSummary.manualSectionHeadings["Guides and resources"]).toContain("healthy-housing-guides-and-resources");
+
     expect(hhvcCanonicalWorkingKarlConnectionSummary.relatedEligibleSlugs).toContain("report-rats-or-mice");
     expect(hhvcCanonicalWorkingKarlConnectionSummary.relatedEligibleSlugs).toContain("request-mosquito-education-workshop");
     expect(hhvcCanonicalWorkingKarlConnectionSummary.relatedEligibleSlugs).not.toContain("healthy-housing-guides-and-resources");

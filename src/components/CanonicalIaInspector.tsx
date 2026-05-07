@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import type { IANode, PageConcept } from "../types";
-import { hhvcCanonicalWorkingIaSeedSummary } from "../data/hhvcCanonicalWorkingIaSeed";
+import { hhvcCanonicalWorkingIaSeed, hhvcCanonicalWorkingIaSeedSummary } from "../data/hhvcCanonicalWorkingIaSeed";
 import { Badge, Card, Label } from "./ui";
 import { contentTypeLabel } from "../utils/contentModel";
 import { buildCanonicalIaInspectorModel, countTreeNodes, type CanonicalIaTreeNode } from "../utils/canonicalIa";
@@ -37,7 +37,18 @@ const treeNodeRowStyle: React.CSSProperties = {
   borderTop: "0.5px solid var(--color-border-tertiary)"
 };
 
-function TreeNodeView({ node, depth = 0 }: { node: CanonicalIaTreeNode; depth?: number }) {
+function TreeNodeView({
+  node,
+  seedByTitle,
+  depth = 0
+}: {
+  node: CanonicalIaTreeNode;
+  seedByTitle: Map<string, (typeof hhvcCanonicalWorkingIaSeed)[number]>;
+  depth?: number;
+}) {
+  const seedConcept = seedByTitle.get(node.concept.canonicalTitle);
+  const karlConnection = seedConcept?.karlConnection;
+
   return (
     <li>
       <div style={{ ...treeNodeRowStyle, paddingLeft: depth * 18 }}>
@@ -54,6 +65,19 @@ function TreeNodeView({ node, depth = 0 }: { node: CanonicalIaTreeNode; depth?: 
             <span>Status: {node.concept.status}</span>
             <span>Position: {node.node.position}</span>
           </div>
+          {karlConnection && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+              <span style={summaryChipStyle}>Karl {karlConnection.placementMode}</span>
+              {karlConnection.sectionSurface && (
+                <span style={summaryChipStyle}>
+                  {karlConnection.sectionSurface}: {karlConnection.sectionHeading ?? "Unlabeled"}
+                </span>
+              )}
+              {karlConnection.sectionOrder != null && (
+                <span style={summaryChipStyle}>section order {karlConnection.sectionOrder + 1}</span>
+              )}
+            </div>
+          )}
         </div>
         <span style={{ fontSize: 11, color: "var(--color-text-tertiary)", whiteSpace: "nowrap" }}>
           #{node.concept.id}
@@ -62,7 +86,7 @@ function TreeNodeView({ node, depth = 0 }: { node: CanonicalIaTreeNode; depth?: 
       {node.children.length > 0 && (
         <ul style={treeListStyle}>
           {node.children.map((child) => (
-            <TreeNodeView key={child.node.id} node={child} depth={depth + 1} />
+            <TreeNodeView key={child.node.id} node={child} seedByTitle={seedByTitle} depth={depth + 1} />
           ))}
         </ul>
       )}
@@ -72,9 +96,17 @@ function TreeNodeView({ node, depth = 0 }: { node: CanonicalIaTreeNode; depth?: 
 
 export function CanonicalIaInspector({ concepts, nodes }: CanonicalIaInspectorProps) {
   const model = useMemo(() => buildCanonicalIaInspectorModel(concepts, nodes), [concepts, nodes]);
+  const seedByTitle = useMemo(
+    () => new Map(hhvcCanonicalWorkingIaSeed.map((concept) => [concept.canonicalTitle, concept])),
+    []
+  );
   const liveConceptCount = model.mappedConceptIds.length;
   const liveTreeNodeCount = countTreeNodes(model.root);
   const hasMismatch = liveConceptCount !== hhvcCanonicalWorkingIaSeedSummary.concepts || liveTreeNodeCount !== hhvcCanonicalWorkingIaSeedSummary.concepts;
+  const fixtureMetadataCoverage = useMemo(
+    () => concepts.filter((concept) => seedByTitle.has(concept.canonicalTitle)).length,
+    [concepts, seedByTitle]
+  );
 
   return (
     <Card className="ui-card--map">
@@ -116,6 +148,12 @@ export function CanonicalIaInspector({ concepts, nodes }: CanonicalIaInspectorPr
               {model.orphanConceptIds.length}
             </div>
           </div>
+          <div style={{ border: "0.5px solid var(--color-border-secondary)", borderRadius: 12, padding: 14, background: "var(--color-background-primary)" }}>
+            <Label>Fixture Metadata Coverage</Label>
+            <div style={{ fontSize: 24, color: "var(--color-text-primary)", fontWeight: 600 }}>
+              {fixtureMetadataCoverage}/{concepts.length}
+            </div>
+          </div>
         </div>
 
         {model.orphanConceptIds.length > 0 && (
@@ -128,7 +166,7 @@ export function CanonicalIaInspector({ concepts, nodes }: CanonicalIaInspectorPr
           <Label>Tree</Label>
           {model.root ? (
             <ul style={treeListStyle}>
-              <TreeNodeView node={model.root} />
+              <TreeNodeView node={model.root} seedByTitle={seedByTitle} />
             </ul>
           ) : (
             <div style={{ padding: "18px 0", fontSize: 13, color: "var(--color-text-secondary)" }}>

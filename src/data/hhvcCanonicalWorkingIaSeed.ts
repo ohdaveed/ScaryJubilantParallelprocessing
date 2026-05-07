@@ -18,12 +18,19 @@ export type KarlPlacementKind =
   | "root_topic"
   | "child_topic"
   | "auto_service"
-  | "manual_support";
+  | "manual_section";
+
+export type KarlPlacementMode = "none" | "auto_service" | "manual_section";
+export type KarlSectionSurface = "services" | "resources";
 
 export interface KarlConnectionMetadata {
   placementKind: KarlPlacementKind;
+  placementMode: KarlPlacementMode;
   parentTopicSlug: string | null;
   topicTagSlug: string | null;
+  sectionSurface: KarlSectionSurface | null;
+  sectionHeading: string | null;
+  sectionOrder: number | null;
   relatedEligible: boolean;
   resourcesEligible: boolean;
 }
@@ -49,12 +56,54 @@ const RESOURCES_ELIGIBLE_CONTENT_TYPES = new Set([
   "resource_collection"
 ]);
 
+const DEFAULT_MANUAL_SECTION_HEADINGS: Record<string, string> = {
+  "fix-housing-or-pest-problem": "Fix and follow-up",
+  "prevent-pests-keep-home-healthy": "Prevention guides",
+  "learn-about-programs-and-services": "Program information",
+  "find-tools-fees-and-help": "Tools and support"
+};
+
+const manualSectionConfig = (input: CanonicalSeedConceptInput, contentType: ReturnType<typeof contentTypeFromPageType>) => {
+  const parentTopicSlug = input.parentSlug;
+  const defaultHeading = parentTopicSlug ? DEFAULT_MANUAL_SECTION_HEADINGS[parentTopicSlug] ?? "More information" : "More information";
+
+  if (contentType === "campaign") {
+    return {
+      sectionSurface: "resources" as const,
+      sectionHeading: "Programs and outreach"
+    };
+  }
+
+  if (contentType === "resource_collection") {
+    return {
+      sectionSurface: "resources" as const,
+      sectionHeading: "Guides and resources"
+    };
+  }
+
+  if (parentTopicSlug === "learn-about-programs-and-services" || parentTopicSlug === "find-tools-fees-and-help") {
+    return {
+      sectionSurface: "resources" as const,
+      sectionHeading: defaultHeading
+    };
+  }
+
+  return {
+    sectionSurface: "services" as const,
+    sectionHeading: defaultHeading
+  };
+};
+
 const buildKarlConnection = (input: CanonicalSeedConceptInput, contentType: ReturnType<typeof contentTypeFromPageType>): KarlConnectionMetadata => {
   if (!input.parentSlug) {
     return {
       placementKind: "root_topic",
+      placementMode: "none",
       parentTopicSlug: null,
       topicTagSlug: null,
+      sectionSurface: null,
+      sectionHeading: null,
+      sectionOrder: null,
       relatedEligible: RELATED_ELIGIBLE_CONTENT_TYPES.has(contentType),
       resourcesEligible: RESOURCES_ELIGIBLE_CONTENT_TYPES.has(contentType)
     };
@@ -63,8 +112,12 @@ const buildKarlConnection = (input: CanonicalSeedConceptInput, contentType: Retu
   if (contentType === "topic") {
     return {
       placementKind: "child_topic",
+      placementMode: "none",
       parentTopicSlug: input.parentSlug,
       topicTagSlug: null,
+      sectionSurface: null,
+      sectionHeading: null,
+      sectionOrder: null,
       relatedEligible: true,
       resourcesEligible: true
     };
@@ -73,17 +126,27 @@ const buildKarlConnection = (input: CanonicalSeedConceptInput, contentType: Retu
   if (contentType === "transaction" || contentType === "step_by_step") {
     return {
       placementKind: "auto_service",
+      placementMode: "auto_service",
       parentTopicSlug: input.parentSlug,
       topicTagSlug: input.parentSlug,
+      sectionSurface: "services",
+      sectionHeading: "More services",
+      sectionOrder: null,
       relatedEligible: RELATED_ELIGIBLE_CONTENT_TYPES.has(contentType),
       resourcesEligible: RESOURCES_ELIGIBLE_CONTENT_TYPES.has(contentType)
     };
   }
 
+  const manualSection = manualSectionConfig(input, contentType);
+
   return {
-    placementKind: "manual_support",
+    placementKind: "manual_section",
+    placementMode: "manual_section",
     parentTopicSlug: input.parentSlug,
     topicTagSlug: input.parentSlug,
+    sectionSurface: manualSection.sectionSurface,
+    sectionHeading: manualSection.sectionHeading,
+    sectionOrder: input.position,
     relatedEligible: RELATED_ELIGIBLE_CONTENT_TYPES.has(contentType),
     resourcesEligible: RESOURCES_ELIGIBLE_CONTENT_TYPES.has(contentType)
   };
@@ -599,15 +662,32 @@ export const hhvcCanonicalWorkingKarlConnectionSummary = {
   autoServiceSlugs: hhvcCanonicalWorkingIaSeed
     .filter((concept) => concept.karlConnection.placementKind === "auto_service")
     .map((concept) => concept.slug),
-  manualSupportSlugs: hhvcCanonicalWorkingIaSeed
-    .filter((concept) => concept.karlConnection.placementKind === "manual_support")
+  manualSectionSlugs: hhvcCanonicalWorkingIaSeed
+    .filter((concept) => concept.karlConnection.placementKind === "manual_section")
+    .map((concept) => concept.slug),
+  servicesSectionSlugs: hhvcCanonicalWorkingIaSeed
+    .filter((concept) => concept.karlConnection.sectionSurface === "services")
+    .map((concept) => concept.slug),
+  resourcesSectionSlugs: hhvcCanonicalWorkingIaSeed
+    .filter((concept) => concept.karlConnection.sectionSurface === "resources")
     .map((concept) => concept.slug),
   relatedEligibleSlugs: hhvcCanonicalWorkingIaSeed
     .filter((concept) => concept.karlConnection.relatedEligible)
     .map((concept) => concept.slug),
   resourcesEligibleSlugs: hhvcCanonicalWorkingIaSeed
     .filter((concept) => concept.karlConnection.resourcesEligible)
-    .map((concept) => concept.slug)
+    .map((concept) => concept.slug),
+  manualSectionHeadings: hhvcCanonicalWorkingIaSeed
+    .filter((concept) => concept.karlConnection.placementMode === "manual_section")
+    .reduce<Record<string, string[]>>((acc, concept) => {
+      const heading = concept.karlConnection.sectionHeading;
+      if (!heading) {
+        return acc;
+      }
+      acc[heading] = acc[heading] || [];
+      acc[heading].push(concept.slug);
+      return acc;
+    }, {})
 } as const;
 
 export const hhvcCanonicalWorkingIaSeedSummary = {
