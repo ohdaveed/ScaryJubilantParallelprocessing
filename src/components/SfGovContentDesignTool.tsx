@@ -527,7 +527,7 @@ export function SfGovContentDesignTool({
                 </summary>
                 <div className="page-list page-list--quickpick">
                   {libraryPages.length === 0 ? (
-                    <p className="panel-library-quickpick__empty">No saved pages yet. Generate one or add from Site Plan.</p>
+                    <p className="panel-library-quickpick__empty">No saved pages yet. Start by generating one in the Editor or adding from Site Plan.</p>
                   ) : (
                     libraryPages.map((page) => (
                       <QuickPickItem

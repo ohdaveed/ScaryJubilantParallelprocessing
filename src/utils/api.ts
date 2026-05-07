@@ -14,6 +14,7 @@ import type {
   UserPreference
 } from "../types";
 import { clean, lsLegacy, parseRel } from "./core";
+import { apiFetch } from "./apiFetch";
 import {
   artifactRoleLabel,
   artifactWorkflowLabel,
@@ -62,13 +63,13 @@ const toPageSummary = (page: Partial<PageDraft>): PageDraft => {
 export const pagesApi = {
   list: async (): Promise<PageDraft[]> => {
     const summaryFields = ["id", "name", "pageType", "userType", "createdAt", "reviewStatus", "currentVersionNumber", "draftPreview", "karlConnected", "karlEvaluation", "qualityGate"].join(",");
-    const res = await fetch(`${API_BASE}/pages?fields=${encodeURIComponent(summaryFields)}&includeDraft=false&includeRaw=false&includeDraftPreview=true`);
+    const res = await apiFetch(`${API_BASE}/pages?fields=${encodeURIComponent(summaryFields)}&includeDraft=false&includeRaw=false&includeDraftPreview=true`);
     if (!res.ok) throw new Error(`Failed to load pages: ${res.status}`);
     const data = await res.json();
     return (data.pages || []).map((p: Partial<PageDraft>) => toPageSummary(p));
   },
   get: async (id: string): Promise<PageDraft> => {
-    const res = await fetch(`${API_BASE}/pages/${encodeURIComponent(id)}`);
+    const res = await apiFetch(`${API_BASE}/pages/${encodeURIComponent(id)}`);
     if (!res.ok) {
       const err = new Error(`Failed to load page: ${res.status}`) as Error & { httpStatus?: number };
       err.httpStatus = res.status;
@@ -83,7 +84,7 @@ export const pagesApi = {
     };
   },
   save: async (id: string, page: PageDraft, version?: { notes: string; trigger: "generate" | "refine" | "restore" | "manual" }): Promise<void> => {
-    const res = await fetch(`${API_BASE}/pages`, {
+    const res = await apiFetch(`${API_BASE}/pages`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, data: page, ...(version ? { versionNotes: version.notes, versionTrigger: version.trigger } : {}) })
@@ -91,11 +92,11 @@ export const pagesApi = {
     if (!res.ok) throw new Error(`Failed to save page: ${res.status}`);
   },
   delete: async (id: string): Promise<void> => {
-    const res = await fetch(`${API_BASE}/pages/${encodeURIComponent(id)}`, { method: "DELETE" });
+    const res = await apiFetch(`${API_BASE}/pages/${encodeURIComponent(id)}`, { method: "DELETE" });
     if (!res.ok) throw new Error(`Failed to delete page: ${res.status}`);
   },
   updateReview: async (id: string, status: string): Promise<void> => {
-    const res = await fetch(`${API_BASE}/pages/${encodeURIComponent(id)}/review`, {
+    const res = await apiFetch(`${API_BASE}/pages/${encodeURIComponent(id)}/review`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status })
@@ -106,13 +107,13 @@ export const pagesApi = {
 
 export const todosApi = {
   list: async (): Promise<TodoItem[]> => {
-    const res = await fetch(`${API_BASE}/todos`);
+    const res = await apiFetch(`${API_BASE}/todos`);
     if (!res.ok) throw new Error(`Failed to load todos: ${res.status}`);
     const data = await res.json();
     return data.todos || [];
   },
   create: async (topic: string, userType: string, opts?: { plannedId?: number }): Promise<TodoItem> => {
-    const res = await fetch(`${API_BASE}/todos`, {
+    const res = await apiFetch(`${API_BASE}/todos`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ topic, userType, ...(opts?.plannedId != null ? { plannedId: opts.plannedId } : {}) })
@@ -121,7 +122,7 @@ export const todosApi = {
     return res.json();
   },
   toggle: async (id: number, done: boolean): Promise<void> => {
-    const res = await fetch(`${API_BASE}/todos/${id}`, {
+    const res = await apiFetch(`${API_BASE}/todos/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ done })
@@ -129,7 +130,7 @@ export const todosApi = {
     if (!res.ok) throw new Error(`Failed to update todo: ${res.status}`);
   },
   updateQueue: async (id: number, fields: { status: string; errorMessage?: string | null; builtPageId?: string | null; karlGrade?: string | null }): Promise<void> => {
-    const res = await fetch(`${API_BASE}/todos/${id}`, {
+    const res = await apiFetch(`${API_BASE}/todos/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(fields)
@@ -137,20 +138,20 @@ export const todosApi = {
     if (!res.ok) throw new Error(`Failed to update todo queue status: ${res.status}`);
   },
   delete: async (id: number): Promise<void> => {
-    const res = await fetch(`${API_BASE}/todos/${id}`, { method: "DELETE" });
+    const res = await apiFetch(`${API_BASE}/todos/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error(`Failed to delete todo: ${res.status}`);
   }
 };
 
 export const plannedPagesApi = {
   list: async (): Promise<PlannedPage[]> => {
-    const res = await fetch(`${API_BASE}/planned-pages`);
+    const res = await apiFetch(`${API_BASE}/planned-pages`);
     if (!res.ok) throw new Error(`Failed to load planned pages: ${res.status}`);
     const data = await res.json();
     return data.plannedPages || [];
   },
   create: async (name: string, pageType: string, userType: string, parentId?: number | null): Promise<PlannedPage> => {
-    const res = await fetch(`${API_BASE}/planned-pages`, {
+    const res = await apiFetch(`${API_BASE}/planned-pages`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, pageType, userType, parentId: parentId || null })
@@ -159,7 +160,7 @@ export const plannedPagesApi = {
     return res.json();
   },
   update: async (id: number, updates: Partial<{ name: string; pageType: string; userType: string; parentId: number | null; builtPageId: string | null }>): Promise<PlannedPage> => {
-    const res = await fetch(`${API_BASE}/planned-pages/${id}`, {
+    const res = await apiFetch(`${API_BASE}/planned-pages/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updates)
@@ -168,20 +169,20 @@ export const plannedPagesApi = {
     return res.json();
   },
   delete: async (id: number): Promise<void> => {
-    const res = await fetch(`${API_BASE}/planned-pages/${id}`, { method: "DELETE" });
+    const res = await apiFetch(`${API_BASE}/planned-pages/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error(`Failed to delete planned page: ${res.status}`);
   }
 };
 
 export const pageConceptsApi = {
   list: async (): Promise<PageConcept[]> => {
-    const res = await fetch(`${API_BASE}/page-concepts`);
+    const res = await apiFetch(`${API_BASE}/page-concepts`);
     if (!res.ok) throw new Error(`Failed to load page concepts: ${res.status}`);
     const data = await res.json();
     return data.concepts || [];
   },
   create: async (payload: Omit<PageConcept, "id" | "intentKey" | "createdAt" | "updatedAt" | "governanceFlags">): Promise<PageConcept> => {
-    const res = await fetch(`${API_BASE}/page-concepts`, {
+    const res = await apiFetch(`${API_BASE}/page-concepts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -193,7 +194,7 @@ export const pageConceptsApi = {
     return res.json();
   },
   update: async (id: number, patch: Partial<Omit<PageConcept, "id" | "intentKey" | "createdAt" | "updatedAt">>): Promise<PageConcept> => {
-    const res = await fetch(`${API_BASE}/page-concepts/${id}`, {
+    const res = await apiFetch(`${API_BASE}/page-concepts/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch)
@@ -209,7 +210,7 @@ export const pageConceptsApi = {
 export const iaNodesApi = {
   list: async (mapId?: string): Promise<IANode[]> => {
     const qs = mapId ? `?mapId=${encodeURIComponent(mapId)}` : "";
-    const res = await fetch(`${API_BASE}/ia-nodes${qs}`);
+    const res = await apiFetch(`${API_BASE}/ia-nodes${qs}`);
     if (!res.ok) throw new Error(`Failed to load IA nodes: ${res.status}`);
     const data = await res.json();
     return data.nodes || [];
@@ -218,13 +219,13 @@ export const iaNodesApi = {
 
 export const pageArtifactsApi = {
   list: async (): Promise<PageArtifact[]> => {
-    const res = await fetch(`${API_BASE}/page-artifacts`);
+    const res = await apiFetch(`${API_BASE}/page-artifacts`);
     if (!res.ok) throw new Error(`Failed to load page artifacts: ${res.status}`);
     const data = await res.json();
     return data.artifacts || [];
   },
   promote: async (artifactId: string, conceptId: number): Promise<PageArtifact> => {
-    const res = await fetch(`${API_BASE}/page-artifacts/${encodeURIComponent(artifactId)}/promote`, {
+    const res = await apiFetch(`${API_BASE}/page-artifacts/${encodeURIComponent(artifactId)}/promote`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ conceptId })
@@ -236,13 +237,13 @@ export const pageArtifactsApi = {
 
 export const artifactVariantsApi = {
   list: async (): Promise<ArtifactVariant[]> => {
-    const res = await fetch(`${API_BASE}/artifact-variants`);
+    const res = await apiFetch(`${API_BASE}/artifact-variants`);
     if (!res.ok) throw new Error(`Failed to load artifact variants: ${res.status}`);
     const data = await res.json();
     return data.variants || [];
   },
   create: async (payload: Omit<ArtifactVariant, "id" | "createdAt" | "updatedAt">): Promise<ArtifactVariant> => {
-    const res = await fetch(`${API_BASE}/artifact-variants`, {
+    const res = await apiFetch(`${API_BASE}/artifact-variants`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -254,7 +255,7 @@ export const artifactVariantsApi = {
 
 export const referenceExamplesApi = {
   list: async (): Promise<ReferenceExample[]> => {
-    const res = await fetch(`${API_BASE}/reference-examples`);
+    const res = await apiFetch(`${API_BASE}/reference-examples`);
     if (!res.ok) throw new Error(`Failed to load reference examples: ${res.status}`);
     const data = await res.json();
     return data.references || [];
@@ -263,13 +264,13 @@ export const referenceExamplesApi = {
 
 export const buildQueueApi = {
   list: async (): Promise<BuildQueueItem[]> => {
-    const res = await fetch(`${API_BASE}/build-queue`);
+    const res = await apiFetch(`${API_BASE}/build-queue`);
     if (!res.ok) throw new Error(`Failed to load build queue: ${res.status}`);
     const data = await res.json();
     return data.items || [];
   },
   create: async (payload: Omit<BuildQueueItem, "id" | "createdAt" | "errorMessage" | "karlGrade">): Promise<BuildQueueItem> => {
-    const res = await fetch(`${API_BASE}/build-queue`, {
+    const res = await apiFetch(`${API_BASE}/build-queue`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -278,7 +279,7 @@ export const buildQueueApi = {
     return res.json();
   },
   update: async (id: number, patch: Partial<BuildQueueItem> & { errorMessage?: string | null; karlGrade?: string | null }): Promise<BuildQueueItem> => {
-    const res = await fetch(`${API_BASE}/build-queue/${id}`, {
+    const res = await apiFetch(`${API_BASE}/build-queue/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch)
@@ -287,7 +288,7 @@ export const buildQueueApi = {
     return res.json();
   },
   delete: async (id: number): Promise<void> => {
-    const res = await fetch(`${API_BASE}/build-queue/${id}`, { method: "DELETE" });
+    const res = await apiFetch(`${API_BASE}/build-queue/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error(`Failed to delete build queue item: ${res.status}`);
   }
 };
@@ -337,13 +338,13 @@ export const findPossibleConceptDuplicates = (concepts: PageConcept[], title: st
 export const preferencesApi = {
   list: async (pageId?: string | null): Promise<UserPreference[]> => {
     const url = pageId ? `${API_BASE}/preferences?page_id=${encodeURIComponent(pageId)}` : `${API_BASE}/preferences`;
-    const res = await fetch(url);
+    const res = await apiFetch(url);
     if (!res.ok) throw new Error(`Failed to load preferences: ${res.status}`);
     const data = await res.json();
     return data.preferences || [];
   },
   create: async (preference: string, source: string = "manual", pageId?: string | null): Promise<UserPreference> => {
-    const res = await fetch(`${API_BASE}/preferences`, {
+    const res = await apiFetch(`${API_BASE}/preferences`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ preference, source, page_id: pageId || null })
@@ -352,7 +353,7 @@ export const preferencesApi = {
     return res.json();
   },
   delete: async (id: number): Promise<void> => {
-    const res = await fetch(`${API_BASE}/preferences/${id}`, { method: "DELETE" });
+    const res = await apiFetch(`${API_BASE}/preferences/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error(`Failed to delete preference: ${res.status}`);
   }
 };
@@ -363,18 +364,18 @@ export const versionsApi = {
     if (opts.limit !== undefined) params.set("limit", String(opts.limit));
     if (opts.includeData) params.set("includeData", "true");
     const qs = params.toString() ? `?${params}` : "";
-    const res = await fetch(`${API_BASE}/pages/${encodeURIComponent(pageId)}/versions${qs}`);
+    const res = await apiFetch(`${API_BASE}/pages/${encodeURIComponent(pageId)}/versions${qs}`);
     if (!res.ok) throw new Error(`Failed to load versions: ${res.status}`);
     const data = await res.json();
     return data.versions || [];
   },
   get: async (pageId: string, versionId: number): Promise<PageVersion> => {
-    const res = await fetch(`${API_BASE}/pages/${encodeURIComponent(pageId)}/versions/${versionId}`);
+    const res = await apiFetch(`${API_BASE}/pages/${encodeURIComponent(pageId)}/versions/${versionId}`);
     if (!res.ok) throw new Error(`Failed to load version: ${res.status}`);
     return res.json();
   },
   restore: async (pageId: string, versionId: number): Promise<PageDraft> => {
-    const res = await fetch(`${API_BASE}/pages/${encodeURIComponent(pageId)}/restore/${versionId}`, { method: "POST" });
+    const res = await apiFetch(`${API_BASE}/pages/${encodeURIComponent(pageId)}/restore/${versionId}`, { method: "POST" });
     if (!res.ok) throw new Error(`Failed to restore version: ${res.status}`);
     const body = await res.json();
     return body.data;
@@ -383,7 +384,7 @@ export const versionsApi = {
 
 export const runKarlEvaluation = async (page: { name: string; pageType: string; draft: string; userType: string }): Promise<KarlEvaluation | null> => {
   try {
-    const res = await fetch(`${API_BASE}/evaluate`, {
+    const res = await apiFetch(`${API_BASE}/evaluate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ pageName: page.name, pageType: page.pageType, draft: page.draft, userType: page.userType })
@@ -401,7 +402,7 @@ export const runKarlEvaluation = async (page: { name: string; pageType: string; 
 
 export const fetchKarlRemediation = async (payload: { raw: string; pageType: string; evaluation: KarlEvaluation }): Promise<{ consulted: boolean; guidance: string[]; error: string | null }> => {
   try {
-    const res = await fetch(`${API_BASE}/karl-remediate`, {
+    const res = await apiFetch(`${API_BASE}/karl-remediate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -421,7 +422,7 @@ export const improveStructure = async (
   evaluationFeedback?: KarlEvaluation | null
 ): Promise<string | null> => {
   try {
-    const res = await fetch(`${API_BASE}/improve-structure`, {
+    const res = await apiFetch(`${API_BASE}/improve-structure`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ raw, preferences, evaluationFeedback })

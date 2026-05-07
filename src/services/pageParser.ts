@@ -1,4 +1,5 @@
 import { parsePage, parseStructuredPage } from "../utils/parsing";
+import { apiFetch } from "../utils/apiFetch";
 
 type ChatTextChunk = { type?: string; text?: string };
 
@@ -22,7 +23,7 @@ export async function repairAndParseStructured(options: {
   const needsRepair = !!parseResult.parseError || !parsed.valid;
 
   if (needsRepair) {
-    const repairRes = await fetch("/api/chat", {
+    const repairRes = await apiFetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

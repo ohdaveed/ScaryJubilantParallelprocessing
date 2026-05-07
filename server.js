@@ -4,12 +4,18 @@ import { rateLimit } from "express-rate-limit";
 import { createServer } from "http";
 import { createRequire } from "module";
 import { randomUUID } from "crypto";
+import cors from "cors";
+import helmet from "helmet";
+import hpp from "hpp";
+import pino from "pino";
+import pinoHttp from "pino-http";
 import mammoth from "mammoth";
 import { createPersistence, formatPersistenceError } from "./lib/persistence.js";
 import {
   chatRequestSchema,
   evaluateRequestSchema,
   improveStructureRequestSchema,
+  promoteArtifactRequestSchema,
   parseRequestBody
 } from "./lib/requestSchemas.js";
 import { withKarlCitations, enforceKarlCitationsOnEvaluation } from "./lib/karlCitations.js";
@@ -26,7 +32,13 @@ const pdfParse = require("pdf-parse");
 
 const app = express();
 app.set("trust proxy", 1);
+app.disable("x-powered-by");
 const API_READ_CACHE_CONTROL = "private, no-cache, must-revalidate";
+
+const logger = pino({
+  level: process.env.LOG_LEVEL || (process.env.NODE_ENV === "production" ? "info" : "debug"),
+  base: undefined
+});
 
 const shouldCompressApiJson = (req, res) => {
   if (!compression.filter(req, res)) return false;
@@ -57,22 +69,65 @@ const evaluateLimiter = createAiLimiter(EVALUATE_LIMIT_PER_MINUTE);
 const improveStructureLimiter = createAiLimiter(IMPROVE_LIMIT_PER_MINUTE);
 
 app.use(compression({ threshold: 1024, filter: shouldCompressApiJson }));
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(hpp());
+
+const parseCommaSeparated = (value) => value
+  .split(",")
+  .map((entry) => entry.trim())
+  .filter(Boolean);
+
+const defaultCorsOrigins = new Set([
+  "http://localhost:5000",
+  "http://127.0.0.1:5000"
+]);
+
+const corsOrigins = new Set(defaultCorsOrigins);
+const configuredOrigins = process.env.CORS_ORIGINS || process.env.CORS_ORIGIN || "";
+for (const origin of parseCommaSeparated(configuredOrigins)) {
+  corsOrigins.add(origin);
+}
+if (process.env.URL) {
+  corsOrigins.add(process.env.URL);
+}
+if (process.env.DEPLOY_PRIME_URL) {
+  corsOrigins.add(process.env.DEPLOY_PRIME_URL);
+}
+if (process.env.DEPLOY_URL) {
+  corsOrigins.add(process.env.DEPLOY_URL);
+}
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (corsOrigins.has(origin)) return callback(null, true);
+    return callback(null, false);
+  },
+  methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-admin-token"]
+}));
+
 app.use(express.json({ limit: "20mb" }));
-app.use((req, res, next) => {
-  const requestId = randomUUID();
-  res.locals.requestId = requestId;
-  res.setHeader("x-request-id", requestId);
-  next();
-});
+app.use(pinoHttp({
+  logger,
+  genReqId: (req, res) => {
+    const requestId = randomUUID();
+    res.locals.requestId = requestId;
+    res.setHeader("x-request-id", requestId);
+    return requestId;
+  },
+  customProps: (req, res) => ({ requestId: res.locals.requestId })
+}));
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || process.env.HHVC_ADMIN_TOKEN || "";
 const db = await createPersistence();
 const getErrorMessage = (error) => formatPersistenceError(error);
 
 const logWithRequest = (reqOrRes, stage, message, extra = {}) => {
   const requestId = reqOrRes?.locals?.requestId || reqOrRes?.res?.locals?.requestId || "no-request-id";
   const payload = { requestId, stage, message, ...extra };
-  console.log(JSON.stringify(payload));
+  logger.info(payload);
 };
 
 const isObject = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
@@ -131,6 +186,20 @@ const withTimeout = async (promiseFactory, timeoutMs = 45000) => {
   });
   return Promise.race([promiseFactory(), timeout]);
 };
+
+const shouldRequireAdminToken = (req) => {
+  if (!ADMIN_TOKEN) return false;
+  if (!req.path.startsWith("/api/")) return false;
+  if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") return false;
+  return true;
+};
+
+app.use((req, res, next) => {
+  if (!shouldRequireAdminToken(req)) return next();
+  const provided = req.headers["x-admin-token"];
+  if (typeof provided === "string" && provided === ADMIN_TOKEN) return next();
+  res.status(401).json({ error: "Unauthorized" });
+});
 
 const postAnthropic = async (body, timeoutMs = 45000, retries = 1) => {
   let attempt = 0;
@@ -533,7 +602,7 @@ ${raw}`;
 
     res.json({ improved });
   } catch (err) {
-    console.error("Structure improvement error:", err);
+    logWithRequest(res, "improve", "structure improvement error", { error: String(err?.message || err) });
     res.status(500).json({ error: "Structure improvement failed" });
   }
 });
@@ -945,8 +1014,9 @@ app.get("/api/page-artifacts", async (req, res) => {
 });
 
 app.post("/api/page-artifacts/:id/promote", async (req, res) => {
-  const { conceptId } = req.body || {};
-  if (!conceptId) return res.status(400).json({ error: "Missing conceptId" });
+  const parsedBody = parseRequestBody(promoteArtifactRequestSchema, req, res, "/api/page-artifacts/:id/promote");
+  if (!parsedBody) return;
+  const { conceptId } = parsedBody;
   try {
     const artifact = await db.promoteArtifactAsCanonical(conceptId, req.params.id);
     if (!artifact) return res.status(404).json({ error: "Artifact not found" });

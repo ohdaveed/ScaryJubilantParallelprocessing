@@ -268,7 +268,9 @@ export function LibraryTab(props: LibraryTabProps) {
         <div style={{ textAlign: "center", padding: "64px 0", color: "var(--color-text-tertiary)" }}>
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" style={{ marginBottom: 12, display: "block", margin: "0 auto 12px" }}><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 9h6M9 12h6M9 15h4" /></svg>
           <p style={{ fontSize: 14, fontWeight: 500, margin: "0 0 4px", color: "var(--color-text-secondary)" }}>{pages.length === 0 ? "No pages yet" : "No results"}</p>
-          <p style={{ fontSize: 13, margin: 0, lineHeight: 1.5 }}>{pages.length === 0 ? "Generate your first page in the Builder tab." : "Try adjusting your search or filter."}</p>
+          <p style={{ fontSize: 13, margin: 0, lineHeight: 1.5 }}>
+            {pages.length === 0 ? "Create your first page in the Editor tab, then it will appear here." : "Try adjusting your search or filter."}
+          </p>
         </div>
       )}
 

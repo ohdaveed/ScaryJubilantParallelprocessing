@@ -7,6 +7,7 @@ import { useVersionHistory } from "../hooks/useVersionHistory";
 import { useWorkspaceState, WorkspaceState, WorkspaceActions } from "../hooks/useWorkspaceState";
 import { preferencesApi } from "../utils/api";
 import { useProjectModel } from "../hooks/useProjectModel";
+import { clean } from "../utils";
 
 export interface WorkspaceContextValue {
   pages: PageDraft[];
@@ -174,7 +175,25 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     if (!full) return;
     setSelected(full);
     setShowSuccess(false);
-  }, [rawHydrate, setSelected, setShowSuccess]);
+    // Keep the Generate rail in sync with the active page so authors don't
+    // accidentally generate/refine using stale context from a previous selection.
+    setTopic(full.inputs?.topic ?? clean(full.name) ?? "");
+    setUserType((full.inputs?.userType ?? full.userType ?? "") as any);
+    setNotes(full.inputs?.notes ?? "");
+    setPendingPageType(clean(full.pageType) ?? "");
+    setPendingPlannedId(null);
+    setTopicTouched(false);
+  }, [
+    rawHydrate,
+    setSelected,
+    setShowSuccess,
+    setTopic,
+    setUserType,
+    setNotes,
+    setPendingPageType,
+    setPendingPlannedId,
+    setTopicTouched
+  ]);
 
   const generateForQueue = useCallback(
     async (todo: TodoItem) => {

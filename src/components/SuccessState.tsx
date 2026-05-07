@@ -6,6 +6,7 @@ import { clean } from "../utils";
 export const SuccessState = memo(function SuccessState({ page, onView }: { page: PageDraft; onView: () => void }) {
   const ev = page.karlEvaluation;
   const grade = ev?.grade || "—";
+  const versionNumber = page.currentVersionNumber;
 
   const gradeKey = ["A", "B", "C", "D", "F"].includes(grade) ? grade : "none";
 
@@ -16,7 +17,11 @@ export const SuccessState = memo(function SuccessState({ page, onView }: { page:
       </div>
       <div className="app-success__body">
         <p className="app-success__name">{clean(page?.name) || "Page generated"}</p>
-        <p className="app-success__desc">Page draft created and evaluated against Karl content standards.</p>
+        <p className="app-success__desc">
+          {versionNumber != null
+            ? `Draft v${versionNumber} saved for this page and evaluated against Karl content standards.`
+            : "Draft saved for this page and evaluated against Karl content standards."}
+        </p>
       </div>
 
       <div className="app-success__badges">

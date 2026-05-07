@@ -7,11 +7,13 @@ import { pageArtifactsApi, pagesApi } from "../utils/api";
 import { generateZip, renderPageAsPDF, renderPageAsPNG } from "../utils/export";
 import { SfGovPagePreview } from "../components/SfGovPreview";
 import type { PageDraft, ReviewStatus } from "../types";
+import { useNavigate } from "react-router-dom";
 
 const LazySfGovPagePreview = lazy(() => import("../components/SfGovPreview").then((m) => ({ default: m.SfGovPagePreview })));
 
 export default function LibraryPage() {
   const ctx = useWorkspace();
+  const navigate = useNavigate();
 
   const {
     pages, setPages, pagesLoading, seeding, selected,
@@ -180,14 +182,18 @@ export default function LibraryPage() {
   }, [selected, setPages, setSelected]);
 
   const handlePrimaryAction = useCallback((page: (typeof pages)[number]) => {
-    setSelected(page);
-    void openPageById(page.id);
-  }, [openPageById, setSelected]);
+    void (async () => {
+      await openPageById(page.id);
+      navigate("/generate");
+    })();
+  }, [openPageById, navigate]);
 
   const handleOpenAlternate = useCallback((page: (typeof pages)[number]) => {
-    setSelected(page);
-    void openPageById(page.id);
-  }, [openPageById, setSelected]);
+    void (async () => {
+      await openPageById(page.id);
+      navigate("/generate");
+    })();
+  }, [openPageById, navigate]);
 
   const handlePromoteAlternate = useCallback(async (representativeId: string, alternate: (typeof pages)[number]) => {
     const conceptId = groupModel.conceptIdByRepresentativeId.get(representativeId);
@@ -236,8 +242,10 @@ export default function LibraryPage() {
           onDownloadPDF={() => void handleDownloadSelected("pdf")}
           onDownloadText={handleDownloadText}
           onSelectPage={(p) => {
-            setSelected(p);
-            void openPageById(p.id);
+            void (async () => {
+              await openPageById(p.id);
+              navigate("/generate");
+            })();
           }}
           onPrimaryAction={handlePrimaryAction}
           onOpenAlternate={handleOpenAlternate}

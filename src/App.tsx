@@ -13,8 +13,8 @@ const LazyIdealPage = lazy(() => import("./pages/IdealPage"));
 
 const WORKSPACE_TABS: readonly ContentDesignTab[] = [
   { id: "plan", label: "Site Plan", description: "Canonical concepts and working HHVC architecture only." },
-  { id: "generate", label: "Generate", description: "Generate a current draft or experiment without changing canonical IA." },
-  { id: "library", label: "Library", description: "Manage page artifacts, imports, and editorial drafts." },
+  { id: "generate", label: "Editor", description: "Edit and generate drafts for the selected Library page." },
+  { id: "library", label: "Library", description: "Choose a page to work on (recommended starting point)." },
   { id: "ideal", label: "Ideal Map", description: "Reference benchmarks only, separate from working architecture." }
 ];
 
@@ -38,8 +38,8 @@ export default function App() {
   const ctx = useWorkspace();
 
   // Derive workspace tab from URL path
-  const pathTab = location.pathname.replace(/^\//, "") || "generate";
-  const workspaceTab = ["plan", "generate", "library", "ideal"].includes(pathTab) ? pathTab : "generate";
+  const pathTab = location.pathname.replace(/^\//, "") || "library";
+  const workspaceTab = ["plan", "generate", "library", "ideal"].includes(pathTab) ? pathTab : "library";
 
   const {
     pages, selected, topic, showSuccess, justGenerated, karlStatus,
@@ -207,7 +207,12 @@ export default function App() {
         generateDisabled={loading}
         libraryPages={libraryRows}
         selectedLibraryPageId={selected?.id ?? null}
-        onLibraryPageSelect={(id) => { void ctx.openPageById(id); }}
+        onLibraryPageSelect={(id) => {
+          void (async () => {
+            await ctx.openPageById(id);
+            navigate("/generate");
+          })();
+        }}
         onLibraryPageDelete={(id) => void ctx.deletePage(id)}
         previewUrlText={previewUrlSlug}
         showPreviewChrome={workspaceTab === "generate"}

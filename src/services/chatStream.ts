@@ -1,3 +1,5 @@
+import { apiFetch } from "../utils/apiFetch";
+
 type StreamMode = "generate" | "refine";
 
 type StreamEvent = {
@@ -27,7 +29,7 @@ export async function streamModelText(options: StreamModelTextOptions): Promise<
     hasStreamText
   } = options;
 
-  const res = await fetch("/api/chat", {
+  const res = await apiFetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

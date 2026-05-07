@@ -254,7 +254,13 @@ export default function GeneratePage() {
               {!streaming && evaluating && <EvaluatingState />}
 
               {!streaming && !evaluating && showSuccess && justGenerated && (
-                <SuccessState page={justGenerated} onView={() => { setSelected(justGenerated); setShowSuccess(false); setShowSuccess(false); }} />
+                <SuccessState
+                  page={justGenerated}
+                  onView={() => {
+                    void openPageById(justGenerated.id);
+                    setShowSuccess(false);
+                  }}
+                />
               )}
 
               {!streaming && !evaluating && !showSuccess && selected && (
@@ -272,6 +278,12 @@ export default function GeneratePage() {
                           </span>
                         )}
                       </div>
+                      <p className="app-page-sub" style={{ marginTop: 8 }}>
+                        <span style={{ fontWeight: 600 }}>Editing</span>{" "}
+                        <span title={selected.id} style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace" }}>
+                          {selected.id}
+                        </span>
+                      </p>
                       <div
                         className={[
                           "app-page-status",
@@ -395,11 +407,24 @@ export default function GeneratePage() {
                     <>
                       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M9 12h6M12 9v6" /></svg>
                       <div className="app-builder-empty__center">
-                        <h2 className="app-builder-empty__title">{pages.length === 0 ? "Start your first draft" : "Start a new draft or open a saved page"}</h2>
-                        <p className="app-builder-empty__sub">{pages.length === 0 ? "Add a page goal in the left panel, then generate." : "Generate from the left panel or go to Library."}</p>
-                        <p className="app-builder-empty__hint">
-                          Use the left panel to set user type, choose a page type, and enter a page goal.
+                        <h2 className="app-builder-empty__title">{pages.length === 0 ? "Start your first page" : "Choose a page from the Library"}</h2>
+                        <p className="app-builder-empty__sub">
+                          {pages.length === 0
+                            ? "Create a page by entering a goal in the left panel, then generate."
+                            : "Library is the home screen. Select a page there to edit and regenerate drafts here."}
                         </p>
+                        <p className="app-builder-empty__hint">
+                          {pages.length === 0
+                            ? "Use the left panel to set user type, choose a page type, and enter a page goal."
+                            : "This editor always operates on the currently selected Library page."}
+                        </p>
+                        {pages.length > 0 ? (
+                          <div style={{ marginTop: 12 }}>
+                            <Btn variant="primary" size="md" onClick={() => navigate("/library")}>
+                              Open Library
+                            </Btn>
+                          </div>
+                        ) : null}
                       </div>
                     </>
                   )}
