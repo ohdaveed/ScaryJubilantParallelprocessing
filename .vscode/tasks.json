@@ -1,0 +1,83 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "npm: install",
+      "type": "shell",
+      "command": "npm install",
+      "problemMatcher": []
+    },
+    {
+      "label": "npm: dev",
+      "type": "npm",
+      "script": "dev",
+      "isBackground": true,
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "dev",
+        "clear": false
+      },
+      "problemMatcher": [
+        {
+          "pattern": [
+            {
+              "regexp": "."
+            }
+          ],
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": "^",
+            "endsPattern": "\\[1\\].*Local:.*http://localhost:[0-9]+/"
+          }
+        }
+      ]
+    },
+    {
+      "label": "npm: test",
+      "type": "npm",
+      "script": "test",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "npm: test:watch",
+      "type": "npm",
+      "script": "test:watch",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "test",
+        "clear": false
+      },
+      "problemMatcher": [
+        {
+          "pattern": [
+            {
+              "regexp": "."
+            }
+          ],
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": "^",
+            "endsPattern": "DEV\\s+v[0-9]"
+          }
+        }
+      ]
+    },
+    {
+      "label": "npm: ui:audit",
+      "type": "npm",
+      "script": "ui:audit",
+      "problemMatcher": []
+    }
+  ]
+}

@@ -9,7 +9,11 @@ token.json
 hhvc-drive-sa..json
 
 # IDEs and Editors
-.vscode/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
 .claude/
 .cursor/
 *.code-workspace
