@@ -8,6 +8,8 @@ const PAGE_TYPE_DOT_MAP: Record<string, string> = {
   department: "type-dot-department",
   topic: "type-dot-topic",
   "step-by-step": "type-dot-step-by-step",
+  campaign: "type-dot-campaign",
+  "resource-collection": "type-dot-resource-collection",
   form: "type-dot-form"
 };
 

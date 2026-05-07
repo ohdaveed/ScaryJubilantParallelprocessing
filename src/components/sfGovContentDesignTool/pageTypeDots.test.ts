@@ -5,6 +5,8 @@ describe("pageTypeToDotClass", () => {
   it("maps canonical page types", () => {
     expect(pageTypeToDotClass("Transaction")).toBe("type-dot-transaction");
     expect(pageTypeToDotClass("Step-by-step")).toBe("type-dot-step-by-step");
+    expect(pageTypeToDotClass("Campaign")).toBe("type-dot-campaign");
+    expect(pageTypeToDotClass("Resource Collection")).toBe("type-dot-resource-collection");
     expect(pageTypeToDotClass("Form")).toBe("type-dot-form");
   });
 

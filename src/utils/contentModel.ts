@@ -39,6 +39,10 @@ export function contentTypeLabel(type: ContentType): string {
       return "Information";
     case "step_by_step":
       return "Step by step";
+    case "campaign":
+      return "Campaign";
+    case "resource_collection":
+      return "Resource Collection";
     default:
       return type;
   }
@@ -50,6 +54,8 @@ export function contentTypeFromPageType(value: string): ContentType {
   if (key === "transaction") return "transaction";
   if (key === "information") return "information";
   if (key === "step by step" || key === "step-by-step") return "step_by_step";
+  if (key === "campaign") return "campaign";
+  if (key === "resource collection" || key === "resource-collection") return "resource_collection";
   return "information";
 }
 

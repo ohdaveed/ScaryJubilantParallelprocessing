@@ -83,7 +83,13 @@ export type VerificationState =
   | "import_rejected"
   | "not_checked";
 
-export type ContentType = "topic" | "transaction" | "information" | "step_by_step";
+export type ContentType =
+  | "topic"
+  | "transaction"
+  | "information"
+  | "step_by_step"
+  | "campaign"
+  | "resource_collection";
 export type ConceptStatus = "proposed" | "canonical" | "deferred" | "archived";
 export type IAPlacementStatus = "placed" | "orphaned" | "deferred";
 export type ArtifactKind = "draft" | "imported" | "built" | "published_snapshot" | "experiment";
