@@ -222,6 +222,15 @@ export const pageArtifactsApi = {
     if (!res.ok) throw new Error(`Failed to load page artifacts: ${res.status}`);
     const data = await res.json();
     return data.artifacts || [];
+  },
+  promote: async (artifactId: string, conceptId: number): Promise<PageArtifact> => {
+    const res = await fetch(`${API_BASE}/page-artifacts/${encodeURIComponent(artifactId)}/promote`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ conceptId })
+    });
+    if (!res.ok) throw new Error(`Failed to promote artifact: ${res.status}`);
+    return res.json();
   }
 };
 

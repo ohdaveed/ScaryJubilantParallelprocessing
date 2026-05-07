@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { useWorkspace } from "../context/WorkspaceContext";
 import { LibraryTab } from "../components/tabs/LibraryTab";
-import { clean, findOverlappingPageIds, getVerificationState, VERIFICATION_FILTERS } from "../utils";
+import { clean, getVerificationState, VERIFICATION_FILTERS } from "../utils";
 import { pagesApi } from "../utils/api";
 import { generateZip, renderPageAsPDF, renderPageAsPNG } from "../utils/export";
 import { SfGovPagePreview } from "../components/SfGovPreview";
@@ -15,18 +15,67 @@ export default function LibraryPage() {
 
   const {
     pages, setPages, pagesLoading, seeding, selected,
-    wsState, wsActions, openHistory, deletePage, openPageById, setSelected
+    wsState, wsActions, openHistory, deletePage, openPageById, setSelected,
+    plannedPages, concepts
   } = ctx;
 
-  const overlapIds = useMemo(() => findOverlappingPageIds(pages), [pages]);
+  const groupModel = useMemo(() => {
+    const conceptByBuiltPageId = new Map<string, number>();
+    plannedPages.forEach((planned) => {
+      if (planned.builtPageId) conceptByBuiltPageId.set(planned.builtPageId, planned.id);
+    });
+    const conceptById = new Map<number, (typeof concepts)[number]>();
+    concepts.forEach((concept) => {
+      conceptById.set(concept.id, concept);
+    });
+
+    const groups = new Map<string, { members: typeof pages; conceptId: number | null }>();
+    pages.forEach((page) => {
+      const linkedConceptId = conceptByBuiltPageId.get(page.id);
+      const concept = linkedConceptId != null ? conceptById.get(linkedConceptId) : undefined;
+      const titleKey = clean(page.name).toLowerCase().replace(/\s+/g, " ").trim();
+      const key = concept ? `concept:${concept.id}` : `title:${titleKey || page.id}`;
+      const existing = groups.get(key);
+      if (existing) existing.members.push(page);
+      else groups.set(key, { members: [page], conceptId: concept?.id ?? null });
+    });
+
+    const representatives: typeof pages = [];
+    const groupSizes = new Map<string, number>();
+    const overlapIds = new Set<string>();
+    const alternatesByRepresentativeId = new Map<string, PageDraft[]>();
+
+    groups.forEach(({ members, conceptId }) => {
+      members.sort((a, b) => {
+        const aScore = (a.skeleton ? 0 : 10) + (a.qualityGate?.status === "pass" ? 5 : 0) + (a.karlEvaluation ? 3 : 0);
+        const bScore = (b.skeleton ? 0 : 10) + (b.qualityGate?.status === "pass" ? 5 : 0) + (b.karlEvaluation ? 3 : 0);
+        if (aScore !== bScore) return bScore - aScore;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+      const concept = conceptId != null ? conceptById.get(conceptId) : undefined;
+      const canonicalMember = concept?.canonicalArtifactId
+        ? members.find((member) => member.id === concept.canonicalArtifactId)
+        : undefined;
+      const representative = canonicalMember || members[0];
+      representatives.push(representative);
+      groupSizes.set(representative.id, members.length);
+      if (members.length > 1) overlapIds.add(representative.id);
+      const alternates = members.filter((member) => member.id !== representative.id);
+      if (alternates.length > 0) alternatesByRepresentativeId.set(representative.id, alternates);
+    });
+
+    return { representatives, groupSizes, overlapIds, alternatesByRepresentativeId };
+  }, [pages, plannedPages, concepts]);
+
+  const overlapIds = groupModel.overlapIds;
   const selectedPages = useMemo(
-    () => pages.filter((page) => wsState.selectedPageIds.has(page.id)),
-    [pages, wsState.selectedPageIds]
+    () => groupModel.representatives.filter((page) => wsState.selectedPageIds.has(page.id)),
+    [groupModel.representatives, wsState.selectedPageIds]
   );
   
   const filtered = useMemo(() => {
     const query = wsState.search.toLowerCase().trim();
-    const base = pages.filter((p) => {
+    const base = groupModel.representatives.filter((p) => {
       const verificationState = getVerificationState(p);
       const matchesSearch =
         !query ||
@@ -40,7 +89,7 @@ export default function LibraryPage() {
     });
     if (!wsState.showOverlapsOnly) return base;
     return base.filter((p) => overlapIds.has(p.id));
-  }, [pages, wsState.search, wsState.filterType, wsState.verificationFilter, wsState.showOverlapsOnly, overlapIds]);
+  }, [groupModel.representatives, wsState.search, wsState.filterType, wsState.verificationFilter, wsState.showOverlapsOnly, overlapIds]);
 
   const sorted = wsState.sortNewest ? [...filtered].reverse() : filtered;
   const filteredCount = filtered.length;
@@ -131,6 +180,16 @@ export default function LibraryPage() {
     }
   }, [selected, setPages, setSelected]);
 
+  const handlePrimaryAction = useCallback((page: (typeof pages)[number]) => {
+    setSelected(page);
+    void openPageById(page.id);
+  }, [openPageById, setSelected]);
+
+  const handleOpenAlternate = useCallback((page: (typeof pages)[number]) => {
+    setSelected(page);
+    void openPageById(page.id);
+  }, [openPageById, setSelected]);
+
   return (
     <div style={{ display: "flex", height: "100%", gap: 0, overflow: "hidden" }}>
       {/* Library list - full width when no preview, half when preview open */}
@@ -150,11 +209,13 @@ export default function LibraryPage() {
           setSortNewest={wsActions.setSortNewest}
           pagesLoading={pagesLoading}
           seeding={seeding}
-          pages={pages}
+          pages={groupModel.representatives}
           sorted={sorted}
+          groupSizes={Object.fromEntries(groupModel.groupSizes.entries())}
+          alternatesByRepresentativeId={Object.fromEntries(groupModel.alternatesByRepresentativeId.entries())}
           filteredCount={filteredCount}
           selectedPageIds={wsState.selectedPageIds}
-          selectAllPages={() => wsActions.selectAllPages(pages.map(p => p.id))}
+          selectAllPages={() => wsActions.selectAllPages(groupModel.representatives.map(p => p.id))}
           clearPageSelection={wsActions.clearPageSelection}
           onRequestBulkDelete={() => wsActions.deleteSelectedPages(deletePage)}
           onDownloadPNG={() => void handleDownloadSelected("png")}
@@ -164,6 +225,8 @@ export default function LibraryPage() {
             setSelected(p);
             void openPageById(p.id);
           }}
+          onPrimaryAction={handlePrimaryAction}
+          onOpenAlternate={handleOpenAlternate}
           onTogglePageSelection={wsActions.togglePageSelection}
           onUpdateReviewStatus={handleUpdateReviewStatus}
           onOpenHistory={handleOpenHistory}

@@ -486,7 +486,7 @@ export default function GeneratePage() {
         onCancel={() => !singlePageDeleteLoading && setShowDeleteCurrentPageModal(false)}
         isLoading={singlePageDeleteLoading} />
       <DeleteConfirmationModal isOpen={showRegenerateConfirmModal && !!selected}
-        title="Regenerate page?" message="This replaces the current draft with a newly generated page."
+        title="Regenerate page?" message="This creates a new version from the current inputs."
         confirmLabel="Regenerate" confirmVariant="primary"
         onConfirm={handleConfirmRegenerate}
         onCancel={() => setShowRegenerateConfirmModal(false)} />

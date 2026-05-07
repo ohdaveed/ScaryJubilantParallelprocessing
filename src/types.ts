@@ -95,6 +95,9 @@ export type IAPlacementStatus = "placed" | "orphaned" | "deferred";
 export type ArtifactKind = "draft" | "imported" | "built" | "published_snapshot" | "experiment";
 export type ArtifactSource = "generate" | "import" | "manual";
 export type ArtifactWorkflowStatus = "draft" | "in_review" | "approved" | "built" | "archived";
+export type ArtifactStatus = "draft" | "needs_review" | "ready" | "published" | "archived";
+export type CheckStatus = "not_checked" | "checking" | "passed" | "failed";
+export type ImportStatus = "none" | "pending" | "approved" | "rejected";
 export type VariantStatus = "exploring" | "shortlisted" | "accepted" | "rejected";
 export type QueueStatus = "queued" | "generating" | "blocked" | "done" | "failed";
 
@@ -118,6 +121,7 @@ export interface PageConcept {
   createdAt: string;
   updatedAt: string;
   governanceFlags?: GovernanceFlag[];
+  canonicalArtifactId?: string | null;
 }
 
 export interface IANode {
@@ -158,6 +162,12 @@ export interface PageArtifact {
     status: "pass" | "review_required";
     reasons: string[];
   };
+  status?: ArtifactStatus;
+  checkStatus?: CheckStatus;
+  importStatus?: ImportStatus;
+  activeVersionId?: number | null;
+  verifiedVersionId?: number | null;
+  isCanonical?: boolean;
 }
 
 export interface ArtifactVersion {

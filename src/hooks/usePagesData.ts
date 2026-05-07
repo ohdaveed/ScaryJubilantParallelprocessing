@@ -52,7 +52,12 @@ export function usePagesData() {
           }
         }
 
-        setPages([...dbPages, ...migrated]);
+        const byId = new Map<string, PageDraft>();
+        [...dbPages, ...migrated].forEach((page) => {
+          if (!page?.id) return;
+          byId.set(page.id, page);
+        });
+        setPages(Array.from(byId.values()));
       } catch (err) {
         console.error("Failed to load pages:", err);
       }

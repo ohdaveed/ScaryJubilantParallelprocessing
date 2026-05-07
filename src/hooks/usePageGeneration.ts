@@ -37,6 +37,7 @@ type GenerateOverrides = Partial<{
   notes: string;
   pageType: string;
   replaceSkeletonId: string;
+  existingPageId: string;
   /** Link this planned row to the generated page (avoids relying on async React state). */
   plannedId: number;
   /** When true, skip success splash / selection churn (used by bulk skeleton runs). */
@@ -270,7 +271,7 @@ export function usePageGeneration(params: UsePageGenerationParams) {
         setError(`Draft parsed with issues (${stringifyParseError(parseResult.parseError)}). Review generated content before publishing.`);
       }
 
-      const id = ov.replaceSkeletonId || `page_${Date.now()}`;
+      const id = ov.existingPageId || ov.replaceSkeletonId || `page_${Date.now()}`;
 
       setStreaming(false);
       setEvaluating(true);
@@ -326,8 +327,9 @@ export function usePageGeneration(params: UsePageGenerationParams) {
         return null;
       }
 
-      if (ov.replaceSkeletonId) {
-        setPages((prev) => prev.map((p) => (p.id === ov.replaceSkeletonId ? page! : p)));
+      if (ov.existingPageId || ov.replaceSkeletonId) {
+        const targetId = ov.existingPageId || ov.replaceSkeletonId;
+        setPages((prev) => prev.map((p) => (p.id === targetId ? page! : p)));
       } else {
         setPages((prev) => [...prev, page!]);
       }
@@ -392,7 +394,12 @@ export function usePageGeneration(params: UsePageGenerationParams) {
 
   const regenerate = useCallback((p: PageDraft) => {
     if (p?.inputs) {
-      void generate({ topic: p.inputs.topic, userType: p.inputs.userType, notes: p.inputs.notes });
+      void generate({
+        topic: p.inputs.topic,
+        userType: p.inputs.userType,
+        notes: p.inputs.notes,
+        existingPageId: p.id
+      });
     }
   }, [generate]);
 

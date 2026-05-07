@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { PAGE_TYPES, TYPE_META } from "../../constants";
 import { PageDraft, ReviewStatus, VerificationState } from "../../types";
 import { Badge, Btn, Card, UI_INPUT_CLASS } from "../ui";
@@ -22,6 +22,8 @@ type LibraryTabProps = {
   seeding: boolean;
   pages: PageDraft[];
   sorted: PageDraft[];
+  groupSizes: Record<string, number>;
+  alternatesByRepresentativeId: Record<string, PageDraft[]>;
   filteredCount: number;
   selectedPageIds: Set<string>;
   selectAllPages: () => void;
@@ -31,6 +33,8 @@ type LibraryTabProps = {
   onDownloadPDF: () => void;
   onDownloadText: (text: string, name: string) => void;
   onSelectPage: (page: PageDraft) => void;
+  onPrimaryAction: (page: PageDraft) => void;
+  onOpenAlternate: (page: PageDraft) => void;
   onTogglePageSelection: (id: string, e: React.MouseEvent) => void;
   onUpdateReviewStatus: (id: string, status: ReviewStatus) => Promise<void>;
   onOpenHistory: (pageId: string) => void;
@@ -54,6 +58,8 @@ export function LibraryTab(props: LibraryTabProps) {
     seeding,
     pages,
     sorted,
+    groupSizes,
+    alternatesByRepresentativeId,
     filteredCount,
     selectedPageIds,
     selectAllPages,
@@ -63,10 +69,14 @@ export function LibraryTab(props: LibraryTabProps) {
     onDownloadPDF,
     onDownloadText,
     onSelectPage,
+    onPrimaryAction,
+    onOpenAlternate,
     onTogglePageSelection,
     onUpdateReviewStatus,
     onOpenHistory
   } = props;
+
+  const [expandedAlternates, setExpandedAlternates] = useState<Set<string>>(new Set());
 
   return (
     <div style={{ marginTop: 20 }}>
@@ -152,6 +162,16 @@ export function LibraryTab(props: LibraryTabProps) {
           const verificationState = getVerificationState(p);
           const objectRole = artifactRoleLabel(artifactKindFromPage(p));
           const gradeColor: Record<string, string> = { A: "#0F6E56", B: "#185FA5", C: "#854F0B", D: "#A32D2D", F: "#A32D2D" };
+          const groupedCount = groupSizes[p.id] || 1;
+          const alternates = alternatesByRepresentativeId[p.id] || [];
+          const alternatesOpen = expandedAlternates.has(p.id);
+          const primaryAction = p.imported && (p.reviewStatus || "pending") === "pending"
+            ? "Review import"
+            : verificationState === "review_required"
+              ? "Fix issues"
+              : verificationState === "verified"
+                ? "Publish"
+                : "Continue draft";
           return (
             <Card key={p.id} onClick={() => onSelectPage(p)} className={["ui-card--lib", selectedPageIds.has(p.id) ? "ui-card--bulk-selected" : ""].filter(Boolean).join(" ")}>
               <div onClick={(e) => onTogglePageSelection(p.id, e)} style={{ position: "absolute", top: 8, left: 8, width: 18, height: 18, borderRadius: 4, border: selectedPageIds.has(p.id) ? "none" : "1.5px solid #aaa", background: selectedPageIds.has(p.id) ? "#e53e3e" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 10, flexShrink: 0 }}>
@@ -167,6 +187,7 @@ export function LibraryTab(props: LibraryTabProps) {
                 </span>
                 {p.skeleton && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#F3E8FF", color: "#6B21A8", border: "1px dashed #6B21A866" }}>skeleton</span>}
                 {p.imported && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#F1EFE8", color: "#6B4C00", border: "0.5px solid #6B4C0033" }}>imported</span>}
+                {groupedCount > 1 && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#EEF2FF", color: "#4338CA", border: "0.5px solid #4338CA33" }}>{groupedCount} alternate drafts</span>}
                 <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 4, background: "#eef2f6", color: "#334155", border: "0.5px solid #cbd5e1" }}>
                   {getVerificationLabel(verificationState)}
                 </span>
@@ -180,7 +201,7 @@ export function LibraryTab(props: LibraryTabProps) {
               </div>
               <p style={{ fontSize: 13, fontWeight: 500, margin: "0 0 6px", lineHeight: 1.4, color: "var(--color-text-primary)" }}>{clean(p.name) || "Untitled"}</p>
               <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", margin: "0 0 6px", lineHeight: 1.4 }}>
-                {p.skeleton ? "Experiment draft not linked to canonical architecture." : p.imported ? "Imported artifact awaiting canonical mapping or review." : "Current page artifact managed separately from site architecture."}
+                {p.skeleton ? "Draft not yet linked to a canonical page." : p.imported ? "Imported draft waiting for editor review." : groupedCount > 1 ? "Alternate drafts are collapsed under this canonical row." : "Canonical draft with version history."}
               </p>
               <p style={{ fontSize: 12, color: "var(--color-text-secondary)", margin: "0 0 12px", lineHeight: 1.5 }}>{(clean(p.userGoal) || "").slice(0, 70)}{(clean(p.userGoal) || "").length > 70 ? "…" : ""}</p>
               {ev && (
@@ -192,6 +213,16 @@ export function LibraryTab(props: LibraryTabProps) {
               )}
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: "auto", flexWrap: "wrap" }}>
                 <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", margin: 0, flex: 1 }}>{new Date(p.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+                <Btn
+                  variant="primary"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPrimaryAction(p);
+                  }}
+                >
+                  {primaryAction}
+                </Btn>
                 {!p.skeleton && (
                   <Btn
                     variant="ghost"
@@ -202,6 +233,23 @@ export function LibraryTab(props: LibraryTabProps) {
                     }}
                   >
                     History
+                  </Btn>
+                )}
+                {alternates.length > 0 && (
+                  <Btn
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setExpandedAlternates((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(p.id)) next.delete(p.id);
+                        else next.add(p.id);
+                        return next;
+                      });
+                    }}
+                  >
+                    {alternatesOpen ? "Hide alternate drafts" : `View alternate drafts (${alternates.length})`}
                   </Btn>
                 )}
                 {p.imported && (
@@ -234,6 +282,34 @@ export function LibraryTab(props: LibraryTabProps) {
                   </select>
                 )}
               </div>
+              {alternatesOpen && alternates.length > 0 && (
+                <div style={{ marginTop: 10, borderTop: "1px dashed #d1d5db", paddingTop: 8 }}>
+                  <p style={{ fontSize: 10, margin: "0 0 6px", color: "#6b7280" }}>Alternate drafts (non-canonical)</p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {alternates.map((alt) => (
+                      <button
+                        key={alt.id}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenAlternate(alt);
+                        }}
+                        style={{
+                          fontSize: 10,
+                          padding: "3px 7px",
+                          borderRadius: 999,
+                          border: "1px solid #cbd5e1",
+                          background: "#f8fafc",
+                          color: "#334155",
+                          cursor: "pointer"
+                        }}
+                      >
+                        {`v${alt.currentVersionNumber || "?"} · ${new Date(alt.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </Card>
           );
         })}

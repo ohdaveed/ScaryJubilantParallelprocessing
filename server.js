@@ -944,6 +944,19 @@ app.get("/api/page-artifacts", async (req, res) => {
   }
 });
 
+app.post("/api/page-artifacts/:id/promote", async (req, res) => {
+  const { conceptId } = req.body || {};
+  if (!conceptId) return res.status(400).json({ error: "Missing conceptId" });
+  try {
+    const artifact = await db.promoteArtifactAsCanonical(conceptId, req.params.id);
+    if (!artifact) return res.status(404).json({ error: "Artifact not found" });
+    res.json(artifact);
+  } catch (err) {
+    console.error("POST /api/page-artifacts/:id/promote error:", getErrorMessage(err));
+    res.status(500).json({ error: getErrorMessage(err) });
+  }
+});
+
 app.get("/api/artifact-variants", async (req, res) => {
   try {
     applyShortReadCache(res);
