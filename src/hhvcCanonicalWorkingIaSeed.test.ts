@@ -95,7 +95,7 @@ describe("HHVC canonical working IA seed", () => {
       parentTopicSlug: "fix-housing-or-pest-problem",
       topicTagSlug: "fix-housing-or-pest-problem",
       sectionSurface: "services",
-      sectionHeading: "Fix and follow-up",
+      sectionHeading: "After you report",
       sectionOrder: 0,
       relatedEligible: true,
       resourcesEligible: false
@@ -111,7 +111,7 @@ describe("HHVC canonical working IA seed", () => {
     expect(hhvcCanonicalWorkingKarlConnectionSummary.resourcesSectionSlugs).toContain("healthy-housing-guides-and-resources");
     expect(hhvcCanonicalWorkingKarlConnectionSummary.resourcesSectionSlugs).not.toContain("report-rats-or-mice");
 
-    expect(hhvcCanonicalWorkingKarlConnectionSummary.manualSectionHeadings["Fix and follow-up"]).toContain("get-ready-housing-inspection");
+    expect(hhvcCanonicalWorkingKarlConnectionSummary.manualSectionHeadings["After you report"]).toContain("get-ready-housing-inspection");
     expect(hhvcCanonicalWorkingKarlConnectionSummary.manualSectionHeadings["Programs and outreach"]).toContain("request-mosquito-education-workshop");
     expect(hhvcCanonicalWorkingKarlConnectionSummary.manualSectionHeadings["Guides and resources"]).toContain("healthy-housing-guides-and-resources");
 

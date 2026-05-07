@@ -57,8 +57,8 @@ const RESOURCES_ELIGIBLE_CONTENT_TYPES = new Set([
 ]);
 
 const DEFAULT_MANUAL_SECTION_HEADINGS: Record<string, string> = {
-  "fix-housing-or-pest-problem": "Fix and follow-up",
-  "prevent-pests-keep-home-healthy": "Prevention guides",
+  "fix-housing-or-pest-problem": "After you report",
+  "prevent-pests-keep-home-healthy": "Prevention and home care",
   "learn-about-programs-and-services": "Program information",
   "find-tools-fees-and-help": "Tools and support"
 };
