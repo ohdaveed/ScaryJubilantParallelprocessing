@@ -11,6 +11,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "seed:hhvc-working:plan": "vite-node scripts/seed-hhvc-working-ia.ts",
+    "seed:hhvc-working": "vite-node scripts/seed-hhvc-working-ia.ts --write",
     "metrics:fixtures": "node scripts/report-fixture-metrics.mjs",
     "eval": "node eval/run-evals.mjs",
     "eval:deterministic": "node eval/run-evals.mjs --deterministic-only",
