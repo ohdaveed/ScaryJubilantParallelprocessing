@@ -1,10 +1,10 @@
-import React, { memo, useState } from "react";
+import React, { memo, useMemo, useState } from "react";
 import { PageDraft, PlannedPage } from "../types";
 import { PAGE_TYPES, USER_TYPES } from "../constants";
 import { Badge, Btn, Card, Divider } from "./ui";
 import { clean } from "../utils";
 
-export const PlanSidebar = memo(function PlanSidebar({ planned, pages, selectedPlanned, onSelectPlanned, onAdd, onDelete, onGenerate, onViewPage }: {
+export const PlanSidebar = memo(function PlanSidebar({ planned, pages, selectedPlanned, onSelectPlanned, onAdd, onDelete, onGenerate, onViewPage, onLinkExistingPage, onUnlinkPage }: {
   planned: PlannedPage[];
   pages: PageDraft[];
   selectedPlanned: PlannedPage | null;
@@ -13,12 +13,16 @@ export const PlanSidebar = memo(function PlanSidebar({ planned, pages, selectedP
   onDelete: (id: number) => void;
   onGenerate: (p: PlannedPage) => void | Promise<void>;
   onViewPage: (pageId: string) => void;
+  onLinkExistingPage?: (plannedId: number, pageId: string) => void | Promise<void>;
+  onUnlinkPage?: (plannedId: number) => void | Promise<void>;
 }) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [pageType, setPageType] = useState(PAGE_TYPES[0]);
   const [ut, setUt] = useState(USER_TYPES[0]);
   const [parentId, setParentId] = useState<number | null>(null);
+  const [linkPickerOpen, setLinkPickerOpen] = useState(false);
+  const [linkPickerSelection, setLinkPickerSelection] = useState<string>("");
 
   const handleAdd = () => {
     if (!name.trim()) return;
@@ -27,6 +31,14 @@ export const PlanSidebar = memo(function PlanSidebar({ planned, pages, selectedP
   };
 
   const builtPage = selectedPlanned?.builtPageId ? pages.find(p => p.id === selectedPlanned.builtPageId) : null;
+
+  const linkablePages = useMemo(() => {
+    const usedPageIds = new Set(planned.map((p) => p.builtPageId).filter(Boolean) as string[]);
+    if (selectedPlanned?.builtPageId) usedPageIds.delete(selectedPlanned.builtPageId);
+    return pages
+      .filter((p) => !p.skeleton && !usedPageIds.has(p.id))
+      .sort((a, b) => clean(a.name).localeCompare(clean(b.name)));
+  }, [pages, planned, selectedPlanned?.builtPageId]);
 
   return (
     <Card className="app-card-pad--16-18">
@@ -54,15 +66,63 @@ export const PlanSidebar = memo(function PlanSidebar({ planned, pages, selectedP
           {builtPage ? (
             <div>
               <div className="app-ps-built-box">
-                <p className="app-ps-built-title">Page has been generated</p>
+                <p className="app-ps-built-title">Linked to library draft</p>
+                <p className="app-ps-built-sub">{clean(builtPage.name) || "Untitled"}</p>
                 {builtPage.karlEvaluation && (
                   <p className="app-ps-built-sub">Grade {builtPage.karlEvaluation.grade} &middot; {builtPage.karlEvaluation.score}/100</p>
                 )}
               </div>
               <Btn onClick={() => onViewPage(builtPage.id)} variant="primary" size="md" fullWidth>View page &rarr;</Btn>
+              {onUnlinkPage && (
+                <div style={{ marginTop: 6 }}>
+                  <Btn onClick={() => void onUnlinkPage(selectedPlanned.id)} variant="ghost" size="sm">Unlink draft</Btn>
+                </div>
+              )}
             </div>
           ) : (
-            <Btn onClick={() => void onGenerate(selectedPlanned)} variant="primary" size="md" fullWidth>Add to build queue &rarr;</Btn>
+            <div>
+              <Btn onClick={() => void onGenerate(selectedPlanned)} variant="primary" size="md" fullWidth>Add to build queue &rarr;</Btn>
+              {onLinkExistingPage && (
+                <div style={{ marginTop: 8 }}>
+                  {!linkPickerOpen ? (
+                    <Btn onClick={() => { setLinkPickerOpen(true); setLinkPickerSelection(""); }} variant="ghost" size="sm">Link existing draft…</Btn>
+                  ) : (
+                    <div className="app-ps-add-panel">
+                      <p className="app-ps-muted" style={{ margin: "0 0 6px" }}>Pick a Library draft to link to this concept.</p>
+                      <select
+                        className="app-input app-input--sm app-input--mb6"
+                        aria-label="Library draft"
+                        title="Library draft"
+                        value={linkPickerSelection}
+                        onChange={(e) => setLinkPickerSelection(e.target.value)}
+                      >
+                        <option value="">Choose a draft…</option>
+                        {linkablePages.length === 0 && <option value="" disabled>No unlinked drafts available</option>}
+                        {linkablePages.map((pg) => (
+                          <option key={pg.id} value={pg.id}>
+                            {clean(pg.name) || "Untitled"} · {clean(pg.pageType) || "—"}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="app-row-gap-6">
+                        <Btn
+                          onClick={() => {
+                            if (!linkPickerSelection) return;
+                            void onLinkExistingPage(selectedPlanned.id, linkPickerSelection);
+                            setLinkPickerOpen(false);
+                            setLinkPickerSelection("");
+                          }}
+                          variant="primary"
+                          size="sm"
+                          disabled={!linkPickerSelection}
+                        >Link draft</Btn>
+                        <Btn onClick={() => { setLinkPickerOpen(false); setLinkPickerSelection(""); }} variant="ghost" size="sm">Cancel</Btn>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           )}
           <Divider variant="plan" />
           <Btn onClick={() => onDelete(selectedPlanned.id)} variant="danger" size="sm">Delete from plan</Btn>

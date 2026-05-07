@@ -48,6 +48,8 @@ export type SfGovContentDesignToolProps = {
   onPageTypeChange?: (value: string) => void;
   pageGoal: string;
   onPageGoalChange?: (value: string) => void;
+  pageGoalInvalid?: boolean;
+  pageGoalErrorText?: string;
   additionalContext: string;
   onAdditionalContextChange?: (value: string) => void;
   onGenerateClick?: () => void;
@@ -67,6 +69,12 @@ export type SfGovContentDesignToolProps = {
   headerExportDisabled?: boolean;
   /** When false, hides duplicate export control in the faux browser chrome. */
   showPreviewExportButton?: boolean;
+  /**
+   * When false, hides the faux-browser chrome (browser dots + URL bar) on tabs
+   * that don't render a page preview (Site Plan, Library, Ideal Map). Defaults true
+   * to preserve existing behavior on the Generate tab.
+   */
+  showPreviewChrome?: boolean;
   /** When false, hides the version pill in the header (version can live in footer / About). */
   showHeaderVersion?: boolean;
   streamStatus?: string;
@@ -93,9 +101,6 @@ const DEFAULT_PAGE_TYPES = [
   "Step-by-step",
   "Form"
 ] as const;
-
-/** Visible page-type chips before “More types” (choice overload). */
-const PAGE_TYPE_CHIP_PRIMARY_COUNT = 5;
 
 function IconSettings() {
   return (
@@ -237,6 +242,8 @@ export function SfGovContentDesignTool({
   onPageTypeChange,
   pageGoal,
   onPageGoalChange,
+  pageGoalInvalid = false,
+  pageGoalErrorText = "Add a page goal to continue.",
   additionalContext,
   onAdditionalContextChange,
   onGenerateClick,
@@ -253,6 +260,7 @@ export function SfGovContentDesignTool({
   onExportPreview,
   headerExportDisabled = false,
   showPreviewExportButton = true,
+  showPreviewChrome = true,
   showHeaderVersion = false,
   streamStatus = "Connected",
   streamMessage = "",
@@ -273,7 +281,6 @@ export function SfGovContentDesignTool({
   const [leftWidth, setLeftWidth] = useState(defaultLeftPanelWidth);
   const [splitterDragging, setSplitterDragging] = useState(false);
   const [dismissConfirm, setDismissConfirm] = useState(0);
-  const [pageTypesExpanded, setPageTypesExpanded] = useState(false);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
 
   const activeTabMeta = useMemo(() => tabs.find((t) => t.id === activeTabId), [tabs, activeTabId]);
@@ -306,17 +313,15 @@ export function SfGovContentDesignTool({
     [tabs, onTabChange, baseId]
   );
 
-  const pageTypeOverflow = pageTypeOptions.length > PAGE_TYPE_CHIP_PRIMARY_COUNT;
-  const pageTypesVisible = useMemo(() => {
-    if (!pageTypeOverflow || pageTypesExpanded) return [...pageTypeOptions];
-    return pageTypeOptions.slice(0, PAGE_TYPE_CHIP_PRIMARY_COUNT);
-  }, [pageTypeOptions, pageTypeOverflow, pageTypesExpanded]);
-
-  useEffect(() => {
-    if (!pageTypeOverflow || pageTypesExpanded) return;
-    const rest = pageTypeOptions.slice(PAGE_TYPE_CHIP_PRIMARY_COUNT);
-    if (rest.includes(activePageType)) setPageTypesExpanded(true);
-  }, [activePageType, pageTypeOptions, pageTypeOverflow, pageTypesExpanded]);
+  const pageTypeDescriptions: Record<string, string> = {
+    Transaction: "Complete a task with steps and requirements",
+    Information: "Explain a policy, program, or process",
+    Topic: "Collect related services and guidance",
+    "Step by step": "Guide people through a multi-step process",
+    Location: "Share place details, hours, and services",
+    "Resource Collection": "Group links, forms, and references",
+    Campaign: "Promote a coordinated public initiative"
+  };
 
   const shellStyle = useMemo(
     () =>
@@ -504,37 +509,18 @@ export function SfGovContentDesignTool({
                 <div className="field-label" id={`${baseId}-page-type-label`}>
                   Page type
                 </div>
-                <div className="chips" role="group" aria-labelledby={`${baseId}-page-type-label`}>
-                  {pageTypesVisible.map((pt) => (
+                <div className="page-type-grid" role="group" aria-labelledby={`${baseId}-page-type-label`}>
+                  {pageTypeOptions.map((pt) => (
                     <button
                       key={pt}
                       type="button"
-                      className={`chip${pt === activePageType ? " active" : ""}`}
+                      className={`page-type-card${pt === activePageType ? " active" : ""}`}
                       onClick={() => onPageTypeChange?.(pt)}
                     >
-                      {pt}
+                      <span className="page-type-card__name">{pt}</span>
+                      <span className="page-type-card__meta">{pageTypeDescriptions[pt] ?? "Build this page format"}</span>
                     </button>
                   ))}
-                  {pageTypeOverflow && !pageTypesExpanded ? (
-                    <button
-                      type="button"
-                      className="chip chip--more"
-                      aria-expanded={false}
-                      onClick={() => setPageTypesExpanded(true)}
-                    >
-                      More types…
-                    </button>
-                  ) : null}
-                  {pageTypeOverflow && pageTypesExpanded ? (
-                    <button
-                      type="button"
-                      className="chip chip--more chip--ghost"
-                      aria-expanded={true}
-                      onClick={() => setPageTypesExpanded(false)}
-                    >
-                      Fewer types
-                    </button>
-                  ) : null}
                 </div>
               </div>
             </section>
@@ -548,22 +534,25 @@ export function SfGovContentDesignTool({
                 {pageGoalInputMode === "textarea" ? (
                   <textarea
                     id={goalFieldId}
-                    className="field-textarea field-textarea--goal"
+                    className={`field-textarea field-textarea--goal${pageGoalInvalid ? " field-textarea--error" : ""}`}
                     placeholder="Describe the page topic…"
                     value={pageGoal}
                     onChange={(e) => onPageGoalChange?.(e.target.value)}
+                    aria-invalid={pageGoalInvalid ? "true" : "false"}
                     rows={4}
                   />
                 ) : (
                   <input
                     id={goalFieldId}
-                    className="field-input"
+                    className={`field-input${pageGoalInvalid ? " field-input--error" : ""}`}
                     type="text"
                     placeholder="e.g. Apply for a business permit"
                     value={pageGoal}
                     onChange={(e) => onPageGoalChange?.(e.target.value)}
+                    aria-invalid={pageGoalInvalid ? "true" : "false"}
                   />
                 )}
+                {pageGoalInvalid ? <p className="field-helper-error">{pageGoalErrorText}</p> : null}
               </div>
               <details className="panel-details">
                 <summary className="panel-details__summary">Additional context (optional)</summary>
@@ -593,7 +582,7 @@ export function SfGovContentDesignTool({
                   →
                 </span>
               </button>
-              <details className="panel-library-quickpick">
+              <details className="panel-library-quickpick" open>
                 <summary className="panel-library-quickpick__summary">
                   Quick pick
                   <span className="section-label-meta">
@@ -658,42 +647,46 @@ export function SfGovContentDesignTool({
                   <IconChevron direction={leftPanelCollapsed ? "right" : "left"} />
                 </button>
               ) : null}
-              <div className="browser-dots" aria-hidden>
-                <div className="bdot bdot-r" />
-                <div className="bdot bdot-y" />
-                <div className="bdot bdot-g" />
-              </div>
-              <div className="url-bar">
-                <span className="url-secure" title="Secure">
-                  <IconLock />
-                </span>
-                <span className="url-text">{previewUrlText}</span>
-              </div>
-              <div className="preview-toolbar-actions">
-                <button type="button" className="icon-btn icon-btn--preview" title="Fit" aria-label="Fit preview" onClick={() => onExpandPreview?.()}>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                    <polyline points="15 3 21 3 21 9" />
-                    <polyline points="9 21 3 21 3 15" />
-                    <line x1="21" y1="3" x2="14" y2="10" />
-                    <line x1="3" y1="21" x2="10" y2="14" />
-                  </svg>
-                </button>
-                {showPreviewExportButton ? (
-                  <button
-                    type="button"
-                    className="icon-btn icon-btn--preview icon-btn--preview-active"
-                    title="Export preview"
-                    aria-label="Export preview"
-                    onClick={() => onExportPreview?.()}
-                  >
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" y1="15" x2="12" y2="3" />
-                    </svg>
-                  </button>
-                ) : null}
-              </div>
+              {showPreviewChrome ? (
+                <>
+                  <div className="browser-dots" aria-hidden>
+                    <div className="bdot bdot-r" />
+                    <div className="bdot bdot-y" />
+                    <div className="bdot bdot-g" />
+                  </div>
+                  <div className="url-bar">
+                    <span className="url-secure" title="Secure">
+                      <IconLock />
+                    </span>
+                    <span className="url-text">{previewUrlText}</span>
+                  </div>
+                  <div className="preview-toolbar-actions">
+                    <button type="button" className="icon-btn icon-btn--preview" title="Fit" aria-label="Fit preview" onClick={() => onExpandPreview?.()}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                        <polyline points="15 3 21 3 21 9" />
+                        <polyline points="9 21 3 21 3 15" />
+                        <line x1="21" y1="3" x2="14" y2="10" />
+                        <line x1="3" y1="21" x2="10" y2="14" />
+                      </svg>
+                    </button>
+                    {showPreviewExportButton ? (
+                      <button
+                        type="button"
+                        className="icon-btn icon-btn--preview icon-btn--preview-active"
+                        title="Export preview"
+                        aria-label="Export preview"
+                        onClick={() => onExportPreview?.()}
+                      >
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                      </button>
+                    ) : null}
+                  </div>
+                </>
+              ) : null}
             </div>
             {previewSummaryLine ? (
               <div className="preview-summary-line" title={previewSummaryLine}>

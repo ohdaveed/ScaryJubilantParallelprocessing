@@ -1,19 +1,22 @@
 import React, { useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useWorkspace } from "../context/WorkspaceContext";
 import { MapTab } from "../components/tabs/MapTab";
 import { PlanDiagram } from "../components/PlanDiagram";
 import { PlanSidebar } from "../components/PlanSidebar";
 import { TodoPanel } from "../components/TodoPanel";
 import { CanonicalIaInspector } from "../components/CanonicalIaInspector";
-import { TodoItem } from "../types";
+import { ReferenceExample, TodoItem } from "../types";
 
 export default function PlanPage() {
   const ctx = useWorkspace();
+  const navigate = useNavigate();
 
   const {
     pages, plannedPages, plannedLoading, selectedPlanned,
     setSelectedPlanned, mapMode, setMapMode, addPlannedPage,
-    deletePlannedPage, openPageById, generate
+    deletePlannedPage, openPageById, generate, linkPlannedPage,
+    setTopic, setTopicTouched, setNotes, setPendingPageType, setPendingPlannedId
   } = ctx;
 
   const generateForQueue = useCallback(
@@ -39,6 +42,38 @@ export default function PlanPage() {
     }
   }, []);
 
+  const handleLinkExistingPage = useCallback(
+    async (plannedId: number, pageId: string) => {
+      await linkPlannedPage(plannedId, pageId);
+    },
+    [linkPlannedPage]
+  );
+
+  const handleUnlinkPage = useCallback(
+    async (plannedId: number) => {
+      await linkPlannedPage(plannedId, null);
+    },
+    [linkPlannedPage]
+  );
+
+  const handleGenerateFromReference = useCallback(
+    (reference: ReferenceExample, suggestedPageType: string) => {
+      const goal = reference.title?.trim() || "";
+      const benchmarkNotes =
+        `Benchmark reference: ${reference.title} (source: ${reference.sourceSystem}, type: ${reference.referenceType.replace(/_/g, " ")}, pattern: ${reference.mappedPattern}).` +
+        (reference.notes ? `\n\nNotes: ${reference.notes}` : "");
+      if (goal) {
+        setTopic(goal);
+        setTopicTouched(true);
+      }
+      setNotes(benchmarkNotes);
+      if (suggestedPageType) setPendingPageType(suggestedPageType);
+      setPendingPlannedId(null);
+      navigate("/generate");
+    },
+    [navigate, setTopic, setTopicTouched, setNotes, setPendingPageType, setPendingPlannedId]
+  );
+
   return (
     <div className="app-studio-tab-pad">
       <MapTab
@@ -59,6 +94,9 @@ export default function PlanPage() {
         PlanSidebarComponent={PlanSidebar}
         TodoPanelComponent={TodoPanel}
         onOpenQueuedPage={(id) => { void openPageById(id); }}
+        onLinkExistingPage={handleLinkExistingPage}
+        onUnlinkPage={handleUnlinkPage}
+        onGenerateFromReference={handleGenerateFromReference}
       />
       <div style={{ marginTop: 20 }}>
         <CanonicalIaInspector concepts={ctx.concepts} nodes={ctx.nodes} />

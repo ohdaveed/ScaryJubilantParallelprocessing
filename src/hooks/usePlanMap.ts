@@ -84,7 +84,7 @@ export function usePlanMap(setPages: Dispatch<SetStateAction<PageDraft[]>>) {
     else if (updated.builtPageId !== selectedPlanned.builtPageId) setSelectedPlanned(updated);
   }, [plannedPages, selectedPlanned]);
 
-  const linkPlannedPage = useCallback(async (plannedId: number, builtPageId: string) => {
+  const linkPlannedPage = useCallback(async (plannedId: number, builtPageId: string | null) => {
     try {
       const updated = await plannedPagesApi.update(plannedId, { builtPageId });
       setPlannedPages((prev) => prev.map((p) => (p.id === plannedId ? updated : p)));

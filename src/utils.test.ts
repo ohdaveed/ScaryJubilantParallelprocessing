@@ -186,6 +186,28 @@ describe("overlap detection", () => {
     expect(overlaps.has("2")).toBe(true);
     expect(overlaps.has("3")).toBe(false);
   });
+
+  it("treats near-duplicate possessive titles as overlaps", () => {
+    const overlaps = findOverlappingPageIds([
+      { id: "a", name: "Report flies in your home" } as PageDraft,
+      { id: "b", name: "Report flies in my home" } as PageDraft,
+      { id: "c", name: "Report rats in the home" } as PageDraft,
+      { id: "d", name: "Schedule pickup" } as PageDraft
+    ]);
+    expect(overlaps.has("a")).toBe(true);
+    expect(overlaps.has("b")).toBe(true);
+    expect(overlaps.has("c")).toBe(false);
+    expect(overlaps.has("d")).toBe(false);
+  });
+
+  it("ignores punctuation and articles", () => {
+    const overlaps = findOverlappingPageIds([
+      { id: "x", name: "Get a permit!" } as PageDraft,
+      { id: "y", name: "Get the permit" } as PageDraft
+    ]);
+    expect(overlaps.has("x")).toBe(true);
+    expect(overlaps.has("y")).toBe(true);
+  });
 });
 
 describe("golden fixtures", () => {

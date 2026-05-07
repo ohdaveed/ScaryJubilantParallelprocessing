@@ -4,6 +4,8 @@ import { PageDraft, PlannedPage, ReferenceExample, TodoItem } from "../../types"
 import { Card } from "../ui";
 const LazyIdealSiteMap = lazy(() => import("../IdealSiteMap"));
 
+type GenerateFromReferenceHandler = (reference: ReferenceExample, suggestedPageType: string) => void;
+
 type MapTabProps = {
   mapMode: "plan" | "view";
   setMapMode: React.Dispatch<React.SetStateAction<"plan" | "view">>;
@@ -19,6 +21,9 @@ type MapTabProps = {
   generateFromPlanned: (p: PlannedPage) => void | Promise<void>;
   generateForQueue: (todo: TodoItem) => Promise<PageDraft | null>;
   onOpenQueuedPage: (pageId: string) => void;
+  onLinkExistingPage?: (plannedId: number, pageId: string) => void | Promise<void>;
+  onUnlinkPage?: (plannedId: number) => void | Promise<void>;
+  onGenerateFromReference?: GenerateFromReferenceHandler;
   PlanDiagramComponent: React.ComponentType<{ planned: PlannedPage[]; pages: PageDraft[]; onSelectPlanned: (p: PlannedPage) => void }>;
   PlanSidebarComponent: React.ComponentType<{
     planned: PlannedPage[];
@@ -29,10 +34,13 @@ type MapTabProps = {
     onDelete: (id: number) => void;
     onGenerate: (p: PlannedPage) => void | Promise<void>;
     onViewPage: (pageId: string) => void;
+    onLinkExistingPage?: (plannedId: number, pageId: string) => void | Promise<void>;
+    onUnlinkPage?: (plannedId: number) => void | Promise<void>;
   }>;
   TodoPanelComponent: React.ComponentType<{
     generateForQueue: (todo: TodoItem) => Promise<PageDraft | null>;
     onOpenPage: (pageId: string) => void;
+    plannedPages?: PlannedPage[];
   }>;
 };
 
@@ -52,6 +60,9 @@ export function MapTab(props: MapTabProps) {
     generateFromPlanned,
     generateForQueue,
     onOpenQueuedPage,
+    onLinkExistingPage,
+    onUnlinkPage,
+    onGenerateFromReference,
     PlanDiagramComponent,
     PlanSidebarComponent,
     TodoPanelComponent
@@ -107,7 +118,7 @@ export function MapTab(props: MapTabProps) {
             <div>
               <Card className="ui-card--map">
                 <Suspense fallback={<div style={{ textAlign: "center", padding: "56px 0", color: "var(--color-text-tertiary)" }}>Loading site map…</div>}>
-                  <LazyIdealSiteMap references={references} />
+                  <LazyIdealSiteMap references={references} onGenerateFromReference={onGenerateFromReference} />
                 </Suspense>
               </Card>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
@@ -115,7 +126,7 @@ export function MapTab(props: MapTabProps) {
                 <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "var(--color-background-secondary)", color: "var(--color-text-tertiary)", border: "0.5px dashed var(--color-border-secondary)" }}>not working IA</span>
               </div>
             </div>
-            <TodoPanelComponent generateForQueue={generateForQueue} onOpenPage={onOpenQueuedPage} />
+            <TodoPanelComponent generateForQueue={generateForQueue} onOpenPage={onOpenQueuedPage} plannedPages={plannedPages} />
           </>
         ) : (
           <>
@@ -145,6 +156,8 @@ export function MapTab(props: MapTabProps) {
               onDelete={deletePlannedPage}
               onGenerate={generateFromPlanned}
               onViewPage={selectById}
+              onLinkExistingPage={onLinkExistingPage}
+              onUnlinkPage={onUnlinkPage}
             />
           </>
         )}

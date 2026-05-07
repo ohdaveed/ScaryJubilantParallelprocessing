@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { PAGE_TYPES, TYPE_META } from "../../constants";
-import { PageDraft, ReviewStatus, VerificationState } from "../../types";
+import { PageDraft, PlannedPage, ReviewStatus, VerificationState } from "../../types";
 import { Badge, Btn, Card, DeleteConfirmationModal, UI_INPUT_CLASS } from "../ui";
 import { artifactKindFromPage, artifactRoleLabel } from "../../utils/contentModel";
 import { clean, getVerificationLabel, getVerificationState } from "../../utils";
@@ -40,6 +40,10 @@ type LibraryTabProps = {
   onTogglePageSelection: (id: string, e: React.MouseEvent) => void;
   onUpdateReviewStatus: (id: string, status: ReviewStatus) => Promise<void>;
   onOpenHistory: (pageId: string) => void;
+  /** Planned pages a verified library draft can be promoted into (linked) as a built artifact. */
+  plannedPages?: PlannedPage[];
+  /** Promote a verified library page by linking it to a planned Site Plan node. */
+  onMarkAsBuilt?: (pageId: string, plannedId: number) => Promise<void> | void;
 };
 
 export function LibraryTab(props: LibraryTabProps) {
@@ -77,12 +81,32 @@ export function LibraryTab(props: LibraryTabProps) {
     onPromoteAlternate,
     onTogglePageSelection,
     onUpdateReviewStatus,
-    onOpenHistory
+    onOpenHistory,
+    plannedPages = [],
+    onMarkAsBuilt
   } = props;
 
   const [expandedAlternates, setExpandedAlternates] = useState<Set<string>>(new Set());
   const [pendingPromotion, setPendingPromotion] = useState<{ representativeId: string; page: PageDraft } | null>(null);
   const [promotionLoading, setPromotionLoading] = useState(false);
+
+  const [markAsBuiltOpen, setMarkAsBuiltOpen] = useState<string | null>(null);
+  const [markAsBuiltSelection, setMarkAsBuiltSelection] = useState<number | null>(null);
+  const [markAsBuiltLoading, setMarkAsBuiltLoading] = useState(false);
+
+  const linkablePlannedPages = useMemo(() => {
+    return [...plannedPages]
+      .filter((p) => !p.builtPageId)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [plannedPages]);
+
+  const plannedByBuiltPageId = useMemo(() => {
+    const map = new Map<string, PlannedPage>();
+    plannedPages.forEach((p) => {
+      if (p.builtPageId) map.set(p.builtPageId, p);
+    });
+    return map;
+  }, [plannedPages]);
 
   return (
     <div style={{ marginTop: 20 }}>
@@ -179,6 +203,12 @@ export function LibraryTab(props: LibraryTabProps) {
               : verificationState === "verified"
                 ? "Open publish review"
                 : "Continue draft";
+          const linkedPlanned = plannedByBuiltPageId.get(p.id) || null;
+          const canMarkAsBuilt =
+            !!onMarkAsBuilt &&
+            !p.skeleton &&
+            !linkedPlanned &&
+            (verificationState === "verified" || p.qualityGate?.status === "pass");
           return (
             <Card key={p.id} onClick={() => onSelectPage(p)} className={["ui-card--lib", selectedPageIds.has(p.id) ? "ui-card--bulk-selected" : ""].filter(Boolean).join(" ")}>
               <div onClick={(e) => onTogglePageSelection(p.id, e)} style={{ position: "absolute", top: 8, left: 8, width: 18, height: 18, borderRadius: 4, border: selectedPageIds.has(p.id) ? "none" : "1.5px solid #aaa", background: selectedPageIds.has(p.id) ? "#e53e3e" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 10, flexShrink: 0 }}>
@@ -240,6 +270,34 @@ export function LibraryTab(props: LibraryTabProps) {
                     }}
                   >
                     History
+                  </Btn>
+                )}
+                {linkedPlanned && (
+                  <span
+                    style={{
+                      fontSize: 10,
+                      padding: "2px 7px",
+                      borderRadius: 999,
+                      background: "#E1F5EE",
+                      color: "#0F6E56",
+                      border: "1px solid #0F6E5640"
+                    }}
+                    title={`Built artifact for plan node "${linkedPlanned.name}"`}
+                  >
+                    Built · {linkedPlanned.name.length > 22 ? `${linkedPlanned.name.slice(0, 22)}…` : linkedPlanned.name}
+                  </span>
+                )}
+                {canMarkAsBuilt && (
+                  <Btn
+                    variant="primary"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMarkAsBuiltOpen(p.id);
+                      setMarkAsBuiltSelection(null);
+                    }}
+                  >
+                    Mark as built
                   </Btn>
                 )}
                 {alternates.length > 0 && (
@@ -364,6 +422,104 @@ export function LibraryTab(props: LibraryTabProps) {
           }
         }}
       />
+      {markAsBuiltOpen != null && (
+        <div
+          role="dialog"
+          aria-label="Mark as built"
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.32)",
+            zIndex: 50,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16
+          }}
+          onClick={() => {
+            if (!markAsBuiltLoading) {
+              setMarkAsBuiltOpen(null);
+              setMarkAsBuiltSelection(null);
+            }
+          }}
+        >
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 10,
+              padding: 18,
+              maxWidth: 460,
+              width: "100%",
+              boxShadow: "0 12px 40px rgba(0,0,0,0.2)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Mark draft as built</p>
+            <p style={{ margin: "6px 0 12px", fontSize: 12, color: "#6b7280", lineHeight: 1.5 }}>
+              Link this verified draft to a Site Plan node. The plan node will then show this page as built.
+            </p>
+            {linkablePlannedPages.length === 0 ? (
+              <p style={{ margin: "0 0 12px", fontSize: 12, color: "#92400e" }}>
+                No unlinked plan nodes available. Add a planned page in Site Plan first, or unlink an existing one.
+              </p>
+            ) : (
+              <select
+                aria-label="Plan node to link"
+                title="Plan node to link"
+                value={markAsBuiltSelection ?? ""}
+                onChange={(e) => setMarkAsBuiltSelection(e.target.value ? Number(e.target.value) : null)}
+                style={{
+                  width: "100%",
+                  padding: "6px 10px",
+                  fontSize: 13,
+                  borderRadius: 6,
+                  border: "1px solid #cbd5e1",
+                  background: "#fff",
+                  marginBottom: 12
+                }}
+              >
+                <option value="">Choose a plan node…</option>
+                {linkablePlannedPages.map((pp) => (
+                  <option key={pp.id} value={pp.id}>
+                    {pp.name} · {pp.pageType}
+                  </option>
+                ))}
+              </select>
+            )}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <Btn
+                variant="ghost"
+                size="sm"
+                disabled={markAsBuiltLoading}
+                onClick={() => {
+                  setMarkAsBuiltOpen(null);
+                  setMarkAsBuiltSelection(null);
+                }}
+              >
+                Cancel
+              </Btn>
+              <Btn
+                variant="primary"
+                size="sm"
+                disabled={markAsBuiltLoading || markAsBuiltSelection == null || !onMarkAsBuilt}
+                onClick={async () => {
+                  if (!onMarkAsBuilt || markAsBuiltSelection == null || markAsBuiltOpen == null) return;
+                  setMarkAsBuiltLoading(true);
+                  try {
+                    await onMarkAsBuilt(markAsBuiltOpen, markAsBuiltSelection);
+                    setMarkAsBuiltOpen(null);
+                    setMarkAsBuiltSelection(null);
+                  } finally {
+                    setMarkAsBuiltLoading(false);
+                  }
+                }}
+              >
+                {markAsBuiltLoading ? "Linking…" : "Mark as built"}
+              </Btn>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

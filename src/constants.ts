@@ -106,8 +106,27 @@ OUTPUT FORMAT RULES:
 - Do not output markdown fences or extra commentary.`;
 
 
-/** Selectable / generatable types only (excludes Agency). */
+/** All Karl page types valid for HHVC content (excludes Agency). Used by Site Plan filter and Library filter. */
 export const PAGE_TYPES: string[] = KARL_PAGE_TYPES.filter((t) => t !== "Agency");
+
+/**
+ * Subset of `PAGE_TYPES` that the Generate page can produce drafts for.
+ *
+ * Site Plan and Library filters still use the full `PAGE_TYPES` set — those filters
+ * span existing canonical IA, manually curated reference pages, and imported drafts
+ * that are not necessarily generatable in this tool. Generation prompts and validators
+ * are tuned only for the page types listed here. Any type filtered out of this list
+ * is "viewable / plannable but not generatable".
+ */
+export const GENERATABLE_PAGE_TYPES: string[] = [
+  "Transaction",
+  "Information",
+  "Topic",
+  "Step by step",
+  "Location",
+  "Resource Collection",
+  "Campaign"
+];
 export const USER_TYPES = ["Resident / tenant", "Property owner / landlord", "General public", "Property manager", "HHVC staff"];
 export const PEST_KW = ["rodent", "rat", "mouse", "mice", "cockroach", "roach", "flea", "mosquito", "fly", "flies", "bed bug", "bedbug", "tick", "ant", "wasp", "bee", "pest"];
 

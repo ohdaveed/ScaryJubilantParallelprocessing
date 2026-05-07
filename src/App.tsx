@@ -76,8 +76,10 @@ export default function App() {
   }, []);
 
   const handleGenerateClick = useCallback(() => {
+    setTopicTouched(true);
+    if (!topic.trim()) return;
     void generate({ pageType: pendingPageType || pageTypeOptions[0] });
-  }, [generate, pendingPageType, pageTypeOptions]);
+  }, [generate, pendingPageType, pageTypeOptions, setTopicTouched, topic]);
 
   const handleExportScreenshot = useCallback(async (pageName: string) => {
     if (!screenshotRef.current) return;
@@ -194,18 +196,21 @@ export default function App() {
         onPageTypeChange={handlePageTypeChange}
         pageGoal={topic}
         onPageGoalChange={handlePageGoalChange}
+        pageGoalInvalid={topicError}
+        pageGoalErrorText="Add a page goal before generating."
         additionalContext={ctx.notes}
         onAdditionalContextChange={ctx.setNotes}
         onGenerateClick={handleGenerateClick}
         generateLabel={
           loading ? (streaming ? "Generating…" : evaluating ? "Evaluating…" : "Working…") : "Generate page"
         }
-        generateDisabled={loading || topicError}
+        generateDisabled={loading}
         libraryPages={libraryRows}
         selectedLibraryPageId={selected?.id ?? null}
         onLibraryPageSelect={(id) => { void ctx.openPageById(id); }}
         onLibraryPageDelete={(id) => void ctx.deletePage(id)}
         previewUrlText={previewUrlSlug}
+        showPreviewChrome={workspaceTab === "generate"}
         previewSummaryLine={workspaceTab === "generate" ? previewSummaryLine : undefined}
         streamMessage={streamBarMessage}
         streamFooterMeta={streamFooterMetaFull}

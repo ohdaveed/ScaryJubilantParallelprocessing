@@ -6,7 +6,7 @@ import { clean, getVerificationState, VERIFICATION_FILTERS } from "../utils";
 import { pageArtifactsApi, pagesApi } from "../utils/api";
 import { generateZip, renderPageAsPDF, renderPageAsPNG } from "../utils/export";
 import { SfGovPagePreview } from "../components/SfGovPreview";
-import type { ReviewStatus } from "../types";
+import type { PageDraft, ReviewStatus } from "../types";
 
 const LazySfGovPagePreview = lazy(() => import("../components/SfGovPreview").then((m) => ({ default: m.SfGovPagePreview })));
 
@@ -16,7 +16,7 @@ export default function LibraryPage() {
   const {
     pages, setPages, pagesLoading, seeding, selected,
     wsState, wsActions, openHistory, deletePage, openPageById, setSelected,
-    plannedPages, concepts
+    plannedPages, concepts, linkPlannedPage
   } = ctx;
 
   const groupModel = useMemo(() => {
@@ -199,6 +199,10 @@ export default function LibraryPage() {
     await openPageById(alternate.id);
   }, [groupModel.conceptIdByRepresentativeId, openPageById, setPages, setSelected]);
 
+  const handleMarkAsBuilt = useCallback(async (pageId: string, plannedId: number) => {
+    await linkPlannedPage(plannedId, pageId);
+  }, [linkPlannedPage]);
+
   return (
     <div style={{ display: "flex", height: "100%", gap: 0, overflow: "hidden" }}>
       {/* Library list - full width when no preview, half when preview open */}
@@ -241,6 +245,8 @@ export default function LibraryPage() {
           onTogglePageSelection={wsActions.togglePageSelection}
           onUpdateReviewStatus={handleUpdateReviewStatus}
           onOpenHistory={handleOpenHistory}
+          plannedPages={plannedPages}
+          onMarkAsBuilt={handleMarkAsBuilt}
         />
       </div>
 

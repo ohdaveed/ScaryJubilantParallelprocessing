@@ -131,8 +131,19 @@
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.58);
+    color: rgba(255, 255, 255, 0.88);
     margin: 0 0 10px;
+  }
+
+  .panel-band {
+    position: relative;
+  }
+
+  .panel-band::after {
+    content: "";
+    display: block;
+    margin-top: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   }
 
   .panel-band .field:first-of-type .field-label {
@@ -585,7 +596,7 @@
     font-family: var(--font-mono);
     font-size: var(--font-size-micro-label);
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.76);
+    color: rgba(255, 255, 255, 0.66);
     letter-spacing: 0.1em;
     margin-bottom: 7px;
     text-transform: uppercase;
@@ -638,6 +649,63 @@
   .field-textarea--goal {
     min-height: 116px;
     height: auto;
+  }
+
+  .field-input--error,
+  .field-textarea--error {
+    border-color: #ef6c6c;
+    box-shadow: 0 0 0 1px rgba(239, 108, 108, 0.35);
+  }
+
+  .field-helper-error {
+    margin-top: 8px;
+    font-size: var(--text-sm);
+    line-height: 1.45;
+    color: #ffd5d5;
+  }
+
+  .page-type-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .page-type-card {
+    width: 100%;
+    text-align: left;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 9px 10px;
+    color: rgba(255, 255, 255, 0.84);
+    cursor: pointer;
+  }
+
+  .page-type-card__name {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-micro-label);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .page-type-card__meta {
+    display: block;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.62);
+  }
+
+  .page-type-card:hover {
+    border-color: rgba(255, 255, 255, 0.26);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .page-type-card.active {
+    border-color: rgba(125, 151, 255, 0.7);
+    background: rgba(73, 94, 212, 0.2);
   }
 
   .field-select {

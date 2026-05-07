@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useWorkspace } from "../context/WorkspaceContext";
-import { USER_TYPES } from "../constants";
+import { USER_TYPES, GENERATABLE_PAGE_TYPES } from "../constants";
 import { clean, getExportReadiness } from "../utils";
 import { Badge, Btn, Card, IssueResolutionPanel, ComponentChips, RelPanel, ProgressBar, DeleteConfirmationModal } from "../components/ui";
 import { StreamRenderer } from "../components/StreamRenderer";
@@ -30,13 +30,7 @@ export default function GeneratePage() {
   } = ctx;
 
   const pendingPageTypeValue = pendingPageType;
-  const pageTypeOptions = useMemo(() => {
-    const STUDIO_PAGE_TYPE_CHIPS = [
-      "Transaction", "Information", "Topic", "Step by step",
-      "Location", "Resource Collection", "Campaign"
-    ] as const;
-    return STUDIO_PAGE_TYPE_CHIPS.filter((t) => ["Transaction", "Information", "Topic", "Step by step", "Location", "Resource Collection", "Campaign"].includes(t));
-  }, []);
+  const pageTypeOptions = useMemo(() => GENERATABLE_PAGE_TYPES, []);
 
   const [showRegenerateConfirmModal, setShowRegenerateConfirmModal] = useState(false);
   const [showDeleteCurrentPageModal, setShowDeleteCurrentPageModal] = useState(false);
@@ -213,9 +207,8 @@ export default function GeneratePage() {
         <div className={["app-studio-generate", !showGenerateContextRail ? "app-studio-generate--no-rail" : ""].filter(Boolean).join(" ")}>
           {showGenerateContextRail ? (
             <div className="app-studio-generate__rail">
-              {(topicTouched && !topic.trim() || pendingPageType) ? (
+              {pendingPageType ? (
                 <Card className="app-card-pad--18-20">
-                  {topicTouched && !topic.trim() && <p className="app-topic-err">Enter a page goal in the left panel to generate.</p>}
                   {pendingPageType && (
                     <div className="app-pending-type-banner">
                       <Badge type={pendingPageType} small />
@@ -426,13 +419,9 @@ export default function GeneratePage() {
                       <div className="app-builder-empty__center">
                         <h2 className="app-builder-empty__title">{pages.length === 0 ? "Start your first draft" : "Start a new draft or open a saved page"}</h2>
                         <p className="app-builder-empty__sub">{pages.length === 0 ? "Add a page goal in the left panel, then generate." : "Generate from the left panel or go to Library."}</p>
-                        <div className="app-builder-empty__actions">
-                          <Btn variant="primary" size="md" disabled={loading || (topicTouched && !topic.trim())}
-                            onClick={() => void generate({ pageType: pendingPageTypeValue || pageTypeOptions[0] })}>
-                            {loading ? "Working…" : "Generate draft"}
-                          </Btn>
-                          <Btn variant="ghost" size="md" onClick={() => navigate("/library")}>Browse Library</Btn>
-                        </div>
+                        <p className="app-builder-empty__hint">
+                          Use the left panel to set user type, choose a page type, and enter a page goal.
+                        </p>
                       </div>
                     </>
                   )}

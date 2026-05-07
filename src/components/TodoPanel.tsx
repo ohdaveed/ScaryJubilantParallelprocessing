@@ -1,5 +1,5 @@
 import React, { memo, useState, useEffect, useCallback } from "react";
-import { PageDraft, TodoItem } from "../types";
+import { PageDraft, PlannedPage, TodoItem } from "../types";
 import { USER_TYPES } from "../constants";
 import { Btn, Card } from "./ui";
 import { useQueueRunner } from "../hooks/useQueueRunner";
@@ -7,11 +7,14 @@ import { todosApi } from "../utils/api";
 
 export const TodoPanel = memo(function TodoPanel({
   generateForQueue,
-  onOpenPage
+  onOpenPage,
+  plannedPages = []
 }: {
   generateForQueue: (todo: TodoItem) => Promise<PageDraft | null>;
   onOpenPage: (pageId: string) => void;
+  plannedPages?: PlannedPage[];
 }) {
+  const plannedNameById = new Map<number, string>(plannedPages.map((p) => [p.id, p.name]));
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [newTopic, setNewTopic] = useState("");
   const [newUT, setNewUT] = useState(USER_TYPES[0]);
@@ -104,7 +107,11 @@ export const TodoPanel = memo(function TodoPanel({
             <p className="app-todo-ut">{t.userType}</p>
             <p className="app-todo-ut" style={{ fontSize: 11, marginTop: 4 }}>
               <span style={{ opacity: 0.85 }}>{statusLabel(t)}</span>
-              {t.plannedId != null && <span style={{ marginLeft: 8, opacity: 0.7 }}>· Planned #{t.plannedId}</span>}
+              {t.plannedId != null && (
+                <span style={{ marginLeft: 8, opacity: 0.7 }} title={`Planned page id ${t.plannedId}`}>
+                  · Planned: {plannedNameById.get(t.plannedId) || `#${t.plannedId}`}
+                </span>
+              )}
               {t.karlGrade && t.status === "done" && (
                 <span style={{ marginLeft: 8 }}>· Karl {t.karlGrade}</span>
               )}

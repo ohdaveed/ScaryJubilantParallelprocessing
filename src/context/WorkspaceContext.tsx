@@ -27,7 +27,7 @@ export interface WorkspaceContextValue {
   seeding: boolean;
   addPlannedPage: (name: string, pageType: string, userType: string, parentId: number | null) => Promise<void>;
   deletePlannedPage: (id: number) => Promise<void>;
-  linkPlannedPage: (plannedId: number, pageId: string) => void;
+  linkPlannedPage: (plannedId: number, pageId: string | null) => void;
   loading: boolean;
   streaming: boolean;
   evaluating: boolean;

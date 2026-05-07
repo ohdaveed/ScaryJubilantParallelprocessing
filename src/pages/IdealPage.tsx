@@ -1,20 +1,23 @@
 import React, { Suspense, lazy, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useWorkspace } from "../context/WorkspaceContext";
 import { MapTab } from "../components/tabs/MapTab";
 import { IdealTabQueuePanel } from "../components/IdealTabQueuePanel";
 import { PlanDiagram } from "../components/PlanDiagram";
 import { PlanSidebar } from "../components/PlanSidebar";
 import { Card } from "../components/ui";
-import { TodoItem } from "../types";
+import { ReferenceExample, TodoItem } from "../types";
 
 const LazyIdealSiteMap = lazy(() => import("../components/IdealSiteMap"));
 
 export default function IdealPage() {
   const ctx = useWorkspace();
+  const navigate = useNavigate();
 
   const {
     pages, plannedPages, references, setSelectedPlanned,
-    openPageById, generate
+    openPageById, generate, setTopic, setTopicTouched, setNotes,
+    setPendingPageType, setPendingPlannedId
   } = ctx;
 
   const generateForQueue = useCallback(
@@ -31,13 +34,29 @@ export default function IdealPage() {
     [generate, plannedPages]
   );
 
+  const handleGenerateFromReference = useCallback(
+    (reference: ReferenceExample, suggestedPageType: string) => {
+      const goal = reference.title;
+      const benchmarkNotes =
+        `Benchmark reference: ${reference.title} (source: ${reference.sourceSystem}, type: ${reference.referenceType.replace(/_/g, " ")}, pattern: ${reference.mappedPattern}).` +
+        (reference.notes ? `\n\nNotes: ${reference.notes}` : "");
+      setTopic(goal);
+      setTopicTouched(true);
+      setNotes(benchmarkNotes);
+      setPendingPageType(suggestedPageType);
+      setPendingPlannedId(null);
+      navigate("/generate");
+    },
+    [navigate, setTopic, setTopicTouched, setNotes, setPendingPageType, setPendingPlannedId]
+  );
+
   return (
     <div style={{ marginTop: 20 }}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 16, alignItems: "start" }}>
         <div>
           <Card className="ui-card--map">
             <Suspense fallback={<div style={{ textAlign: "center", padding: "56px 0", color: "var(--color-text-tertiary)" }}>Loading site map…</div>}>
-              <LazyIdealSiteMap references={references} />
+              <LazyIdealSiteMap references={references} onGenerateFromReference={handleGenerateFromReference} />
             </Suspense>
           </Card>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center", marginTop: 8 }}>
