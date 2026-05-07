@@ -38,6 +38,10 @@ const applyShortReadCache = (res) => {
   res.setHeader("Cache-Control", API_READ_CACHE_CONTROL);
 };
 
+const CHAT_LIMIT_PER_MINUTE = 12;
+const EVALUATE_LIMIT_PER_MINUTE = 24;
+const IMPROVE_LIMIT_PER_MINUTE = 24;
+
 const createAiLimiter = (limit) => rateLimit({
   windowMs: 60 * 1000,
   limit,
@@ -48,9 +52,9 @@ const createAiLimiter = (limit) => rateLimit({
   }
 });
 
-const chatLimiter = createAiLimiter(5);
-const evaluateLimiter = createAiLimiter(10);
-const improveStructureLimiter = createAiLimiter(10);
+const chatLimiter = createAiLimiter(CHAT_LIMIT_PER_MINUTE);
+const evaluateLimiter = createAiLimiter(EVALUATE_LIMIT_PER_MINUTE);
+const improveStructureLimiter = createAiLimiter(IMPROVE_LIMIT_PER_MINUTE);
 
 app.use(compression({ threshold: 1024, filter: shouldCompressApiJson }));
 app.use(express.json({ limit: "20mb" }));

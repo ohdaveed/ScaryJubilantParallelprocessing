@@ -36,15 +36,27 @@ describe("API validation guards", () => {
   it("validates request schemas in process", () => {
     expect(chatRequestSchema.safeParse({
       model: "  claude  ",
-      messages: []
+      messages: [{ role: "user", content: "Hello" }]
     }).success).toBe(true);
     expect(chatRequestSchema.safeParse({
       model: "   ",
-      messages: []
+      messages: [{ role: "user", content: "Hello" }]
     }).success).toBe(false);
     expect(chatRequestSchema.safeParse({
       model: "claude",
       messages: {}
+    }).success).toBe(false);
+    expect(chatRequestSchema.safeParse({
+      model: "claude",
+      messages: [{ role: "user" }]
+    }).success).toBe(false);
+    expect(chatRequestSchema.safeParse({
+      model: "claude",
+      messages: [{ role: "user", content: [{ type: "text", text: "Hello" }] }]
+    }).success).toBe(true);
+    expect(chatRequestSchema.safeParse({
+      model: "claude",
+      messages: [{ role: "user", content: [{ type: "text" }] }]
     }).success).toBe(false);
 
     expect(evaluateRequestSchema.safeParse({
@@ -67,13 +79,22 @@ describe("API validation guards", () => {
     }).success).toBe(false);
     expect(improveStructureRequestSchema.safeParse({
       raw: "Valid raw content",
+      evaluationFeedback: { warnings: "bad" }
+    }).success).toBe(false);
+    expect(improveStructureRequestSchema.safeParse({
+      raw: "Valid raw content",
       preferences: "bad"
     }).success).toBe(false);
     expect(chatRequestSchema.safeParse({
       model: "claude",
-      messages: [],
-      images: [{ foo: "bar" }, null]
+      messages: [{ role: "user", content: "Hello" }],
+      images: [{ base64: "abc123", mimeType: "image/png" }]
     }).success).toBe(true);
+    expect(chatRequestSchema.safeParse({
+      model: "claude",
+      messages: [{ role: "user", content: "Hello" }],
+      images: [{ foo: "bar" }, null]
+    }).success).toBe(false);
   });
 
   it("parses request bodies in process", () => {
@@ -84,12 +105,12 @@ describe("API validation guards", () => {
 
     const parsed = parseRequestBody(
       chatRequestSchema,
-      { body: { model: "  claude  ", messages: [], extra: "keep me" } },
+      { body: { model: "  claude  ", messages: [{ role: "user", content: "Hello" }], extra: "keep me" } },
       res as any,
       "/api/chat"
     );
 
-    expect(parsed).toEqual({ model: "  claude  ", messages: [], extra: "keep me" });
+    expect(parsed).toEqual({ model: "  claude  ", messages: [{ role: "user", content: "Hello" }], extra: "keep me" });
     expect(res.status).not.toHaveBeenCalled();
     expect(res.json).not.toHaveBeenCalled();
 
@@ -126,10 +147,51 @@ describe("API validation guards", () => {
 
     const res = await request(app).post("/api/chat").send({
       model: "   ",
-      messages: []
+      messages: [{ role: "user", content: "Hello" }]
     });
     expect(res.status).toBe(400);
     expect(res.body.error).toBe("Invalid request body for /api/chat");
+  });
+
+  it("rejects malformed nested /api/chat payloads", async () => {
+    const res = await request(app).post("/api/chat").send({
+      model: "claude",
+      messages: [{ role: "user" }],
+      images: [{ base64: "abc123" }]
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Invalid request body for /api/chat");
+  });
+
+  it("allows a normal chat burst without rate limiting", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async () => ({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        body: new ReadableStream({
+          start(controller) {
+            controller.close();
+          }
+        }),
+        json: async () => ({ ok: true }),
+        text: async () => ""
+      } as any))
+    );
+
+    const payload = {
+      model: "claude",
+      messages: [{ role: "user", content: "Hello" }]
+    };
+    const limiterHeaders = {
+      "X-Forwarded-For": "203.0.113.20"
+    };
+
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const res = await request(app).post("/api/chat").set(limiterHeaders).send(payload);
+      expect(res.status).toBe(200);
+    }
   });
 
   it("rate limits repeated /api/chat requests", async () => {
@@ -157,7 +219,7 @@ describe("API validation guards", () => {
       "X-Forwarded-For": "203.0.113.10"
     };
 
-    for (let attempt = 0; attempt < 5; attempt += 1) {
+    for (let attempt = 0; attempt < 12; attempt += 1) {
       const res = await request(app).post("/api/chat").set(limiterHeaders).send(payload);
       expect(res.status).toBe(200);
     }
@@ -179,6 +241,15 @@ describe("API validation guards", () => {
     const res = await request(app).post("/api/improve-structure").send({
       raw: "Valid raw content",
       preferences: "bad"
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Invalid request body for /api/improve-structure");
+  });
+
+  it("rejects invalid nested evaluation feedback for /api/improve-structure", async () => {
+    const res = await request(app).post("/api/improve-structure").send({
+      raw: "Valid raw content",
+      evaluationFeedback: { warnings: "bad" }
     });
     expect(res.status).toBe(400);
     expect(res.body.error).toBe("Invalid request body for /api/improve-structure");
