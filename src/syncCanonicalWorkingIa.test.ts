@@ -175,7 +175,7 @@ describe("syncCanonicalWorkingIa", () => {
       intentKey: reportHubSeed.intentKey,
       taskStatement: reportHubSeed.taskStatement,
       canonicalTitle: "Old hub title",
-      contentType: reportHubSeed.contentType,
+      contentType: reportHubSeed.contentType as PageConcept["contentType"],
       audience: reportHubSeed.audience,
       serviceArea: reportHubSeed.serviceArea,
       status: "canonical",

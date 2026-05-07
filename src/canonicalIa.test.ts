@@ -17,7 +17,7 @@ function buildSeededConceptsAndNodes() {
       intentKey: concept.intentKey,
       taskStatement: concept.taskStatement,
       canonicalTitle: concept.canonicalTitle,
-      contentType: concept.contentType,
+      contentType: concept.contentType as PageConcept["contentType"],
       audience: concept.audience,
       serviceArea: concept.serviceArea,
       status: concept.status,

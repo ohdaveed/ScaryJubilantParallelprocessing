@@ -53,10 +53,10 @@ const conceptDiff = (
   expected: {
     canonicalTitle: string;
     taskStatement: string;
-    contentType: string;
+    contentType: PageConcept["contentType"];
     audience: string;
     serviceArea: string;
-    status: string;
+    status: PageConcept["status"];
     summary: string;
     parentConceptId: number | null;
   }
@@ -141,10 +141,10 @@ export async function syncCanonicalWorkingIa(
     const expected = {
       taskStatement: seedConcept.taskStatement,
       canonicalTitle: seedConcept.canonicalTitle,
-      contentType: seedConcept.contentType,
+      contentType: seedConcept.contentType as PageConcept["contentType"],
       audience: seedConcept.audience,
       serviceArea: seedConcept.serviceArea,
-      status: seedConcept.status,
+      status: seedConcept.status as PageConcept["status"],
       summary: seedConcept.summary,
       parentConceptId
     };
@@ -160,7 +160,7 @@ export async function syncCanonicalWorkingIa(
           contentType: expected.contentType,
           audience: expected.audience,
           serviceArea: expected.serviceArea,
-          status: expected.status as PageConcept["status"],
+          status: expected.status,
           summary: expected.summary,
           parentConceptId: expected.parentConceptId,
           createdAt: "",
@@ -198,10 +198,10 @@ export async function syncCanonicalWorkingIa(
       if (updatedConcept) {
         updatedConcept.taskStatement = expected.taskStatement;
         updatedConcept.canonicalTitle = expected.canonicalTitle;
-        updatedConcept.contentType = expected.contentType as PageConcept["contentType"];
+        updatedConcept.contentType = expected.contentType;
         updatedConcept.audience = expected.audience;
         updatedConcept.serviceArea = expected.serviceArea;
-        updatedConcept.status = expected.status as PageConcept["status"];
+        updatedConcept.status = expected.status;
         updatedConcept.summary = expected.summary;
         updatedConcept.parentConceptId = expected.parentConceptId;
       }
