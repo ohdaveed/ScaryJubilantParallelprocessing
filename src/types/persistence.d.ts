@@ -1,3 +1,12 @@
+import type {
+  ArtifactVariant,
+  BuildQueueItem,
+  IANode,
+  PageArtifact,
+  PageConcept,
+  ReferenceExample
+} from "../types";
+
 export interface PageData {
   id?: string;
   name?: string;
@@ -81,6 +90,85 @@ export interface PersistenceStore {
   saveVersion(pageId: string, data: any, notes?: string | null, trigger?: string): Promise<void>;
   getVersions(pageId: string, opts?: { limit?: number; includeData?: boolean }): Promise<Version[]>;
   getVersion(versionId: number | string): Promise<Version | null>;
+
+  listPageConcepts(): Promise<PageConcept[]>;
+  getPageConcept(id: number | string): Promise<PageConcept | null>;
+  createPageConcept(payload: {
+    taskStatement: string;
+    canonicalTitle: string;
+    contentType: string;
+    audience: string;
+    serviceArea: string;
+    status?: string;
+    summary?: string;
+    parentConceptId?: number | null;
+  }): Promise<PageConcept>;
+  updatePageConcept(id: number | string, patch: {
+    taskStatement?: string;
+    canonicalTitle?: string;
+    contentType?: string;
+    audience?: string;
+    serviceArea?: string;
+    status?: string;
+    summary?: string;
+    parentConceptId?: number | null;
+  }): Promise<PageConcept | null>;
+
+  listIANodes(mapId?: string): Promise<IANode[]>;
+  createIANode(payload: {
+    conceptId: number;
+    iaMapId?: string;
+    parentNodeId?: number | null;
+    position?: number;
+    placementStatus?: string;
+  }): Promise<IANode>;
+  updateIANode(id: number | string, patch: {
+    parentNodeId?: number | null;
+    position?: number;
+    placementStatus?: string;
+  }): Promise<IANode | null>;
+
+  listPageArtifacts(): Promise<PageArtifact[]>;
+  getPageArtifact(id: string): Promise<PageArtifact | null>;
+  updatePageArtifact(id: string, patch: {
+    conceptId?: number | null;
+    artifactKind?: string;
+    workflowStatus?: string;
+    isCurrent?: boolean;
+  }): Promise<PageArtifact | null>;
+
+  listArtifactVariants(): Promise<ArtifactVariant[]>;
+  createArtifactVariant(payload: {
+    conceptId: number;
+    baseArtifactId: string;
+    artifactId: string;
+    variantLabel: string;
+    reason?: string;
+    status?: string;
+  }): Promise<ArtifactVariant>;
+
+  listReferenceExamples(): Promise<ReferenceExample[]>;
+
+  listBuildQueueItems(): Promise<BuildQueueItem[]>;
+  createBuildQueueItem(payload: {
+    conceptId?: number | null;
+    artifactId?: string | null;
+    queueStatus?: string;
+    priority?: number;
+    requestedBy?: string;
+    topic: string;
+    audience: string;
+  }): Promise<BuildQueueItem>;
+  updateBuildQueueItem(id: number | string, patch: {
+    conceptId?: number | null;
+    artifactId?: string | null;
+    queueStatus?: string;
+    priority?: number;
+    requestedBy?: string;
+    errorMessage?: string | null;
+    karlGrade?: string | null;
+  }): Promise<BuildQueueItem | null>;
+  deleteBuildQueueItem(id: number | string): Promise<void>;
 }
 
 export function createPersistence(opts?: { databaseUrl?: string; fallbackMode?: string; localPath?: string }): Promise<PersistenceStore>;
