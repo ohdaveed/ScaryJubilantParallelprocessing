@@ -544,6 +544,63 @@ export const getVerificationLabel = (state: VerificationState): string => {
   }
 };
 
+export interface ExportReadiness {
+  managerApproved: boolean;
+  standardsPass: boolean;
+  karlBlockersCount: number;
+  headerStatusText: string;
+  readinessText: string;
+  showKarlBlockers: boolean;
+}
+
+export const getExportReadiness = (page: PageDraft | null): ExportReadiness => {
+  if (!page) {
+    return {
+      managerApproved: false,
+      standardsPass: false,
+      karlBlockersCount: 0,
+      headerStatusText: "Not a published candidate",
+      readinessText: "Submit for manager approval to publish",
+      showKarlBlockers: false
+    };
+  }
+
+  const managerApproved = page.reviewStatus === "approved";
+  const karlBlockersCount = page.karlEvaluation?.failed?.length ?? 0;
+  const standardsPass = page.qualityGate?.status === "pass" && karlBlockersCount === 0;
+
+  if (!managerApproved) {
+    return {
+      managerApproved,
+      standardsPass,
+      karlBlockersCount,
+      headerStatusText: "Not a published candidate",
+      readinessText: "Submit for manager approval to publish",
+      showKarlBlockers: false
+    };
+  }
+
+  if (standardsPass) {
+    return {
+      managerApproved,
+      standardsPass,
+      karlBlockersCount,
+      headerStatusText: "Published candidate",
+      readinessText: "Standards pass (preview disabled for now)",
+      showKarlBlockers: false
+    };
+  }
+
+  return {
+    managerApproved,
+    standardsPass,
+    karlBlockersCount,
+    headerStatusText: "Published candidate",
+    readinessText: "Export blocked: fix Karl issues first",
+    showKarlBlockers: karlBlockersCount > 0
+  };
+};
+
 export const findOverlappingPageIds = (pages: PageDraft[]): Set<string> => {
   const byTitle = new Map<string, string[]>();
   for (const page of pages) {

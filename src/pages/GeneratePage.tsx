@@ -1,8 +1,8 @@
 import React, { Suspense, lazy, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useWorkspace } from "../context/WorkspaceContext";
 import { USER_TYPES } from "../constants";
-import { clean } from "../utils";
-import { Badge, Btn, Card, KarlEvalPanel, ComponentChips, RelPanel, ProgressBar, DeleteConfirmationModal } from "../components/ui";
+import { clean, getExportReadiness } from "../utils";
+import { Badge, Btn, Card, IssueResolutionPanel, ComponentChips, RelPanel, ProgressBar, DeleteConfirmationModal } from "../components/ui";
 import { StreamRenderer } from "../components/StreamRenderer";
 import { EvaluatingState } from "../components/EvaluatingState";
 import { SuccessState } from "../components/SuccessState";
@@ -153,6 +153,7 @@ export default function GeneratePage() {
     void generate({ pageType: pendingPageTypeValue || pageTypeOptions[0] });
   }, [generate, pendingPageTypeValue, pageTypeOptions]);
 
+  const refineInputRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!streaming && !evaluating && selected) {
@@ -164,6 +165,47 @@ export default function GeneratePage() {
   }, [streaming, evaluating, selected]);
 
   const showGenerateContextRail = topicTouched && !topic.trim() || !!pendingPageType || !!selected;
+
+  const { managerApproved, standardsPass, karlBlockersCount, headerStatusText, readinessText, showKarlBlockers } = getExportReadiness(selected);
+  const standardsExportBlocked = managerApproved && !standardsPass;
+
+  const suggestedRefinePrompts = useMemo(() => {
+    if (!selected) return [] as string[];
+    const prompts: string[] = [];
+    const firstFailed = selected.karlEvaluation?.failed?.[0];
+    const firstWarning = selected.karlEvaluation?.warnings?.[0];
+    const firstQualityReason = selected.qualityGate?.status === "review_required" ? selected.qualityGate.reasons[0] : undefined;
+
+    if (firstFailed) {
+      prompts.push(`Fix this Karl blocker: ${firstFailed}`);
+    }
+    if (firstWarning) {
+      prompts.push(`Address this Karl warning: ${firstWarning}`);
+    }
+    if (firstQualityReason) {
+      prompts.push(`Revise the page to pass this quality gate: ${firstQualityReason}`);
+    }
+    if (selected.enforcement) {
+      prompts.push("Clarify enforcement boundaries so only verifiable conditions remain.");
+    }
+    if (selected.integration) {
+      prompts.push("Align wording and section order with integration/CMS notes.");
+    }
+
+    if (prompts.length === 0) {
+      prompts.push("Tighten this page for plain language and shorter action-first sections.");
+    }
+
+    return prompts.slice(0, 4);
+  }, [selected]);
+
+  const applySuggestedRefinePrompt = useCallback((prompt: string) => {
+    setRefineInput(prompt);
+    requestAnimationFrame(() => {
+      refineInputRef.current?.focus();
+      refineInputRef.current?.setSelectionRange(prompt.length, prompt.length);
+    });
+  }, [setRefineInput]);
 
   return (
     <div>
@@ -259,6 +301,18 @@ export default function GeneratePage() {
                           </span>
                         )}
                       </div>
+                      <div
+                        className={[
+                          "app-page-status",
+                          !managerApproved ? "app-page-status--needs-approval" : standardsPass ? "app-page-status--ready" : "app-page-status--blocked"
+                        ].filter(Boolean).join(" ")}
+                      >
+                        <p className="app-page-status__kicker">{headerStatusText}</p>
+                        <p className="app-page-status__line">{readinessText}</p>
+                        {standardsExportBlocked && showKarlBlockers && (
+                          <p className="app-page-status__meta">Karl blockers: {karlBlockersCount}</p>
+                        )}
+                      </div>
                       <h2 className="app-page-h2">{clean(selected.name) || "Untitled"}</h2>
                       <p className="app-page-sub">SF.gov · Healthy Housing & Vector Control</p>
                     </div>
@@ -292,15 +346,12 @@ export default function GeneratePage() {
                     ))}
                   </div>
 
-                  {selected.karlEvaluation && <KarlEvalPanel evaluation={selected.karlEvaluation} />}
-                  {selected.qualityGate?.status === "review_required" && (
-                    <div className="app-qg-banner">
-                      <p className="app-qg-banner__title">Manual review required before publish</p>
-                      {selected.qualityGate.reasons.map((reason, idx) => (
-                        <p key={idx} className="app-qg-banner__item">{reason}</p>
-                      ))}
-                    </div>
-                  )}
+                  <IssueResolutionPanel
+                    evaluation={selected.karlEvaluation}
+                    qualityGateReasons={selected.qualityGate?.status === "review_required" ? selected.qualityGate.reasons : []}
+                    enforcementText={selected.enforcement}
+                    integrationText={selected.integration}
+                  />
 
                   <div className="app-preview-wrap" ref={previewRef}>
                     <div className="app-preview-toolbar">
@@ -314,7 +365,7 @@ export default function GeneratePage() {
                             <Btn onClick={wsActions.cancelMockupEditor} variant="ghost" size="sm" disabled={draftEditSaving}>Cancel</Btn>
                           </>
                         )}
-                        <Btn onClick={() => handleExportScreenshot(selected.name)} variant="ghost" size="sm">Download preview</Btn>
+                        <Btn variant="ghost" size="sm" disabled={true} title="Export preview is disabled for now">Download preview</Btn>
                       </div>
                     </div>
                     {mockupEditOpen && (
@@ -330,27 +381,29 @@ export default function GeneratePage() {
                     </Suspense>
                   </div>
 
-                  {selected.enforcement && (
-                    <div className="app-note-panel app-note-panel--enf">
-                      <div className="app-note-panel__head"><span>Enforcement check</span></div>
-                      <div className="app-note-panel__body">{clean(selected.enforcement).split("\n").filter(l => l.trim()).map((line, i) => (<p key={i}>{line}</p>))}</div>
-                    </div>
-                  )}
-                  {selected.integration && (
-                    <div className="app-note-panel app-note-panel--int">
-                      <div className="app-note-panel__head"><span>Integration notes</span></div>
-                      <div className="app-note-panel__body">{clean(selected.integration).split("\n").filter(l => l.trim()).map((line, i) => (<p key={i}>{line}</p>))}</div>
-                    </div>
-                  )}
-
                   <ComponentChips components={selected.components} />
                   <RelPanel rel={selected.relationships} />
 
                   <div className="app-refine">
                     <p className="app-up-label app-up-label--mb8">Refine this page</p>
                     <p className="app-refine__hint">Describe a specific change and the agent will revise the page content.</p>
+                    {suggestedRefinePrompts.length > 0 && (
+                      <div className="app-refine__suggestions">
+                        {suggestedRefinePrompts.map((prompt) => (
+                          <button
+                            key={prompt}
+                            type="button"
+                            className="app-refine__chip"
+                            onClick={() => applySuggestedRefinePrompt(prompt)}
+                            disabled={loading}
+                          >
+                            {prompt}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     <div className="app-refine__row">
-                      <textarea className="app-input app-textarea-refine" value={refineInput}
+                      <textarea ref={refineInputRef} className="app-input app-textarea-refine" value={refineInput}
                         onChange={e => setRefineInput(e.target.value)}
                         onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) refine(); }}
                         placeholder='e.g. "Shorten the responsibilities section" or "Add a step about taking photos of the problem"' rows={2} />

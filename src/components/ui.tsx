@@ -242,6 +242,148 @@ export const KarlEvalPanel: React.FC<{ evaluation: KarlEvaluation }> = ({ evalua
   );
 };
 
+interface IssueResolutionPanelProps {
+  evaluation?: KarlEvaluation | null;
+  qualityGateReasons?: string[];
+  enforcementText?: string;
+  integrationText?: string;
+}
+
+type IssueSeverity = "high" | "medium" | "low";
+
+interface IssueItem {
+  text: string;
+  severity: IssueSeverity;
+  recommendation?: string;
+}
+
+interface IssueGroup {
+  title: string;
+  badge: string;
+  items: IssueItem[];
+}
+
+const normalizeLines = (text?: string): string[] =>
+  clean(text)
+    .split("\n")
+    .map((line) => clean(line.replace(/^[-*•]\s*/, "")))
+    .filter((line) => line.length > 0 && line !== "--");
+
+const extractSectionLines = (text: string, sectionHeading: string): string[] => {
+  const lines = normalizeLines(text);
+  const headingIdx = lines.findIndex((line) => line.toLowerCase().includes(sectionHeading.toLowerCase()));
+  if (headingIdx < 0) return [];
+  const section: string[] = [];
+  for (let i = headingIdx + 1; i < lines.length; i += 1) {
+    const current = lines[i];
+    const lower = current.toLowerCase();
+    if (
+      lower.startsWith("what can be verified") ||
+      lower.startsWith("what is unclear or not enforceable") ||
+      lower.startsWith("integration notes")
+    ) {
+      if (section.length > 0) break;
+      continue;
+    }
+    section.push(current);
+  }
+  return section;
+};
+
+export const IssueResolutionPanel: React.FC<IssueResolutionPanelProps> = ({
+  evaluation,
+  qualityGateReasons = [],
+  enforcementText,
+  integrationText
+}) => {
+  const [expanded, setExpanded] = useState(true);
+
+  const karlBlockers: IssueItem[] = [
+    ...(evaluation?.failed ?? []).map((text) => ({
+      text,
+      severity: "high" as const,
+      recommendation: "Revise this section in “Refine this page” and re-run Karl checks."
+    })),
+    ...qualityGateReasons.map((text) => ({
+      text,
+      severity: "high" as const,
+      recommendation: "Address this gate reason before requesting manager approval."
+    }))
+  ];
+
+  const karlWarnings: IssueItem[] = (evaluation?.warnings ?? []).map((text) => ({
+    text,
+    severity: "medium",
+    recommendation: "Tighten the language or structure during refinement."
+  }));
+
+  const enforcementIssues: IssueItem[] = [
+    ...extractSectionLines(clean(enforcementText), "what is unclear or not enforceable").map((text) => ({
+      text,
+      severity: "high" as const,
+      recommendation: "Remove claims we cannot enforce, or clarify legal scope."
+    }))
+  ];
+
+  const integrationIssues: IssueItem[] = normalizeLines(integrationText).slice(0, 6).map((text) => ({
+    text,
+    severity: "low",
+    recommendation: "Confirm CMS/component alignment before final approval."
+  }));
+
+  const groups: IssueGroup[] = [
+    { title: "Karl blockers", badge: "Blocks readiness", items: karlBlockers },
+    { title: "Karl warnings", badge: "Needs edits", items: karlWarnings },
+    { title: "Enforcement issues", badge: "Needs policy check", items: enforcementIssues },
+    { title: "Integration/CMS notes", badge: "Optional", items: integrationIssues }
+  ];
+
+  const totalIssues = groups.reduce((count, group) => count + group.items.length, 0);
+
+  return (
+    <div className="ui-issues">
+      <div className="ui-issues__head">
+        <div>
+          <p className="ui-issues__kicker">Issue resolution</p>
+          <p className="ui-issues__summary">{totalIssues === 0 ? "No issues currently detected." : `${totalIssues} issues to resolve`}</p>
+        </div>
+        <button
+          type="button"
+          className="ui-issues__toggle"
+          onClick={() => setExpanded((v) => !v)}
+          aria-label={expanded ? "Collapse issue resolution details" : "Expand issue resolution details"}
+        >
+          {expanded ? "Hide" : "Show"}
+        </button>
+      </div>
+      {expanded && (
+        <div className="ui-issues__body">
+          {groups.map((group) => (
+            <section key={group.title} className="ui-issues__group">
+              <div className="ui-issues__group-head">
+                <p className="ui-issues__group-title">{group.title}</p>
+                <span className="ui-issues__group-badge">{group.badge}</span>
+              </div>
+              {group.items.length === 0 ? (
+                <p className="ui-issues__empty">No items in this group.</p>
+              ) : (
+                <div className="ui-issues__list">
+                  {group.items.map((item, idx) => (
+                    <div key={`${group.title}-${idx}`} className="ui-issues__item" data-severity={item.severity}>
+                      <p className="ui-issues__item-text">{item.text}</p>
+                      {item.recommendation && <p className="ui-issues__item-fix">Recommended fix: {item.recommendation}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 interface CheckboxProps {
   id?: string;
   checked?: boolean;

@@ -183,8 +183,8 @@ export default function App() {
         activeTabId={workspaceTab}
         onTabChange={handleWorkspaceTab}
         onBrowseLibraryClick={handleBrowseLibraryClick}
-        headerExportDisabled={!selected}
-        showPreviewExportButton={!!selected}
+        headerExportDisabled={true}
+        showPreviewExportButton={false}
         onExportClick={handleExportClick}
         userType={userType}
         onUserTypeChange={setUserType}
@@ -210,7 +210,7 @@ export default function App() {
         streamMessage={streamBarMessage}
         streamFooterMeta={streamFooterMetaFull}
         onExportPreview={() => {
-          if (selected) void handleExportScreenshot(selected.name);
+          // Preview export is intentionally disabled for now.
         }}
         previewSlot={
           <Suspense fallback={<div className="app-preview-loading">Loading…</div>}>
