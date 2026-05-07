@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { PAGE_TYPES, TYPE_META } from "../../constants";
 import { PageDraft, ReviewStatus, VerificationState } from "../../types";
-import { Badge, Btn, Card, UI_INPUT_CLASS } from "../ui";
+import { Badge, Btn, Card, DeleteConfirmationModal, UI_INPUT_CLASS } from "../ui";
 import { artifactKindFromPage, artifactRoleLabel } from "../../utils/contentModel";
 import { clean, getVerificationLabel, getVerificationState } from "../../utils";
 
@@ -24,6 +24,7 @@ type LibraryTabProps = {
   sorted: PageDraft[];
   groupSizes: Record<string, number>;
   alternatesByRepresentativeId: Record<string, PageDraft[]>;
+  conceptIdByRepresentativeId: Record<string, number>;
   filteredCount: number;
   selectedPageIds: Set<string>;
   selectAllPages: () => void;
@@ -35,6 +36,7 @@ type LibraryTabProps = {
   onSelectPage: (page: PageDraft) => void;
   onPrimaryAction: (page: PageDraft) => void;
   onOpenAlternate: (page: PageDraft) => void;
+  onPromoteAlternate: (representativeId: string, page: PageDraft) => Promise<void> | void;
   onTogglePageSelection: (id: string, e: React.MouseEvent) => void;
   onUpdateReviewStatus: (id: string, status: ReviewStatus) => Promise<void>;
   onOpenHistory: (pageId: string) => void;
@@ -60,6 +62,7 @@ export function LibraryTab(props: LibraryTabProps) {
     sorted,
     groupSizes,
     alternatesByRepresentativeId,
+    conceptIdByRepresentativeId,
     filteredCount,
     selectedPageIds,
     selectAllPages,
@@ -71,12 +74,15 @@ export function LibraryTab(props: LibraryTabProps) {
     onSelectPage,
     onPrimaryAction,
     onOpenAlternate,
+    onPromoteAlternate,
     onTogglePageSelection,
     onUpdateReviewStatus,
     onOpenHistory
   } = props;
 
   const [expandedAlternates, setExpandedAlternates] = useState<Set<string>>(new Set());
+  const [pendingPromotion, setPendingPromotion] = useState<{ representativeId: string; page: PageDraft } | null>(null);
+  const [promotionLoading, setPromotionLoading] = useState(false);
 
   return (
     <div style={{ marginTop: 20 }}>
@@ -164,13 +170,14 @@ export function LibraryTab(props: LibraryTabProps) {
           const gradeColor: Record<string, string> = { A: "#0F6E56", B: "#185FA5", C: "#854F0B", D: "#A32D2D", F: "#A32D2D" };
           const groupedCount = groupSizes[p.id] || 1;
           const alternates = alternatesByRepresentativeId[p.id] || [];
+          const canPromoteAlternates = conceptIdByRepresentativeId[p.id] != null;
           const alternatesOpen = expandedAlternates.has(p.id);
           const primaryAction = p.imported && (p.reviewStatus || "pending") === "pending"
             ? "Review import"
             : verificationState === "review_required"
               ? "Fix issues"
               : verificationState === "verified"
-                ? "Publish"
+                ? "Open publish review"
                 : "Continue draft";
           return (
             <Card key={p.id} onClick={() => onSelectPage(p)} className={["ui-card--lib", selectedPageIds.has(p.id) ? "ui-card--bulk-selected" : ""].filter(Boolean).join(" ")}>
@@ -287,25 +294,46 @@ export function LibraryTab(props: LibraryTabProps) {
                   <p style={{ fontSize: 10, margin: "0 0 6px", color: "#6b7280" }}>Alternate drafts (non-canonical)</p>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                     {alternates.map((alt) => (
-                      <button
-                        key={alt.id}
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onOpenAlternate(alt);
-                        }}
-                        style={{
-                          fontSize: 10,
-                          padding: "3px 7px",
-                          borderRadius: 999,
-                          border: "1px solid #cbd5e1",
-                          background: "#f8fafc",
-                          color: "#334155",
-                          cursor: "pointer"
-                        }}
-                      >
-                        {`v${alt.currentVersionNumber || "?"} · ${new Date(alt.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
-                      </button>
+                      <div key={alt.id} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenAlternate(alt);
+                          }}
+                          style={{
+                            fontSize: 10,
+                            padding: "3px 7px",
+                            borderRadius: 999,
+                            border: "1px solid #cbd5e1",
+                            background: "#f8fafc",
+                            color: "#334155",
+                            cursor: "pointer"
+                          }}
+                        >
+                          {`v${alt.currentVersionNumber || "?"} · ${new Date(alt.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+                        </button>
+                        {canPromoteAlternates && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPendingPromotion({ representativeId: p.id, page: alt });
+                            }}
+                            style={{
+                              fontSize: 10,
+                              padding: "3px 7px",
+                              borderRadius: 999,
+                              border: "1px solid #16a34a33",
+                              background: "#f0fdf4",
+                              color: "#166534",
+                              cursor: "pointer"
+                            }}
+                          >
+                            Make canonical
+                          </button>
+                        )}
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -314,6 +342,28 @@ export function LibraryTab(props: LibraryTabProps) {
           );
         })}
       </div>
+      <DeleteConfirmationModal
+        isOpen={pendingPromotion != null}
+        title="Make this draft canonical?"
+        message={pendingPromotion ? `Use "${clean(pendingPromotion.page.name) || "Untitled"}" as the canonical draft for this page concept? The current canonical draft will become an alternate draft.` : ""}
+        confirmLabel="Make canonical"
+        confirmVariant="primary"
+        loadingConfirmLabel="Updating…"
+        isLoading={promotionLoading}
+        onCancel={() => {
+          if (!promotionLoading) setPendingPromotion(null);
+        }}
+        onConfirm={async () => {
+          if (!pendingPromotion) return;
+          setPromotionLoading(true);
+          try {
+            await onPromoteAlternate(pendingPromotion.representativeId, pendingPromotion.page);
+            setPendingPromotion(null);
+          } finally {
+            setPromotionLoading(false);
+          }
+        }}
+      />
     </div>
   );
 }

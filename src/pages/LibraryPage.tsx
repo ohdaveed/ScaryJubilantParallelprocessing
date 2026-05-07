@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { useWorkspace } from "../context/WorkspaceContext";
 import { LibraryTab } from "../components/tabs/LibraryTab";
 import { clean, getVerificationState, VERIFICATION_FILTERS } from "../utils";
-import { pagesApi } from "../utils/api";
+import { pageArtifactsApi, pagesApi } from "../utils/api";
 import { generateZip, renderPageAsPDF, renderPageAsPNG } from "../utils/export";
 import { SfGovPagePreview } from "../components/SfGovPreview";
 import type { ReviewStatus } from "../types";
@@ -44,27 +44,26 @@ export default function LibraryPage() {
     const groupSizes = new Map<string, number>();
     const overlapIds = new Set<string>();
     const alternatesByRepresentativeId = new Map<string, PageDraft[]>();
+    const conceptIdByRepresentativeId = new Map<string, number>();
 
     groups.forEach(({ members, conceptId }) => {
-      members.sort((a, b) => {
-        const aScore = (a.skeleton ? 0 : 10) + (a.qualityGate?.status === "pass" ? 5 : 0) + (a.karlEvaluation ? 3 : 0);
-        const bScore = (b.skeleton ? 0 : 10) + (b.qualityGate?.status === "pass" ? 5 : 0) + (b.karlEvaluation ? 3 : 0);
-        if (aScore !== bScore) return bScore - aScore;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      });
+      members.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       const concept = conceptId != null ? conceptById.get(conceptId) : undefined;
       const canonicalMember = concept?.canonicalArtifactId
         ? members.find((member) => member.id === concept.canonicalArtifactId)
         : undefined;
-      const representative = canonicalMember || members[0];
+      const representative = canonicalMember
+        || members.find((member) => !member.skeleton)
+        || members[0];
       representatives.push(representative);
+      if (conceptId != null) conceptIdByRepresentativeId.set(representative.id, conceptId);
       groupSizes.set(representative.id, members.length);
       if (members.length > 1) overlapIds.add(representative.id);
       const alternates = members.filter((member) => member.id !== representative.id);
       if (alternates.length > 0) alternatesByRepresentativeId.set(representative.id, alternates);
     });
 
-    return { representatives, groupSizes, overlapIds, alternatesByRepresentativeId };
+    return { representatives, groupSizes, overlapIds, alternatesByRepresentativeId, conceptIdByRepresentativeId };
   }, [pages, plannedPages, concepts]);
 
   const overlapIds = groupModel.overlapIds;
@@ -190,6 +189,16 @@ export default function LibraryPage() {
     void openPageById(page.id);
   }, [openPageById, setSelected]);
 
+  const handlePromoteAlternate = useCallback(async (representativeId: string, alternate: (typeof pages)[number]) => {
+    const conceptId = groupModel.conceptIdByRepresentativeId.get(representativeId);
+    if (!conceptId) return;
+    await pageArtifactsApi.promote(alternate.id, conceptId);
+    const refreshed = await pagesApi.list();
+    setPages(refreshed);
+    setSelected(alternate);
+    await openPageById(alternate.id);
+  }, [groupModel.conceptIdByRepresentativeId, openPageById, setPages, setSelected]);
+
   return (
     <div style={{ display: "flex", height: "100%", gap: 0, overflow: "hidden" }}>
       {/* Library list - full width when no preview, half when preview open */}
@@ -213,6 +222,7 @@ export default function LibraryPage() {
           sorted={sorted}
           groupSizes={Object.fromEntries(groupModel.groupSizes.entries())}
           alternatesByRepresentativeId={Object.fromEntries(groupModel.alternatesByRepresentativeId.entries())}
+          conceptIdByRepresentativeId={Object.fromEntries(groupModel.conceptIdByRepresentativeId.entries())}
           filteredCount={filteredCount}
           selectedPageIds={wsState.selectedPageIds}
           selectAllPages={() => wsActions.selectAllPages(groupModel.representatives.map(p => p.id))}
@@ -227,6 +237,7 @@ export default function LibraryPage() {
           }}
           onPrimaryAction={handlePrimaryAction}
           onOpenAlternate={handleOpenAlternate}
+          onPromoteAlternate={handlePromoteAlternate}
           onTogglePageSelection={wsActions.togglePageSelection}
           onUpdateReviewStatus={handleUpdateReviewStatus}
           onOpenHistory={handleOpenHistory}
