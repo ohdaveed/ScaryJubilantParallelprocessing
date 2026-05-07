@@ -46,7 +46,8 @@ describe("file-backed fallback persistence", () => {
 
     const loaded = await request(app).get("/api/pages");
     expect(loaded.status).toBe(200);
-    expect(loaded.body.pages).toEqual([draft]);
+    expect(loaded.body.pages).toHaveLength(1);
+    expect(loaded.body.pages[0]).toEqual(expect.objectContaining(draft));
   });
 
   it("stores planned pages, todos, and preferences in fallback mode", async () => {

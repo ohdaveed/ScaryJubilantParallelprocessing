@@ -30,13 +30,13 @@ describe("repairAndParseStructured", () => {
   };
 
   it("should return parsed page without repair if valid", async () => {
-    vi.spyOn(utils, "parseStructuredPage").mockReturnValue({
+    vi.spyOn(parsing, "parseStructuredPage").mockReturnValue({
       rawText: mockStructuredOutput.rawText,
       parseError: null,
       parsed: mockValidPage as any
     });
 
-    vi.spyOn(utils, "parsePage").mockReturnValue(mockValidPage as any);
+    vi.spyOn(parsing, "parsePage").mockReturnValue(mockValidPage as any);
 
     const result = await repairAndParseStructured({
       text: mockStructuredOutput.rawText,
@@ -52,7 +52,7 @@ describe("repairAndParseStructured", () => {
   it("should attempt repair when parse fails", async () => {
     const parseError: ParseErrorDetail = { code: "invalid_json", message: "Invalid JSON" };
 
-    vi.spyOn(utils, "parseStructuredPage")
+    vi.spyOn(parsing, "parseStructuredPage")
       .mockReturnValueOnce({
         rawText: "invalid",
         parseError,
@@ -64,7 +64,7 @@ describe("repairAndParseStructured", () => {
         parsed: mockValidPage as any
       });
 
-    vi.spyOn(utils, "parsePage").mockReturnValue(mockValidPage as any);
+    vi.spyOn(parsing, "parsePage").mockReturnValue(mockValidPage as any);
 
     (global.fetch as any).mockResolvedValue({
       ok: true,
@@ -92,7 +92,7 @@ describe("repairAndParseStructured", () => {
   it("should send repair prompt with original invalid response", async () => {
     const parseError: ParseErrorDetail = { code: "schema_invalid", message: "Schema mismatch" };
 
-    vi.spyOn(utils, "parseStructuredPage")
+    vi.spyOn(parsing, "parseStructuredPage")
       .mockReturnValueOnce({
         rawText: "invalid",
         parseError,
@@ -104,7 +104,7 @@ describe("repairAndParseStructured", () => {
         parsed: mockValidPage as any
       });
 
-    vi.spyOn(utils, "parsePage").mockReturnValue(mockValidPage as any);
+    vi.spyOn(parsing, "parsePage").mockReturnValue(mockValidPage as any);
 
     (global.fetch as any).mockResolvedValue({
       ok: true,
@@ -136,7 +136,7 @@ describe("repairAndParseStructured", () => {
   it("should handle repair API errors gracefully", async () => {
     const parseError: ParseErrorDetail = { code: "invalid_json", message: "Invalid JSON" };
 
-    vi.spyOn(utils, "parseStructuredPage")
+    vi.spyOn(parsing, "parseStructuredPage")
       .mockReturnValueOnce({
         rawText: "invalid",
         parseError,
@@ -148,7 +148,7 @@ describe("repairAndParseStructured", () => {
         parsed: null
       });
 
-    vi.spyOn(utils, "parsePage").mockReturnValue({
+    vi.spyOn(parsing, "parsePage").mockReturnValue({
       valid: false,
       name: "Unknown"
     } as any);
@@ -174,7 +174,7 @@ describe("repairAndParseStructured", () => {
     const parseError: ParseErrorDetail = { code: "invalid_json", message: "Invalid" };
     const repairedText = mockStructuredOutput.rawText;
 
-    vi.spyOn(utils, "parseStructuredPage")
+    vi.spyOn(parsing, "parseStructuredPage")
       .mockReturnValueOnce({
         rawText: "invalid",
         parseError,
@@ -186,7 +186,7 @@ describe("repairAndParseStructured", () => {
         parsed: mockValidPage as any
       });
 
-    vi.spyOn(utils, "parsePage").mockReturnValue(mockValidPage as any);
+    vi.spyOn(parsing, "parsePage").mockReturnValue(mockValidPage as any);
 
     (global.fetch as any).mockResolvedValue({
       ok: true,
@@ -213,7 +213,7 @@ describe("repairAndParseStructured", () => {
     const parseError: ParseErrorDetail = { code: "invalid_json", message: "Invalid" };
     const fallbackRawText = "fallback content";
 
-    vi.spyOn(utils, "parseStructuredPage")
+    vi.spyOn(parsing, "parseStructuredPage")
       .mockReturnValueOnce({
         rawText: fallbackRawText,
         parseError,
@@ -225,7 +225,7 @@ describe("repairAndParseStructured", () => {
         parsed: mockValidPage as any
       });
 
-    vi.spyOn(utils, "parsePage")
+    vi.spyOn(parsing, "parsePage")
       .mockReturnValueOnce({ valid: false } as any)
       .mockReturnValueOnce(mockValidPage as any);
 
@@ -250,7 +250,7 @@ describe("repairAndParseStructured", () => {
   it("should include model and max_tokens in repair request", async () => {
     const parseError: ParseErrorDetail = { code: "invalid_json", message: "Invalid" };
 
-    vi.spyOn(utils, "parseStructuredPage")
+    vi.spyOn(parsing, "parseStructuredPage")
       .mockReturnValueOnce({
         rawText: "invalid",
         parseError,
@@ -262,7 +262,7 @@ describe("repairAndParseStructured", () => {
         parsed: mockValidPage as any
       });
 
-    vi.spyOn(utils, "parsePage").mockReturnValue(mockValidPage as any);
+    vi.spyOn(parsing, "parsePage").mockReturnValue(mockValidPage as any);
 
     (global.fetch as any).mockResolvedValue({
       ok: true,
@@ -285,13 +285,13 @@ describe("repairAndParseStructured", () => {
   });
 
   it("should return both parseResult and parsed object", async () => {
-    vi.spyOn(utils, "parseStructuredPage").mockReturnValue({
+    vi.spyOn(parsing, "parseStructuredPage").mockReturnValue({
       rawText: mockStructuredOutput.rawText,
       parseError: null,
       parsed: mockValidPage as any
     });
 
-    vi.spyOn(utils, "parsePage").mockReturnValue(mockValidPage as any);
+    vi.spyOn(parsing, "parsePage").mockReturnValue(mockValidPage as any);
 
     const result = await repairAndParseStructured({
       text: mockStructuredOutput.rawText,

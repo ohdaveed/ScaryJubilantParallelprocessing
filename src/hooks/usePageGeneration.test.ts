@@ -141,7 +141,6 @@ describe('usePageGeneration', () => {
         parseError: false
       } as never);
 
-    const { evaluateQualityGate } = await import('../utils');
     vi.mocked(evaluateQualityGate)
       .mockReturnValueOnce({ status: 'review_required', reasons: ['1 evaluator checks failed.'] } as never)
       .mockReturnValueOnce({ status: 'pass', reasons: ['Meets automatic quality gate.'] } as never);
@@ -214,7 +213,6 @@ describe('usePageGeneration', () => {
         parseError: false
       } as never);
 
-    const { evaluateQualityGate } = await import('../utils');
     vi.mocked(evaluateQualityGate)
       .mockReturnValueOnce({ status: 'review_required', reasons: ['1 evaluator checks failed.'] } as never)
       .mockReturnValueOnce({ status: 'pass', reasons: ['Meets automatic quality gate.'] } as never);
@@ -301,7 +299,6 @@ describe('usePageGeneration', () => {
         parseError: false
       } as never);
 
-    const { evaluateQualityGate } = await import('../utils');
     vi.mocked(evaluateQualityGate)
       .mockReturnValueOnce({ status: 'review_required', reasons: ['1 evaluator checks failed.'] } as never)
       .mockReturnValueOnce({ status: 'pass', reasons: ['Meets automatic quality gate.'] } as never);
