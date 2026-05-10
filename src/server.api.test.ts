@@ -339,6 +339,23 @@ describe("API validation guards", () => {
     );
   });
 
+  it("exposes current persistence mode at /api/system/db-mode", async () => {
+    const res = await request(app).get("/api/system/db-mode");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("mode");
+    expect(res.body).toHaveProperty("timestamp");
+    expect(res.body).toHaveProperty("isFile");
+    expect(res.body).toHaveProperty("isPostgres");
+    expect(["postgres", "file", "unknown"]).toContain(res.body.mode);
+    expect(typeof res.body.isFile).toBe("boolean");
+    expect(typeof res.body.isPostgres).toBe("boolean");
+    // Mode should be either file or postgres (or unknown) but at least one should be true
+    if (res.body.mode !== "unknown") {
+      expect(res.body.isFile || res.body.isPostgres).toBe(true);
+    }
+  });
+  });
+
   it("rejects duplicate canonical concept titles", async () => {
     const title = `Report a dead bird duplicate ${Date.now()}`;
     const first = await request(app).post("/api/page-concepts").send({

@@ -10,7 +10,7 @@ import hpp from "hpp";
 import pino from "pino";
 import pinoHttp from "pino-http";
 import mammoth from "mammoth";
-import { createPersistence, formatPersistenceError } from "./lib/persistence.js";
+import { createPersistence, formatPersistenceError, getPersistenceMode } from "./lib/persistence.js";
 import {
   chatRequestSchema,
   evaluateRequestSchema,
@@ -28,6 +28,12 @@ import {
 } from "./lib/modelResponseGuards.js";
 import { buildEvalPrompt, buildEvalSystem, buildEvalRepairPrompt } from "./lib/prompts/evaluate.js";
 import { buildImprovePrompt, buildImproveRepairPrompt } from "./lib/prompts/improve.js";
+import { registerAiRoutes } from "./routes/ai.js";
+import { registerPagesRoutes } from "./routes/pages.js";
+import { registerTodosRoutes } from "./routes/todos.js";
+import { registerPlannedPagesRoutes } from "./routes/plannedPages.js";
+import { registerConceptsRoutes } from "./routes/concepts.js";
+import { registerBuildQueueRoutes } from "./routes/buildQueue.js";
 
 const require = createRequire(import.meta.url);
 const pdfParse = require("pdf-parse");
@@ -231,6 +237,11 @@ const postAnthropic = async (body, timeoutMs = 45000, retries = 1) => {
 
 app.get("/api/health", (req, res) => {
   res.json({ ok: true, db: db.mode, uptime: Math.floor(process.uptime()) });
+});
+
+app.get("/api/system/db-mode", (req, res) => {
+  applyShortReadCache(res);
+  res.json(getPersistenceMode());
 });
 
 app.post("/api/chat", chatLimiter, async (req, res) => {

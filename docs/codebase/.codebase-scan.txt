@@ -1,73 +1,453 @@
 
 === DIRECTORY TREE (max depth 3, source files only) ===
-None found.
+.agents
+.agents\skills
+.agents\skills\brainstorming
+.agents\skills\brainstorming\scripts
+.agents\skills\brainstorming\SKILL.md
+.agents\skills\brainstorming\spec-document-reviewer-prompt.md
+.agents\skills\brainstorming\visual-companion.md
+.agents\skills\browser-use
+.agents\skills\browser-use\references
+.agents\skills\browser-use\SKILL.md
+.agents\skills\find-skills
+.agents\skills\find-skills\SKILL.md
+.agents\skills\frontend-design
+.agents\skills\frontend-design\LICENSE.txt
+.agents\skills\frontend-design\SKILL.md
+.agents\skills\web-design-guidelines
+.agents\skills\web-design-guidelines\SKILL.md
+.claude
+.claude\launch.json
+.claude\settings.local.json
+.claude\worktrees
+.claude\worktrees\inspiring-wilbur-c3c98d
+.config
+.config\.semgrep
+.config\.semgrep\semgrep_rules.json
+.config\.vscode-server
+.config\npm
+.config\npm\node_global
+.config\npm\node_global\lib
+.cursor
+.cursor\hooks.json
+.cursor\mcp.json
+.cursor\rules
+.cursor\rules\design.mdc
+.cursor\rules\sf-gov-karl-content-review.mdc
+.cursor\scripts
+.cursor\scripts\browser-devtools-hook.mjs
+.deno
+.deno\dep_analysis_cache_v1
+.deno\dep_analysis_cache_v1-journal
+.deno\deps
+.deno\deps\https
+.deno\deps\https\deno.land
+.deno\deps\https\raw.githubusercontent.com
+.deno\gen
+.deno\gen\file
+.deno\gen\file\home
+.deno\gen\https
+.deno\gen\https\deno.land
+.deno\gen\https\raw.githubusercontent.com
+.deno\latest.txt
+.deno\node_analysis_cache_v1
+.deno\node_analysis_cache_v1-journal
+.deno\npm
+.deno\v8_code_cache_v1
+.deno\v8_code_cache_v1-journal
+.env
+.github
+.github\skills
+.github\skills\eval-driven-dev
+.github\skills\eval-driven-dev\SKILL.md
+.github\skills\javascript-typescript-jest
+.github\skills\javascript-typescript-jest\SKILL.md
+.github\skills\refactor
+.github\skills\refactor\SKILL.md
+.github\skills\refactor-plan
+.github\skills\refactor-plan\SKILL.md
+.gitignore
+.gstack
+.gstack\browse-audit.jsonl
+.gstack\design-reports
+.gstack\design-reports\design-audit-localhost-2026-05-04.md
+.gstack\design-reports\hhvc-audit-2026-05-04-first-impression.png
+.gstack\design-reports\hhvc-audit-2026-05-04-generate-mobile.png
+.gstack\design-reports\hhvc-audit-2026-05-04-library.png
+.gstack\design-reports\hhvc-audit-2026-05-04-site-plan.png
+.gstack\design-review-first.png
+.gstack\qa-reports
+.gstack\qa-reports\screenshots
+.gstack\qa-reports\screenshots\editor-tab.png
+.gstack\qa-reports\screenshots\ideal-map.png
+.gstack\qa-reports\screenshots\initial.png
+.gstack\qa-reports\screenshots\library-scrolled.png
+.gstack\qa-reports\screenshots\library-tab.png
+.gstack\qa-reports\screenshots\site-plan.png
+.local
+.local\.commit_message
+.local\codex-dev.err.log
+.local\codex-dev.out.log
+.local\hhvc-local-db.json
+.local\secondary_skills
+.local\secondary_skills\ad-creative
+.local\secondary_skills\ad-creative\.fingerprint
+.local\secondary_skills\ad-creative\SKILL.md
+.local\secondary_skills\ai-recruiter
+.local\secondary_skills\ai-recruiter\.fingerprint
+.local\secondary_skills\ai-recruiter\SKILL.md
+.local\secondary_skills\ai-sdr
+.local\secondary_skills\ai-sdr\.fingerprint
+.local\secondary_skills\ai-sdr\SKILL.md
+.local\secondary_skills\ai-secretary
+.local\secondary_skills\ai-secretary\.fingerprint
+.local\secondary_skills\ai-secretary\SKILL.md
+.local\secondary_skills\branding-generator
+.local\secondary_skills\branding-generator\.fingerprint
+.local\secondary_skills\branding-generator\SKILL.md
+.local\secondary_skills\competitive-analysis
+.local\secondary_skills\competitive-analysis\.fingerprint
+.local\secondary_skills\competitive-analysis\SKILL.md
+.local\secondary_skills\content-machine
+.local\secondary_skills\content-machine\.fingerprint
+.local\secondary_skills\content-machine\SKILL.md
+.local\secondary_skills\deep-research
+.local\secondary_skills\deep-research\.fingerprint
+.local\secondary_skills\deep-research\SKILL.md
+.local\secondary_skills\design-thinker
+.local\secondary_skills\design-thinker\.fingerprint
+.local\secondary_skills\design-thinker\SKILL.md
+.local\secondary_skills\excel-generator
+.local\secondary_skills\excel-generator\.fingerprint
+.local\secondary_skills\excel-generator\SKILL.md
+.local\secondary_skills\file-converter
+.local\secondary_skills\file-converter\.fingerprint
+.local\secondary_skills\file-converter\SKILL.md
+.local\secondary_skills\flashcard-generator
+.local\secondary_skills\flashcard-generator\.fingerprint
+.local\secondary_skills\flashcard-generator\SKILL.md
+.local\secondary_skills\github-solution-finder
+.local\secondary_skills\github-solution-finder\.fingerprint
+.local\secondary_skills\github-solution-finder\SKILL.md
+.local\secondary_skills\insurance-optimizer
+.local\secondary_skills\insurance-optimizer\.fingerprint
+.local\secondary_skills\insurance-optimizer\SKILL.md
+.local\secondary_skills\interview-prep
+.local\secondary_skills\interview-prep\.fingerprint
+.local\secondary_skills\interview-prep\SKILL.md
+.local\secondary_skills\invoice-generator
+.local\secondary_skills\invoice-generator\.fingerprint
+.local\secondary_skills\invoice-generator\SKILL.md
+.local\secondary_skills\legal-contract
+.local\secondary_skills\legal-contract\.fingerprint
+.local\secondary_skills\legal-contract\SKILL.md
+.local\secondary_skills\LICENSE.txt
+.local\secondary_skills\meal-planner
+.local\secondary_skills\meal-planner\.fingerprint
+.local\secondary_skills\meal-planner\SKILL.md
+.local\secondary_skills\personal-shopper
+.local\secondary_skills\personal-shopper\.fingerprint
+.local\secondary_skills\personal-shopper\SKILL.md
+.local\secondary_skills\photo-editor
+.local\secondary_skills\photo-editor\.fingerprint
+.local\secondary_skills\photo-editor\SKILL.md
+.local\secondary_skills\podcast-generator
+.local\secondary_skills\podcast-generator\.fingerprint
+.local\secondary_skills\podcast-generator\SKILL.md
+.local\secondary_skills\product-manager
+.local\secondary_skills\product-manager\.fingerprint
+.local\secondary_skills\product-manager\SKILL.md
+.local\secondary_skills\programmatic-seo
+.local\secondary_skills\programmatic-seo\.fingerprint
+.local\secondary_skills\programmatic-seo\SKILL.md
+.local\secondary_skills\real-estate-analyzer
+.local\secondary_skills\real-estate-analyzer\.fingerprint
+.local\secondary_skills\real-estate-analyzer\SKILL.md
+.local\secondary_skills\recipe-creator
+.local\secondary_skills\recipe-creator\.fingerprint
+.local\secondary_skills\recipe-creator\SKILL.md
+.local\secondary_skills\recreate-screenshot
+.local\secondary_skills\recreate-screenshot\.fingerprint
+.local\secondary_skills\recreate-screenshot\SKILL.md
+.local\secondary_skills\resume-maker
+.local\secondary_skills\resume-maker\.fingerprint
+.local\secondary_skills\resume-maker\SKILL.md
+.local\secondary_skills\seo-auditor
+.local\secondary_skills\seo-auditor\.fingerprint
+.local\secondary_skills\seo-auditor\SKILL.md
+.local\secondary_skills\stock-analyzer
+.local\secondary_skills\stock-analyzer\.fingerprint
+.local\secondary_skills\stock-analyzer\SKILL.md
+.local\secondary_skills\storyboard
+.local\secondary_skills\storyboard\.fingerprint
+.local\secondary_skills\storyboard\SKILL.md
+.local\secondary_skills\supplier-research
+.local\secondary_skills\supplier-research\.fingerprint
+.local\secondary_skills\supplier-research\SKILL.md
+.local\secondary_skills\tax-reviewer
+.local\secondary_skills\tax-reviewer\.fingerprint
+.local\secondary_skills\tax-reviewer\SKILL.md
+.local\secondary_skills\travel-assistant
+.local\secondary_skills\travel-assistant\.fingerprint
+.local\secondary_skills\travel-assistant\SKILL.md
+.local\secondary_skills\website-cloning
+.local\secondary_skills\website-cloning\.fingerprint
+.local\secondary_skills\website-cloning\SKILL.md
+.local\seed-plan-preview.json
+.local\skills
+.local\skills\agent-inbox
+.local\skills\agent-inbox\.fingerprint
+.local\skills\agent-inbox\SKILL.md
+.local\skills\artifacts
 
 === STACK DETECTION (manifest files) ===
-No recognized manifest files found in project root.
+
+--- package-lock.json ---
+{
+  "name": "hhvc-tool",
+  "version": "1.0.0",
+  "lockfileVersion": 3,
+  "requires": true,
+  "packages": {
+    "": {
+      "name": "hhvc-tool",
+      "version": "1.0.0",
+      "dependencies": {
+        "@fontsource/dm-serif-display": "^5.2.8",
+        "@fontsource/jetbrains-mono": "^5.2.8",
+        "@fontsource/plus-jakarta-sans": "^5.2.8",
+        "@modelcontextprotocol/sdk": "^1.29.0",
+        "compression": "^1.8.1",
+        "cors": "^2.8.6",
+        "express": "^4.22.1",
+        "express-rate-limit": "^8.5.1",
+        "helmet": "^8.1.0",
+        "hpp": "^0.2.3",
+        "html-to-image": "^1.11.13",
+        "jspdf": "^2.5.2",
+        "jszip": "^3.10.1",
+        "mammoth": "^1.12.0",
+        "pdf-parse": "^2.4.5",
+        "pg": "^8.20.0",
+        "pino": "^10.3.1",
+        "pino-http": "^11.0.0",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
+        "react-router-dom": "^7.14.2",
+        "zod": "^4.4.3"
+      },
+      "devDependencies": {
+        "@playwright/test": "^1.49.1",
+        "@testing-library/dom": "^10.4.1",
+        "@testing-library/react": "^16.3.2",
+        "@types/pg": "^8.20.0",
+        "@types/react": "^18.3.28",
+        "@types/react-dom": "^18.3.7",
+        "@types/supertest": "^6.0.3",
+        "@vitejs/plugin-react": "^4.7.0",
+        "@vitest/coverage-v8": "^3.2.4",
+        "jsdom": "^29.1.1",
+        "supertest": "^7.1.1",
+        "typescript": "^5.9.3",
+        "vite": "^5.4.21",
+        "vitest": "^3.2.4"
+      },
+      "engines": {
+        "node": ">=20.16.0"
+      }
+    },
+    "node_modules/@ampproject/remapping": {
+      "version": "2.3.0",
+      "resolved": "https://registry.npmjs.org/@ampproject/remapping/-/remapping-2.3.0.tgz",
+      "integrity": "sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==",
+      "dev": true,
+      "license": "Apache-2.0",
+      "dependencies": {
+        "@jridgewell/gen-mapping": "^0.3.5",
+        "@jridgewell/trace-mapping": "^0.3.24"
+      },
+      "engines": {
+        "node": ">=6.0.0"
+      }
+    },
+    "node_modules/@asamuzakjp/css-color": {
+      "version": "5.1.11",
+      "resolved": "https://registry.npmjs.org/@asamuzakjp/css-color/-/css-color-5.1.11.tgz",
+      "integrity": "sha512-KVw6qIiCTUQhByfTd78h2yD1/00waTmm9uy/R7Ck/ctUyAPj+AEDLkQIdJW0T8+qGgj3j5bpNKK7Q3G+LedJWg==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "@asamuzakjp/generational-cache": "^1.0.1",
+        "@csstools/css-calc": "^3.2.0",
+        "@csstools/css-color-parser": "^4.1.0",
+        "@csstools/css-parser-algorithms": "^4.0.0",
+        "@csstools/css-tokenizer": "^4.0.0"
+      },
+
+[TRUNCATED] Showing first 80 of 6657 lines.
+--- package.json ---
+{
+  "name": "hhvc-tool",
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20.16.0"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "migrate:karl-connected:plan": "vite-node scripts/migrate-karl-connected.ts",
+    "migrate:karl-connected": "vite-node scripts/migrate-karl-connected.ts --write",
+    "seed:hhvc-working:plan": "vite-node scripts/seed-hhvc-working-ia.ts",
+    "seed:hhvc-working": "vite-node scripts/seed-hhvc-working-ia.ts --write",
+    "metrics:fixtures": "node scripts/report-fixture-metrics.mjs",
+    "eval": "node eval/run-evals.mjs",
+    "eval:deterministic": "node eval/run-evals.mjs --deterministic-only",
+    "eval:judge": "node eval/run-evals.mjs --judge-only",
+    "eval:baseline": "node eval/run-evals.mjs --deterministic-only --baseline",
+    "eval:check": "node eval/run-evals.mjs --deterministic-only --check-baseline",
+    "ui:audit": "node scripts/ui-audit-playwright.mjs"
+  },
+  "dependencies": {
+    "@fontsource/dm-serif-display": "^5.2.8",
+    "@fontsource/jetbrains-mono": "^5.2.8",
+    "@fontsource/plus-jakarta-sans": "^5.2.8",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "compression": "^1.8.1",
+    "cors": "^2.8.6",
+    "express": "^4.22.1",
+    "express-rate-limit": "^8.5.1",
+    "helmet": "^8.1.0",
+    "hpp": "^0.2.3",
+    "html-to-image": "^1.11.13",
+    "jspdf": "^2.5.2",
+    "jszip": "^3.10.1",
+    "mammoth": "^1.12.0",
+    "pdf-parse": "^2.4.5",
+    "pg": "^8.20.0",
+    "pino": "^10.3.1",
+    "pino-http": "^11.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.14.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/pg": "^8.20.0",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
+    "@types/supertest": "^6.0.3",
+    "@vitejs/plugin-react": "^4.7.0",
+    "@vitest/coverage-v8": "^3.2.4",
+    "jsdom": "^29.1.1",
+    "supertest": "^7.1.1",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21",
+    "vitest": "^3.2.4"
+  }
+}
+
 
 === ENTRY POINTS ===
 No common entry points found. Check 'main' or 'scripts.start' in manifest files above.
 
 === LINTING AND FORMATTING CONFIG ===
-No linting or formatting config files found in project root.
+Found: tsconfig.json
 
 === ENVIRONMENT VARIABLE TEMPLATES ===
 No .env.example or .env.template found. Identify required environment variables by searching the code and config for environment variable reads.
 
 === TODO / FIXME / HACK (production code only, test dirs excluded) ===
-None found.
+.config\.semgrep\semgrep_rules.json:24429: "pattern": "AES.new(..., $PYCRYPTODOME_MODE)\n"
+.config\.semgrep\semgrep_rules.json:24434: "pattern-not-inside": "AES.new(..., $PYCRYPTODOME_MODE)\n...\nHMAC.new\n"
+.config\.semgrep\semgrep_rules.json:24438: "metavariable": "$PYCRYPTODOME_MODE",
+.deno\gen\https\deno.land\68c0328e6ee41a9088cacf7c7ec358c0b7e757cf39291f2273f4b8d7950e2185.js:64: // TODO(bartlomieju): handle chunk extension
+.deno\gen\https\deno.land\9bc7365702496f5a3f4f33e565b0e2233a7ce590f15dc02e1fa371214848bc18.js:2: // TODO(ry) It'd be better to make Deferred a class that inherits from
+.deno\gen\https\deno.land\f6fa18768ad4ddb618f2a8f2f1e1cef92b175b567b3adca901b823ed3afff35a.js:110: // TODO(ry):
+.local\skills\artifacts\artifacts\automation\files\src\triggers\slackTriggers.ts:60: // TODO: Remove when Mastra exports this type.
+.yoyo\snapshot\.config\.semgrep\semgrep_rules.json:24429: "pattern": "AES.new(..., $PYCRYPTODOME_MODE)\n"
+.yoyo\snapshot\.config\.semgrep\semgrep_rules.json:24434: "pattern-not-inside": "AES.new(..., $PYCRYPTODOME_MODE)\n...\nHMAC.new\n"
+.yoyo\snapshot\.config\.semgrep\semgrep_rules.json:24438: "metavariable": "$PYCRYPTODOME_MODE",
+.yoyo\snapshot\.deno\gen\https\deno.land\68c0328e6ee41a9088cacf7c7ec358c0b7e757cf39291f2273f4b8d7950e2185.js:64: // TODO(bartlomieju): handle chunk extension
+.yoyo\snapshot\.deno\gen\https\deno.land\9bc7365702496f5a3f4f33e565b0e2233a7ce590f15dc02e1fa371214848bc18.js:2: // TODO(ry) It'd be better to make Deferred a class that inherits from
+.yoyo\snapshot\.deno\gen\https\deno.land\f6fa18768ad4ddb618f2a8f2f1e1cef92b175b567b3adca901b823ed3afff35a.js:110: // TODO(ry):
 
 === GIT RECENT COMMITS (last 20) ===
-7f50f7b Merge feature/cleanup-and-queue into main
-1d9fb16 Implement feature X to enhance user experience and fix bug Y in module Z
-b42f373 fix: replace fragile stop test with behavior-based approach, remove orphaned shouldStop() call
-5a7ef7c Merge branch 'main' of https://github.com/ohdaveed/ScaryJubilantParallelprocessing
-a983a38 feat: add initial dashboard layout and task management styles
-34f8a11 Merge pull request #2 from ohdaveed/cursor/agents-md-runtime-gotchas-016f
-fe98a68 Update AGENTS.md with .env setup instructions and runtime gotchas
-7490856 Merge pull request #1 from ohdaveed/cursor/dev-environment-setup-016f
-1cda869 Potential fix for pull request finding
-5cd570b Update AGENTS.md
-06f286d Update AGENTS.md
-311cd18 Update AGENTS.md
-6d373bc Add package-lock.json for reproducible dependency installs
-b7d086e Add AGENTS.md with cloud-specific development instructions
-028ee82 feat: add useQueueRunner hook with runQueue pure function
-55b3249 feat: add TodoItem queue status fields, persistence, and PATCH endpoint
-747bde7 refactor: remove old bulk generation; generate() now returns PageDraft | null
-cc3e067 chore: remove suggested pages feature
-4dd81b7 chore: remove screenshot upload feature
-62495b4 chore: remove Google Drive frontend integration
+a4b509f Add evaluation and improvement prompts for HHVC page drafts
+08471bf feat: Integrate security and logging enhancements in server setup
+b4c5be4 refactor: Update contentType and status types in tests and syncCanonicalWorkingIa
+f9ddb40 feat: Introduce new types and refactor components for improved structure and usability
+6b15445 feat: Enhance LibraryTab and LibraryPage with promote functionality for alternate drafts
+f856e6b feat: Enhance LibraryTab and LibraryPage with promote functionality for alternate drafts
+a5e829d feat: Implement promote functionality for page artifacts and enhance data models
+98f7437 feat: Introduce Issue Resolution Panel and enhance export readiness checks
+bac5ac1 feat: Update dependencies and add migration script for Karl connected pages
+daaca90 feat: Enhance LibraryPage with lazy loading and preview functionality
+00bdae3 Seed: update manual section headings; add smoke-read-map script
+baca0cb Add Karl section metadata to canonical IA
+55681cf Add live canonical IA inspector
+7227dbc feat: Add seed scripts and sync functionality for canonical working IA
+602f316 feat: Add support for campaign and resource collection content types
+b733ce1 Strengthen postgres persistence coverage
+29685d1 Harden AI request validation on main
+bce284b Fix stale test expectations
+00b1170 Add VS Code workspace baseline
+5553007 feat: Implement workspace state management and routing
 
 === HIGH-CHURN FILES (last 90 days, top 20) ===
-  34 src/App.tsx
-  29 server.js
-  20 src/utils.ts
-  16 src/types.ts
-  15 src/constants.ts
-  10 package-lock.json
-  10 package.json
+  58 src/App.tsx
+  39 server.js
+  30 src/utils.ts
+  24 src/types.ts
+  23 package.json
+  22 package-lock.json
+  19 src/constants.ts
+  16 src/components/ui.tsx
+  14 lib/persistence.js
+  14 src/components/tabs/LibraryTab.tsx
+  14 src/utils.test.ts
+  12 src/components/SfGovContentDesignTool.css
+  12 AGENTS.md
+  11 src/components/SfGovContentDesignTool.tsx
+  11 src/components/SfGovPreview.tsx
+  11 src/hooks/usePageGeneration.ts
+  10 src/components/tabs/MapTab.tsx
+  10 src/App.css
   10 replit.md
-   9 src/components/ui.tsx
-   8 AGENTS.md
-   8 .replit
-   7 src/utils.test.ts
-   7 dist/index.html
-   6 lib/persistence.js
-   6 src/components/tabs/LibraryTab.tsx
-   6 src/components/SfGovPreview.tsx
-   5 src/components/tabs/MapTab.tsx
-   5 src/hooks/usePageGeneration.ts
-   5 src/index.css
-   4 src/services/chatStream.ts
+   9 .gitignore
 
 === MONOREPO SIGNALS ===
 No monorepo signals detected.
 
 === CODE METRICS ===
-Total files scanned: 0
-Total lines of code: 0
+Total files scanned: 1202
+Total lines of code: 117405
 
+Files by language:
+  Other: 755
+  TypeScript/React: 175
+  TypeScript: 146
+  JavaScript: 125
+  Python: 1
+
+Top 10 largest files:
+.local\state\replit\log-query.db-wal: 4031.5KB
+.local\state\scribe\scribe.db-wal: 2293.4KB
+.config\.semgrep\semgrep_rules.json: 1788.1KB
+.yoyo\snapshot\.config\.semgrep\semgrep_rules.json: 1788.1KB
+.local\hhvc-local-db.json: 1517.5KB
+.yoyo\snapshot\attached_assets\Styleguide_-_Wagtail_1776266282756.html: 887.5KB
+.worktrees\ai-route-hardening\docs\screenshots\review-desktop.png: 670.9KB
+docs\screenshots\review-desktop.png: 670.9KB
+.worktrees\ai-route-hardening\docs\screenshots\review-desktop-after.png: 643.2KB
+docs\screenshots\review-desktop-after.png: 643.2KB
 
 === CI/CD PIPELINES ===
 No CI/CD pipelines detected.

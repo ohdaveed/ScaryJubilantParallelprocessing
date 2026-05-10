@@ -1,330 +1,139 @@
-# ARCHITECTURE.md — System Design & Data Flow
+# ARCHITECTURE.md — System Design
 
-## High-Level Architecture
+## System Overview
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      FRONTEND (React)                       │
-│  src/                                                       │
-│  ├─ App.tsx (routing, main layout)                         │
-│  ├─ hooks/ (usePagesData, usePageGeneration, etc.)        │
-│  ├─ components/ (UI atoms, preview, design tool)          │
-│  └─ services/ (chatStream, pageParser)                    │
-└─────────────────────────┬───────────────────────────────────┘
-                          │ HTTP (REST)
-                          ↓
-┌─────────────────────────────────────────────────────────────┐
-│              BACKEND (Express API)                          │
-│  server.js                                                  │
-│  ├─ POST /api/chat (→ Anthropic, cache)                   │
-│  ├─ POST /api/evaluate (Karl check)                       │
-│  ├─ POST /api/improve-structure (refinement)              │
-│  ├─ POST /api/karl-remediate (MCP guidance retrieval)     │
-│  ├─ CRUD /api/pages (PageDraft)                           │
-│  ├─ CRUD /api/todos (TodoItem queue)                      │
-│  ├─ CRUD /api/planned-pages (from DB)                     │
-│  └─ CRUD /api/preferences (user preferences)              │
-└─────────────────────────┬───────────────────────────────────┘
-                          │ SQL / File I/O
-                          ↓
-┌─────────────────────────────────────────────────────────────┐
-│                   PERSISTENCE LAYER                         │
-│  lib/persistence.js                                         │
-│                                                             │
-│  ┌─────────────────────┐      ┌──────────────────────┐    │
-│  │  PostgreSQL (Neon)  │      │  File-Based JSON DB  │    │
-│  │  (primary)          │  ←→  │  .local/hhvc-...json │    │
-│  │  DATABASE_URL       │      │  (fallback)          │    │
-│  └─────────────────────┘      └──────────────────────┘    │
-│                                                             │
-│  Tables:                                                    │
-│  - pages (PageDraft records)                               │
-│  - todos (TodoItem queue)                                  │
-│  - planned_pages (HHVC IA reference)                       │
-│  - page_versions (version history snapshots)               │
-│  - user_preferences (UI state)                             │
-└─────────────────────────────────────────────────────────────┘
-                          │
-                          ↓
-┌─────────────────────────────────────────────────────────────┐
-│              EXTERNAL INTEGRATIONS                          │
-│                                                             │
-│  ├─ Anthropic Claude API (v1, 2023-06-01)                 │
-│  │  ├─ claude-sonnet-4-6 (complex tasks)                  │
-│  │  └─ claude-haiku-4-5 (fast eval)                       │
-│  │  └─ Prompt caching (system prompts)                    │
-│  │                                                         │
-│  ├─ Karl Citations Service (SF.gov standards)             │
-│  │  └─ Enriches system prompt with content rules          │
-│  │                                                         │
-│  └─ Google Drive (legacy; backend only)                   │
-│     └─ Legacy service-account key config                  │
-│                                                            │
-└─────────────────────────────────────────────────────────────┘
+The repo is a full-stack HHVC authoring tool with three major runtime layers:
+
+1. A Vite/React SPA for planning, generating, reviewing, and browsing HHVC pages.
+2. A single-file Express API in `server.js` for AI operations and persistence-backed CRUD.
+3. A persistence layer in `lib/persistence.js` that exposes the same application contract through Postgres primary mode or local JSON fallback mode.
+
+## Runtime Composition
+
+```text
+Browser
+  -> Vite SPA (`src/main.tsx` -> `App.tsx`)
+  -> WorkspaceProvider composes domain hooks
+  -> frontend API clients in `src/utils/api.ts`
+  -> `/api/*`
+Express (`server.js`)
+  -> middleware: compression, helmet, hpp, cors, json, pino
+  -> request validation via `lib/requestSchemas.js`
+  -> Anthropic/Karl routes
+  -> CRUD/model routes
+  -> persistence adapter from `createPersistence()`
+Persistence (`lib/persistence.js`)
+  -> Postgres store after migrations
+  -> or file-backed store at `.local/hhvc-local-db.json`
 ```
 
-## Data Flow: Page Generation Lifecycle
+## Frontend State Architecture
 
-### 1. User Initiates Generation (Frontend)
+`WorkspaceContext` is the frontend composition root. It does not own all logic directly; it wires domain hooks together and exposes a single app-facing context.
 
-```
-User clicks "Generate Page"
-    ↓
-App.tsx → usePageGeneration hook
-    ↓
-Constructs request payload:
-  - userType, userGoal, pageType, context, images, etc.
-    ↓
-POST /api/chat → server.js
-```
+| Hook | Responsibility |
+|---|---|
+| `usePagesData` | Load page summaries, hydrate full pages, migrate legacy localStorage pages/todos |
+| `usePlanMap` | Planned-page tree, initial sitemap seeding, linking built pages |
+| `usePageGeneration` | Generation, streaming, retry, evaluation, remediation, refine flow |
+| `useVersionHistory` | Version listing and restore actions |
+| `useWorkspaceState` | UI-local workspace state such as selections/edit buffers |
+| `useProjectModel` | Bulk load normalized model data: concepts, nodes, artifacts, variants, references, queue |
 
-### 2. Backend Processing (server.js `/api/chat`)
+## UI Shell and Navigation
 
-```
-Receive request
-    ↓
-[Validate] isObject + messages + model
-    ↓
-[Optional] Attach Drive context (if driveContext provided)
-    ↓
-[Optional] Attach images (up to 3, max 4MB each, PNG/JPEG/WebP)
-    ↓
-[Inject] withKarlCitations() → enhance system prompt
-    ↓
-Create cache_control header: { type: "ephemeral" }
-    ↓
-POST https://api.anthropic.com/v1/messages
-  (timeout: 60s, retry up to 1 time on failure)
-    ↓
-Stream response back to client (ReadableStream)
-```
+The current application shell is tab-oriented, not a generic multi-route site:
 
-### 3. Frontend Streams & Parses (React + chatStream service)
+- `plan`: canonical concepts and working HHVC IA
+- `generate`: authoring/generation workspace
+- `library`: page library and selection flow
+- `ideal`: reference-only benchmark map
 
-```
-Receive streaming response
-    ↓
-chatStream.ts iterates over chunks
-    ↓
-pageParser.ts parses structured fields:
-  - name, userType, userGoal, primaryPurpose, pageType
-  - recommendedComponents, systemRelationships
-  - duplicationRisks, enforcementCheck, pageDraft
-  - integrationNotes
-    ↓
-Store in PageDraft state via usePagesData hook
-    ↓
-Update UI in real-time (StreamRenderer component)
-```
+`App.tsx` keeps the tab state URL-driven and renders the relevant page through lazy-loaded route components.
 
-### 4. User Evaluation (POST /api/evaluate)
+## Backend Route Architecture
 
-```
-User clicks "Evaluate Against Karl"
-    ↓
-POST /api/evaluate with PageDraft
-    ↓
-server.js:
-  - Send to Anthropic (claude-haiku-4-5 for speed)
-  - System prompt: Karl content standards rules
-  - Payload: page name, purpose, draft, components, etc.
-    ↓
-Parse response into KarlEvaluation:
-  - score (0–100)
-  - grade (A–F)
-  - summary, passed[], warnings[], failed[]
-    ↓
-Return to frontend & display in KarlEvalPanel
-```
+All HTTP routes are defined inline in `server.js`. They group into these subsystems:
 
-### 5. Improvement Loop (POST /api/improve-structure)
+| Route group | Endpoints |
+|---|---|
+| Health | `GET /api/health` |
+| AI generation/evaluation | `POST /api/chat`, `POST /api/evaluate`, `POST /api/improve-structure`, `POST /api/karl-remediate` |
+| Preferences | `GET/POST/DELETE /api/preferences` |
+| Pages and versions | `GET/POST/DELETE /api/pages`, `PATCH /api/pages/:id/review`, `GET /api/pages/:id/versions`, `GET /api/pages/:id/versions/:versionId`, `POST /api/pages/:id/restore/:versionId` |
+| Legacy execution queue | `GET/POST/PATCH/DELETE /api/todos` |
+| Planned pages | `GET/POST/PATCH/DELETE /api/planned-pages` |
+| Normalized content model | `GET/POST/PATCH /api/page-concepts`, `GET /api/ia-nodes`, `GET /api/page-artifacts`, `POST /api/page-artifacts/:id/promote`, `GET/POST /api/artifact-variants`, `GET /api/reference-examples`, `GET/POST/PATCH/DELETE /api/build-queue` |
 
-```
-User clicks "Improve Structure"
-    ↓
-POST /api/improve-structure with page + feedback
-    ↓
-server.js sends to Anthropic with refinement prompt
-    ↓
-AI returns improved PageDraft fields
-    ↓
-Frontend replaces draft, re-evaluates if needed
-```
+## Persistence Model
 
-### 6. Persistence (CRUD /api/pages)
+The persistence layer is no longer just page drafts plus planned pages. It supports a normalized content system with separate concepts, IA placement, artifacts, references, and queue state.
 
-```
-Save Page:
-  POST /api/pages { id, data, versionNotes?, versionTrigger? }
-    ↓
-  server.js → lib/persistence.js
-    ↓
-  If PostgreSQL available:
-    INSERT INTO pages (...)
-    INSERT INTO page_versions (...)
-      ↓
-  Else (file mode):
-    Read .local/hhvc-local-db.json
-    Append to pages array
-    Write back to disk
-    
-List Pages:
-  GET /api/pages
-    ↓
-  SELECT * FROM pages
-  (or file mode equivalent)
-```
+### Core persisted model
 
-## Component Hierarchy
+| Entity | Role |
+|---|---|
+| `PageConcept` | Canonical user/task concept with governance and canonical-title rules |
+| `IANode` | Placement of a concept inside a specific IA map |
+| `PageArtifact` | Concrete page output/draft/import/build snapshot tied optionally to a concept |
+| `ArtifactVersion` | Version history snapshots for artifacts |
+| `ArtifactVariant` | Alternative artifacts for the same concept |
+| `ReferenceExample` | Reference-only benchmark pages/maps |
+| `BuildQueueItem` | Execution queue item for build/generation work |
 
-```
-App.tsx (root)
-├─ SfGovContentDesignTool
-│  ├─ TabNav (routing)
-│  ├─ LibraryTab
-│  │  └─ PageCard (usePagesData)
-│  ├─ MapTab
-│  │  └─ IdealSiteMap
-│  └─ DesignTab
-│     ├─ InputForm (usePageGeneration)
-│     ├─ StreamRenderer (real-time output)
-│     ├─ SfGovPreview (live page preview)
-│     └─ KarlEvalPanel (KarlEvaluation display)
-└─ RelPanel (version history, related pages)
-```
+### Store selection behavior
 
-## State Management
+- If `DB_FALLBACK_MODE=file` is set, the app uses the local JSON store immediately.
+- If `DATABASE_URL` is absent, the app also uses the file store.
+- If `DATABASE_URL` is present, the app attempts migrations and Postgres startup first.
+- If Postgres init fails, the app falls back to the file store and logs the fallback.
 
-### React Hooks (Custom)
+## Generation and Remediation Flow
 
-| Hook | Scope | Purpose | State Structure |
-|------|-------|---------|-----------------|
-| `usePagesData()` | Global | CRUD operations for pages | `{ pages, loading, error, ...apiMethods }` |
-| `usePageGeneration()` | Per-tab | Generate page via streaming AI | `{ isGenerating, output, error, generate() }` |
-| `usePlanMap()` | Global | Navigate planned pages (IA) | `{ planned, selected, select(), deselect() }` |
-| `useVersionHistory()` | Per-page | Version snapshots & rollback | `{ versions, currentVersion, rollback() }` |
-| `useQueueRunner()` | Per-tab | Execute todo queue | `{ queue, isRunning, run(), pause() }` |
+The current generation architecture is hybrid local-first:
 
-### Persistence State (Backend)
+1. `usePageGeneration.generate()` builds a prompt from constants, selected context, and preferences.
+2. `src/services/chatStream.ts` streams Anthropic output from `/api/chat`.
+3. `src/services/pageParser.ts` attempts structured parsing and, if needed, a repair pass through `/api/chat`.
+4. `src/generationValidation.ts` validates page type, placeholders, and component names locally.
+5. The generation loop retries invalid output up to `MAX_GENERATION_RETRIES = 2`.
+6. The page is evaluated through `/api/evaluate`.
+7. Only if the resulting quality gate is `review_required`, the app calls `/api/karl-remediate`, shows `Consulting Karl...`, applies the returned guidance through `/api/improve-structure`, and re-evaluates.
 
-```typescript
-{
-  meta: {
-    nextIds: {
-      todos: number,
-      planned_pages: number,
-      user_preferences: number,
-      page_versions: number
-    }
-  },
-  pages: PageDraft[],
-  todos: TodoItem[],
-  planned_pages: PlannedPage[],
-  user_preferences: UserPreference[],
-  page_versions: PageVersion[]
-}
-```
+This means Karl remediation is conditional, not the first or only review path.
 
-## Request/Response Patterns
+## Request Validation and Trust Boundaries
 
-### Streaming Response (`/api/chat`)
+- Server request bodies are validated with Zod schemas in `lib/requestSchemas.js`.
+- Write routes can be protected by `ADMIN_TOKEN` / `HHVC_ADMIN_TOKEN`.
+- The frontend adds `x-admin-token` automatically through `src/utils/apiFetch.ts` if `VITE_ADMIN_TOKEN` or stored local token exists.
+- The AI layer is wrapped with response extraction, parse guards, and timeouts before results are trusted.
 
-```
-HTTP/1.1 200 OK
-Content-Type: text/event-stream
-Transfer-Encoding: chunked
+## Intent vs. Reality Divergences Corrected In This Refresh
 
-<ReadableStream chunks>
-PAGE NAME: Generated Page Title
-PRIMARY USER: General public
-PAGE TYPE: Transaction
-...
-```
+- Older docs over-focused on `planned_pages` and page drafts; current code has a normalized concept/artifact/queue model.
+- Older docs treated file-backed persistence as the normal path; current code treats Postgres as primary and file mode as fallback.
+- Older docs described Karl remediation too broadly; current code uses it only after a failing quality gate.
+- Older docs under-described the current four-tab studio shell and context-composed frontend state model.
 
-### JSON Response (`/api/evaluate`, `/api/pages`)
+## Unknowns
 
-```json
-{
-  "score": 85,
-  "grade": "B",
-  "summary": "...",
-  "passed": [...],
-  "warnings": [...],
-  "failed": [...]
-}
-```
-
-### Error Handling
-
-```typescript
-// Backend (server.js)
-if (!ANTHROPIC_API_KEY) {
-  return res.status(500).json({ 
-    error: "ANTHROPIC_API_KEY is not configured..." 
-  });
-}
-
-// Request ID tracking (all endpoints)
-res.locals.requestId = randomUUID();
-res.setHeader("x-request-id", requestId);
-logWithRequest(res, "stage", "message", { extra: "context" });
-```
-
-## Karl Content Standards Integration
-
-The **Karl** system is SF.gov's content design framework. Integration occurs via:
-
-1. **System Prompt Injection** (`lib/karlCitations.js`)
-   - `withKarlCitations(systemPrompt)` → appends Karl page types, component library, naming rules, structure constraints
-   - Called on every `/api/chat` request before sending to Anthropic
-   - Cached via `cache_control: { type: "ephemeral" }`
-
-2. **Evaluation** (`/api/evaluate`)
-   - Send page draft to Claude Haiku
-   - Evaluates against injected Karl rules
-   - Returns KarlEvaluation with score, grade, passed/warnings/failed
-
-3. **Fallback Behavior**
-   - If Karl service unreachable, logs warning, continues with base rules
-   - Does NOT block page generation
-
-## Data Persistence Strategy
-
-### Primary: PostgreSQL (Neon)
-
-- Connection via `pg.Pool` with `DATABASE_URL`
-- Automatic connection pooling
-- Tables: `pages`, `todos`, `planned_pages`, `page_versions`, `user_preferences`
-- SSL required (`sslmode=require`)
-
-### Fallback: File-Based JSON
-
-- File: `.local/hhvc-local-db.json`
-- Triggered by:
-  - Connection failure (auto-detected)
-  - `DB_FALLBACK_MODE=file` env var (manual)
-- State structure: nested arrays (pages, todos, etc.)
-- Created at runtime if missing
-- Version retention: 50 snapshots per page (oldest dropped)
-
-## Error Boundaries & Recovery
-
-| Failure Point | Behavior | Recovery |
-|--------------|----------|----------|
-| PostgreSQL unavailable | Fall back to file mode automatically | No user action required; file DB used |
-| Anthropic API timeout | Retry up to 1 time (60s default for `/api/chat`) | Return 500 if retries fail |
-| Missing ANTHROPIC_API_KEY | Return 500 on AI routes | App starts; AI endpoints disabled |
-| File I/O error in persistence | Log error; propagate to caller | Caller handles 500 response |
-| Cross-page version restore | Explicitly rejected (`404`) | Use matching page/version pair only |
-| Planned-page cycle assignment | Explicitly rejected (`400`) | Choose parent outside child ancestry |
+- [TODO] The repo does not expose a full production deployment topology. Architecture here documents the checked-in runtime, not external infrastructure.
 
 ## Evidence
 
-- `server.js`: route definitions, Anthropic integration, error handling
-- `lib/persistence.js`: PostgreSQL connection, file fallback logic, state schema
-- `lib/karlCitations.js`: prompt injection, cache control
-- `src/hooks/usePageGeneration.ts`: frontend generation orchestration
-- `src/services/chatStream.ts`: streaming response handling
-- `src/services/pageParser.ts`: parse structured output
-- `vite.config.ts`: dev server proxy configuration (localhost:5000 → localhost:3001)
-- `scripts/dev.mjs`: parallel process launcher
+- `src/main.tsx`
+- `src/App.tsx`
+- `src/context/WorkspaceContext.tsx`
+- `src/hooks/usePageGeneration.ts`
+- `src/hooks/usePagesData.ts`
+- `src/hooks/usePlanMap.ts`
+- `src/hooks/useProjectModel.ts`
+- `src/services/chatStream.ts`
+- `src/services/pageParser.ts`
+- `src/generationValidation.ts`
+- `server.js`
+- `lib/persistence.js`
+- `lib/requestSchemas.js`
+- `src/utils/api.ts`
+- `src/types.ts`

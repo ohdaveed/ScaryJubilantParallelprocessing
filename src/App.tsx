@@ -51,6 +51,26 @@ export default function App() {
 
   const screenshotRef = useRef<HTMLDivElement>(null);
   const pageTypeOptions = useMemo(() => studioPageTypes(), []);
+  
+  // Track persistence mode (to show warning if file-mode is active)
+  const [dbMode, setDbMode] = useState<'postgres' | 'file' | 'unknown'>('unknown');
+  
+  useEffect(() => {
+    let isMounted = true;
+    const fetchDbMode = async () => {
+      try {
+        const response = await fetch('/api/system/db-mode');
+        if (response.ok) {
+          const data = await response.json();
+          if (isMounted) setDbMode(data.mode || 'unknown');
+        }
+      } catch (err) {
+        console.debug('Failed to fetch db mode:', err);
+      }
+    };
+    fetchDbMode();
+    return () => { isMounted = false; };
+  }, []);
 
   // Sync tab change to URL
   const handleWorkspaceTab = useCallback((id: string) => {
@@ -170,6 +190,20 @@ export default function App() {
 
   return (
     <div className="app-root-sf-studio">
+      {dbMode === 'file' && (
+        <div style={{
+          backgroundColor: '#fff3cd',
+          border: '1px solid #ffc107',
+          color: '#856404',
+          padding: '10px 16px',
+          fontSize: '14px',
+          fontWeight: 500,
+          zIndex: 1000,
+          textAlign: 'center'
+        }}>
+          ⚠️ Running in local file storage mode. Database is offline. Changes will not persist after restart.
+        </div>
+      )}
       <a href={`#${MAIN_WORKSPACE_PANEL_ID}`} className="skip-link">
         Skip to main content
       </a>

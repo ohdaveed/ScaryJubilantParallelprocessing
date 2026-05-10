@@ -1,426 +1,83 @@
-# CONVENTIONS.md — Code Style, Patterns & Practices
+# CONVENTIONS.md — Code and Project Conventions
 
-## TypeScript & Type Safety
+## Language and Module Conventions
 
-### Philosophy
-- **Strict mode:** TypeScript configured with strict checks (implicit any forbidden)
-- **No ESLint:** TypeScript is the primary static analysis tool (`tsc --noEmit` used for checking)
-- **Module system:** ESM (`import`/`export`) throughout
+- Frontend code is primarily TypeScript under `src/`.
+- Backend runtime code is JavaScript ESM under the repo root and `lib/`.
+- Imports use ESM syntax consistently; CommonJS is only bridged where required (`pdf-parse` in `server.js`).
 
-### Type Definitions
+## Type and Domain Conventions
 
-```typescript
-// Central types in src/types.ts
-export interface PageDraft {
-  id: string;
-  name: string;
-  userType: string;                    // e.g., "General public", "Property owner"
-  userGoal: string;
-  purpose: string;
-  pageType: string;                    // e.g., "Transaction", "Information"
-  components: string;                  // Comma-separated or list
-  relationships: string;               // System relationships JSON or string
-  duplication: string;
-  enforcement: string;
-  draft: string;                       // Raw HTML/markdown page draft
-  integration: string;
-  valid: boolean;
-  raw: string;                         // Original AI response (unparsed)
-  createdAt: string;                   // ISO 8601 timestamp
-  karlConnected: boolean;              // Has Karl evaluation been run?
-  karlEvaluation?: KarlEvaluation;     // Optional; populated after evaluation
-  skeleton?: boolean;
-  imported?: boolean;
-  currentVersionNumber?: number;       // Ephemeral; set by API list response
-  version?: string;
-  reviewStatus?: "pending" | "approved" | "rejected";
-  qualityGate?: { status: "pass" | "review_required"; reasons: string[] };
-}
+- Shared domain contracts live in `src/types.ts`.
+- Content-model normalization helpers live in both `src/utils/contentModel.ts` and `lib/contentModel.js`.
+- Page/content labels shown to users are often Title Case strings, while normalized content types use lower-case keys such as `transaction` or `resource_collection`.
+- The codebase separates canonical concepts, IA nodes, artifacts, reference examples, and queue items instead of storing them as one merged entity.
 
-export interface KarlEvaluation {
-  score: number;                       // 0–100
-  grade: string;                       // "A", "B", "C", "D", "F", or "—"
-  summary: string;
-  passed: string[];
-  warnings: string[];
-  failed: string[];
-  parseError?: boolean;
-  parseFailureReason?: string;
-  confidence?: "high" | "medium" | "low";
-}
+## Frontend Composition Conventions
 
-export interface TodoItem {
-  id: string;
-  title: string;
-  description?: string;
-  status: "pending" | "generating" | "done" | "failed";
-  pageId?: string;
-  createdAt: string;
-  queueIndex?: number;                 // Position in execution queue
-}
-```
+- App-wide behavior is composed through `WorkspaceContext` rather than a third-party state library.
+- Domain hooks own business logic; the context layer wires them together.
+- Routing is URL-driven with `react-router-dom`, but the user experience is still a single workspace shell rather than unrelated pages.
+- Page components under `src/pages/` are lazy-loaded from `App.tsx`.
 
-### Naming Conventions
+## API Client Conventions
 
-| Category | Pattern | Example |
-|----------|---------|---------|
-| **React Components** | PascalCase | `SfGovPreview`, `LibraryTab`, `RelPanel` |
-| **Custom Hooks** | `use*` prefix, PascalCase | `usePageGeneration`, `usePagesData`, `useQueueRunner` |
-| **Services** | camelCase | `chatStream`, `pageParser`, `pagesApi` |
-| **Utilities** | camelCase | `clean`, `formatPersistenceError`, `normalizePlannedPage` |
-| **Constants** | UPPER_SNAKE_CASE | `KARL_PAGE_TYPES`, `SYSTEM_PROMPT`, `PAGE_VERSION_RETENTION` |
-| **Types** | PascalCase | `PageDraft`, `KarlEvaluation`, `TodoItem` |
-| **Enums** | PascalCase values | `"pending" \| "approved" \| "rejected"` |
-| **Variables** | camelCase | `pages`, `isGenerating`, `requestId` |
-| **Database fields** | snake_case | `created_at`, `user_type`, `page_versions` |
-| **CSS Classes** | kebab-case, BEM-like | `.app-evaluating`, `.streamRenderer__line--key` |
+- Frontend HTTP calls are centralized in `src/utils/api.ts` and `src/utils/apiFetch.ts`.
+- `apiFetch()` attaches the optional admin token header automatically.
+- API client helpers usually return parsed JSON or throw a status-based `Error`.
+- List/detail behavior is explicit for pages: list endpoints can return summaries while detail endpoints hydrate full content.
 
-## React Patterns
+## Validation and Parsing Conventions
 
-### Hooks (Custom)
+- Request validation on the server uses Zod schemas in `lib/requestSchemas.js`.
+- Generated content is treated as untrusted until it passes parse/repair and validation stages.
+- `repairAndParseStructured()` first tries local parsing, then asks `/api/chat` for a repair-only response if needed.
+- `validateGeneratedPage()` enforces Karl page-type/component placeholders locally before downstream use.
 
-All state management uses custom React hooks. Example pattern:
+## Naming Conventions Observed In Code
 
-```typescript
-// src/hooks/usePageGeneration.ts
-export function usePageGeneration() {
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [output, setOutput] = useState("");
-  const [error, setError] = useState<string | null>(null);
+| Pattern | Example |
+|---|---|
+| React components use PascalCase | `SfGovContentDesignTool.tsx`, `PlanPage.tsx` |
+| Hooks use `use*` camelCase | `usePageGeneration.ts`, `useProjectModel.ts` |
+| Utility modules use lower camelCase file names | `apiFetch.ts`, `contentModel.ts` |
+| Test files are co-located with `.test.ts` / `.test.tsx` suffixes | `usePageGeneration.test.ts`, `SfGovPreview.test.tsx` |
+| Constants are upper snake case | `SYSTEM_PROMPT`, `MAX_GENERATION_RETRIES`, `QUALITY_GATE_MIN_SCORE` |
 
-  const generate = useCallback(async (userInput: PageGenerationRequest) => {
-    setIsGenerating(true);
-    setError(null);
-    try {
-      const response = await pagesApi("POST", "/api/chat", { ...userInput });
-      // Handle streaming response
-      setOutput(response);
-    } catch (err) {
-      setError(String(err));
-    } finally {
-      setIsGenerating(false);
-    }
-  }, []);
+## Error-Handling Conventions
 
-  return { isGenerating, output, error, generate };
-}
-```
-
-### Component Structure
-
-```typescript
-// React functional components with hooks
-export function MyComponent({ prop1, prop2 }: MyComponentProps) {
-  const { state, setState } = useState(...);
-  const { pages } = usePagesData();
-  const memoized = useMemo(() => { ... }, [deps]);
-  
-  useEffect(() => {
-    // side effects
-  }, [deps]);
-
-  return (
-    <div className="component-class">
-      {/* JSX */}
-    </div>
-  );
-}
-```
-
-### Props Typing
-
-```typescript
-interface ComponentProps {
-  onView?: () => void;              // Optional callback
-  page: PageDraft;                  // Required object
-  text: string;                     // Required string
-  count?: number;                   // Optional number
-  items: TodoItem[];                // Required array
-  children?: React.ReactNode;       // React children
-}
-```
-
-## Backend (Express) Patterns
-
-### Route Structure (server.js)
-
-All routes defined in a single file (`server.js`). Each route follows:
-
-```typescript
-app.post("/api/resource", async (req, res) => {
-  // 1. Validate input
-  if (!isValidRequest(req.body)) {
-    return res.status(400).json({ error: "Invalid input" });
-  }
-
-  // 2. Log with request ID
-  logWithRequest(res, "stage", "Starting request", { extra: "data" });
-
-  // 3. Execute business logic (try-catch)
-  try {
-    const result = await doSomething(req.body);
-    logWithRequest(res, "stage", "Success", { result });
-    return res.json(result);
-  } catch (error) {
-    logWithRequest(res, "stage", "Error", { error: String(error) });
-    return res.status(500).json({ error: getErrorMessage(error) });
-  }
-});
-```
-
-### Error Handling
-
-```typescript
-// Server-wide error format
-const getErrorMessage = (error) => formatPersistenceError(error);
-
-// Request logging with tracing
-const logWithRequest = (reqOrRes, stage, message, extra = {}) => {
-  const requestId = reqOrRes?.locals?.requestId || "no-request-id";
-  const payload = { requestId, stage, message, ...extra };
-  console.log(JSON.stringify(payload));
-};
-
-// Anthropic API error handling
-try {
-  const response = await postAnthropic(body, timeoutMs, retries);
-  // handle response
-} catch (error) {
-  if (attempt === retries) throw error;
-  attempt += 1;
-}
-```
-
-### Async/Await
-
-- Always use `async`/`await` over `.then()` chains
-- Wrap in `try-catch` for Express routes
-- Use `withTimeout()` utility for long-running operations (default 45s)
-
-## Data Parsing & Normalization
-
-### Page Parsing (pageParser.ts)
-
-AI output is unstructured text. Parser extracts structured fields:
-
-```typescript
-// Pattern: parse raw text into PageDraft fields
-const fields = {
-  name: extractField(raw, "PAGE NAME:"),
-  userType: extractField(raw, "PRIMARY USER:"),
-  userGoal: extractField(raw, "USER GOAL:"),
-  pageType: extractField(raw, "PAGE TYPE:"),
-  draft: extractField(raw, "PAGE DRAFT|## "),  // Longest trailing content
-  // ... more fields
-};
-```
-
-### Sanitization (utils.ts)
-
-```typescript
-// clean(value: unknown): string
-// Sanitize page names, descriptions by trimming & escaping HTML
-export const clean = (value) => {
-  if (typeof value !== "string") return "";
-  return value.trim().replace(/<[^>]*>/g, "");  // Strip tags
-};
-```
-
-## Database Conventions
-
-### PostgreSQL Schema
-
-```sql
--- Pages table (persists PageDraft)
-CREATE TABLE pages (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  user_type TEXT,
-  user_goal TEXT,
-  purpose TEXT,
-  page_type TEXT,
-  components TEXT,
-  relationships TEXT,
-  duplication TEXT,
-  enforcement TEXT,
-  draft TEXT,
-  integration TEXT,
-  valid BOOLEAN,
-  raw TEXT,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  karl_connected BOOLEAN DEFAULT false,
-  karl_evaluation JSONB,
-  review_status TEXT
-);
-
--- Todos table (task/queue items)
-CREATE TABLE todos (
-  id TEXT PRIMARY KEY,
-  title TEXT NOT NULL,
-  description TEXT,
-  status TEXT,
-  page_id TEXT,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  queue_index INT
-);
-
--- Page versions (snapshots for history)
-CREATE TABLE page_versions (
-  id SERIAL PRIMARY KEY,
-  page_id TEXT NOT NULL,
-  snapshot JSONB NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-```
-
-### File-Based Fallback
-
-State serialized as JSON with nested arrays:
-
-```json
-{
-  "meta": { "nextIds": { "todos": 1, "planned_pages": 1, ... } },
-  "pages": [ { "id": "...", "name": "...", ... } ],
-  "todos": [ { "id": "...", "title": "...", ... } ],
-  "planned_pages": [ { "name": "...", "page_type": "...", ... } ],
-  "user_preferences": [ ... ],
-  "page_versions": [ ... ]
-}
-```
-
-## Error Codes & Messages
-
-| Code | Message | Cause |
-|------|---------|-------|
-| 400 | Invalid request body | Malformed JSON or missing required fields |
-| 500 | ANTHROPIC_API_KEY is not configured | Environment variable not set |
-| 500 | Operation timed out after {ms}ms | Request exceeded timeout window |
-| 502 | Upstream returned empty response body | Anthropic API returned invalid response |
-| [Database error] | Various | Persistence layer failure |
+- Server request validators return `400` with route-specific error text on invalid bodies.
+- Non-critical frontend refresh/mutation flows often swallow errors intentionally to keep the authoring flow moving.
+- Persistence initialization logs and falls back to file mode instead of crashing the process when Postgres startup fails.
+- Streaming and parsing helpers ignore malformed partial events and continue when possible.
 
 ## Testing Conventions
 
-### Test File Placement
+- Tests live next to the code they cover under `src/`.
+- Vitest is the default runner for unit and integration-style tests.
+- API route tests use `supertest`.
+- Coverage config includes `src/**/*.ts` and `src/**/*.tsx` but excludes test files.
 
-- **Unit tests:** `src/**/*.test.ts` (hooks, utils, services)
-- **Component tests:** `src/components/**/*.test.tsx` (UI)
-- **Integration tests:** `src/server.api.test.ts` (Express routes via supertest)
+## Documentation and Design Conventions
 
-### Test Patterns
+- `DESIGN.md` is the checked-in UI/design source of truth.
+- `docs/codebase/` is meant to reflect current code, not aspirational design.
+- Unknowns should be documented explicitly rather than inferred.
 
-```typescript
-// Vitest + supertest
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import request from "supertest";
-import app from "../server.js";
+## Intent Gaps
 
-describe("POST /api/pages", () => {
-  it("should create a page", async () => {
-    const res = await request(app)
-      .post("/api/pages")
-      .send({ name: "Test Page", pageType: "Information" })
-      .expect(200);
-    
-    expect(res.body).toHaveProperty("id");
-  });
-});
-```
-
-## CSS Conventions
-
-### Global Styles (src/index.css)
-
-```css
-:root {
-  --color-primary: #185FA5;
-  --color-text-success: #22a94c;
-  --color-text-error: #d12828;
-}
-
-* {
-  box-sizing: border-box;
-}
-```
-
-### Component Styles
-
-- CSS Modules for scoped styles: `Component.module.css`
-- BEM-like naming for complex components: `.component__child--modifier`
-- Inline styles avoided; all CSS in `.css` files
-
-## Comment Style
-
-### TypeScript Comments
-
-```typescript
-// Single-line comments for brief notes
-const value = 5;
-
-/** JSDoc for public functions/types */
-export function generatePage(input: PageGenerationRequest): Promise<PageDraft> { ... }
-
-// Inline comments explain *why*, not *what*
-if (condition) {
-  // This check prevents duplicate processing in file mode
-  result = process(data);
-}
-```
-
-### TODO/FIXME Tracking
-
-- TODOs in production code logged during scan
-- Known issues in `CONCERNS.md`
-- Test TODOs in `src/**/*.test.ts` (not counted as production debt)
-
-## Import Organization
-
-```typescript
-// React & Node core first
-import React, { useState, useCallback } from "react";
-import { readFile } from "node:fs/promises";
-
-// Third-party libraries
-import express from "express";
-import { Pool } from "pg";
-
-// Local utilities & types
-import { PageDraft } from "./types";
-import { clean, pagesApi } from "./utils";
-import "./App.css";
-```
-
-## Environment Variables
-
-### Reading Env Vars
-
-```javascript
-// Backend reads from .env via node --env-file=.env
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const DATABASE_URL = process.env.DATABASE_URL;
-
-// Validation
-if (!ANTHROPIC_API_KEY) {
-  console.log("Warning: ANTHROPIC_API_KEY not configured");
-}
-```
-
-### Required vs. Optional
-
-| Var | Required | Default | Purpose |
-|-----|----------|---------|---------|
-| `ANTHROPIC_API_KEY` | Yes | — | Claude API key |
-| `DATABASE_URL` | No | — | PostgreSQL connection (falls back to file) |
-| `DB_FALLBACK_MODE` | No | — | Set to `file` to force file-based DB |
-| `GOOGLE_SERVICE_ACCOUNT_KEY` | No | — | Legacy backend-only Google credential support |
+- [TODO] There is no checked-in formatter or linter config establishing whitespace, quote-style, or import-order enforcement. Current conventions are best-effort observations from existing files.
 
 ## Evidence
 
-- `src/types.ts`: type definitions and naming conventions
-- `src/utils.ts`: sanitization & utility patterns
-- `server.js`: Express route structure, error handling
-- `lib/persistence.js`: database schema & file fallback
-- `src/hooks/*.ts`: custom React hook patterns
-- `src/**/*.test.ts`: test file organization
-- `src/**/*.css`: CSS conventions
-- `tsconfig.json`: TypeScript strict mode configuration
-- `package.json`: `"type": "module"` (ESM format)
+- `package.json`
+- `src/types.ts`
+- `src/utils/contentModel.ts`
+- `src/context/WorkspaceContext.tsx`
+- `src/utils/api.ts`
+- `src/utils/apiFetch.ts`
+- `src/services/pageParser.ts`
+- `src/generationValidation.ts`
+- `lib/requestSchemas.js`
+- `server.js`
+- `DESIGN.md`

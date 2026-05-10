@@ -1,417 +1,108 @@
-# TESTING.md — Test Strategy, Organization & Mocking
+# TESTING.md — Test Strategy and Coverage
 
-## Test Framework & Setup
+## Test Stack
 
-| Tool | Version | Purpose |
-|------|---------|---------|
-| **Vitest** | ^3.2.4 | Unit + integration test runner |
-| **supertest** | ^7.1.1 | HTTP assertion library (API testing) |
-| **@testing-library/react + jsdom** | current | Component rendering and interaction tests |
+| Tool | Purpose |
+|---|---|
+| Vitest | Main test runner |
+| jsdom / node environments | Component/hook tests and server-style tests |
+| Testing Library | React component assertions |
+| supertest | Express API endpoint tests |
+| V8 coverage | Coverage output through Vitest |
 
-### Running Tests
+`vitest.config.ts` sets:
 
-```bash
-npm test                 # Run all tests (Vitest default)
-npm run test:watch      # Watch mode (rerun on file changes)
-```
+- `environment: "node"`
+- `include: ["src/**/*.test.ts", "src/**/*.test.tsx"]`
+- coverage include on `src/**/*.ts` and `src/**/*.tsx`
 
-### Test Discovery
-- **Glob pattern:** `src/**/*.test.ts` and `src/**/*.test.tsx`
-- **Configuration:** `vitest.config.ts` (minimal; mostly defaults)
+## Test Organization
 
----
-
-## Test File Organization
+Tests are co-located with source under `src/` and use `.test.ts` / `.test.tsx` suffixes. There is not a separate top-level `tests/` tree for the main application.
 
-### By Type
+## Coverage Areas Present
 
-#### Unit Tests (Business Logic)
+### Backend/API behavior
 
-```
-src/utils.test.ts                    # Utility functions: clean(), pagesApi(), etc.
-src/hooks/useQueueRunner.test.ts     # Queue execution logic
-src/karlCitations.test.ts            # Karl standards integration
-src/components/IdealSiteMap.test.ts  # Sitemap visualization logic
-```
-
-**Scope:** Pure functions, state logic, domain calculations (no DOM/network mocking required).
-
-#### Component Tests (React)
-
-```
-src/components/ui.test.tsx           # UI atom components (Badge, Button, Card, etc.)
-src/components/SfGovPreview.test.tsx # Page preview renderer
-src/components/SfGovContentDesignTool.test.tsx # Main design tool
-```
-
-**Scope:** Component rendering, event handling, state updates (mocked children/props).
-
-#### Integration Tests (API)
-
-```
-src/server.api.test.ts               # Express routes (supertest)
-src/server.file-db.test.ts           # File-based persistence
-```
-
-**Scope:** Full HTTP request/response cycle, database operations, actual error responses.
-
-### By Feature
-
-```
-[Feature Area]
-├── index.ts (or App.tsx)
-├── types.ts
-├── utils.ts
-├── utils.test.ts
-├── components/
-│   ├── Component.tsx
-│   └── Component.test.tsx
-└── hooks/
-    ├── useHook.ts
-    └── useHook.test.ts
-```
-
----
-
-## Test Patterns & Conventions
-
-### Unit Test Template
-
-```typescript
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { clean, normalizePageName } from "../utils";
-
-describe("utils: clean()", () => {
-  it("should trim whitespace", () => {
-    const result = clean("  hello  ");
-    expect(result).toBe("hello");
-  });
+| File | Focus |
+|---|---|
+| `src/server.api.test.ts` | Request validation, rate limiting, malformed payload rejection, route guards |
+| `src/server.concepts.test.ts` | Concept, IA, artifact, build-queue, and health endpoints |
+| `src/server.file-db.test.ts` | File fallback behavior, pages/todos/preferences persistence, version retention and restore |
+| `src/persistence.postgres.test.ts` | Postgres-mode initialization and normalized concept persistence |
 
-  it("should remove HTML tags", () => {
-    const result = clean("<p>hello</p>");
-    expect(result).toBe("hello");
-  });
-
-  it("should handle null/undefined gracefully", () => {
-    expect(clean(null)).toBe("");
-    expect(clean(undefined)).toBe("");
-  });
-});
-```
-
-### Component Test Template
-
-```typescript
-import { describe, it, expect } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { Badge } from "./ui";
-
-describe("Badge Component", () => {
-  it("should render with type class", () => {
-    render(<Badge type="Transaction" />);
-    const badge = screen.getByRole("img", { hidden: true });
-    expect(badge).toHaveClass("badge--transaction");
-  });
-
-  it("should trigger onClick callback", () => {
-    const onClick = vitest.fn();
-    render(<Badge type="Information" onClick={onClick} />);
-    fireEvent.click(screen.getByRole("img", { hidden: true }));
-    expect(onClick).toHaveBeenCalledOnce();
-  });
-});
-```
-
-### API Integration Test Template
-
-```typescript
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import request from "supertest";
-import app from "../server";
-
-describe("POST /api/pages", () => {
-  it("should create a page and return PageDraft", async () => {
-    const response = await request(app)
-      .post("/api/pages")
-      .send({
-        name: "Test Page",
-        userType: "General public",
-        pageType: "Information",
-        purpose: "Test"
-      })
-      .expect(200);
-
-    expect(response.body).toHaveProperty("id");
-    expect(response.body.name).toBe("Test Page");
-  });
-
-  it("should return 400 if required fields missing", async () => {
-    const response = await request(app)
-      .post("/api/pages")
-      .send({ name: "Incomplete" })
-      .expect(400);
-
-    expect(response.body).toHaveProperty("error");
-  });
-});
-```
-
----
-
-## Mocking Strategy
-
-### What We Mock
-
-| Target | Strategy | Reason |
-|--------|----------|--------|
-| **Anthropic API** | Manual mock (server.js posts real requests) | We want to verify contract; tests may hit real API |
-| **Database** | Actual file-based DB (`.local/test-db.json`) | Integration tests verify DB operations |
-| **HTTP responses** | supertest intercepts (no network) | Vite proxy not active during tests |
-| **React hooks** | Actual hook execution (no wrapper) | Test components with real hooks |
-| **DOM** | No DOM library; inline assertions | Minimal UI logic (mostly data binding) |
-
-### Planned Mocking Improvements
-
-- [ ] Mock Anthropic API for deterministic tests (reduce latency)
-- [ ] Mock file I/O for unit tests (currently hits disk)
-- [ ] Test fixtures for common PageDraft shapes
-- [ ] Mock Google Drive API (legacy; low priority)
-
----
-
-## Test Coverage
-
-### Current State
-
-Coverage is configured in `vitest.config.ts` with:
-
-```bash
-npm test
-# reporters: text, json, html (v8 provider)
-```
-
-### Target Coverage
-- **Utilities (utils.ts):** 90%+ (pure functions, deterministic)
-- **Hooks:** 70%+ (state logic, async calls)
-- **Components:** 60%+ (rendering, event handling)
-- **Server routes:** 70%+ (critical paths: /api/chat, /api/evaluate, /api/pages CRUD)
-- **Persistence:** 80%+ (file & DB operations)
-
-### Known Coverage Gaps
-
-| Module | Gap | Reason |
-|--------|-----|--------|
-| `server.js` | Anthropic error cases | Hard to mock; may require real API |
-| `usePagesData.ts` | Network failures | Timeouts not tested |
-| `components/tabs/*` | Navigation edge cases | Complex state flow |
-| `pageParser.ts` | Malformed AI output | Requires test fixtures |
-
----
-
-## Test Data & Fixtures
-
-### Location
-```
-src/fixtures/
-```
+### Generation and parsing
 
-### Fixture Categories
-
-Fixtures are mostly inline today. Typical shapes used in tests:
-
-```typescript
-const FIXTURE_PAGE_DRAFT: PageDraft = {
-  id: "test-123",
-  name: "Test Page",
-  userType: "General public",
-  pageType: "Information",
-  purpose: "For testing",
-  // ... rest of fields
-};
-
-const FIXTURE_KARL_EVALUATION: KarlEvaluation = {
-  score: 85,
-  grade: "B",
-  summary: "Meets standards with minor improvements",
-  passed: ["naming", "components"],
-  warnings: ["cta-clarity"],
-  failed: []
-};
-```
-
-### Fixture Metrics
-
-To report fixture statistics:
-
-```bash
-npm run metrics:fixtures
-```
-
-Output: Summary of fixture shape, field cardinality, edge cases.
-
----
-
-## Common Test Scenarios
-
-### Testing Async API Calls
-
-```typescript
-it("should handle async page generation", async () => {
-  const hook = renderHook(() => usePageGeneration());
-
-  act(() => {
-    hook.result.current.generate({
-      userType: "Tenant",
-      userGoal: "Report a problem",
-      pageType: "Transaction"
-    });
-  });
-
-  expect(hook.result.current.isGenerating).toBe(true);
-
-  await waitFor(() => {
-    expect(hook.result.current.isGenerating).toBe(false);
-  });
-
-  expect(hook.result.current.output).toBeTruthy();
-});
-```
-
-### Testing Error Handling
-
-```typescript
-it("should handle API errors gracefully", async () => {
-  // Arrange: mock failed API
-  vitest.mock("../services/pagesApi", () => ({
-    pagesApi: () => Promise.reject(new Error("Network error"))
-  }));
-
-  // Act
-  const { result } = renderHook(() => usePageGeneration());
-  await act(() => result.current.generate({ ... }));
-
-  // Assert
-  expect(result.current.error).toContain("Network error");
-});
-```
-
-### Testing Database Fallback
-
-```typescript
-it("should fall back to file DB if PostgreSQL unavailable", async () => {
-  // Set DB_FALLBACK_MODE=file env var
-  process.env.DB_FALLBACK_MODE = "file";
-
-  const db = await createPersistence();
-  const page = await db.pages.create({ name: "Test", ... });
-
-  expect(page).toHaveProperty("id");
-  // Verify file was written to .local/hhvc-local-db.json
-});
-```
-
----
-
-## Test Execution Flow
-
-### Development Workflow
-```
-1. npm run dev                # Start dev servers
-2. Edit code
-3. npm run test:watch        # Auto-run affected tests
-4. Review output
-5. Fix failures
-```
-
-### CI/CD Workflow (if configured)
-```
-1. npm install
-2. npm test                  # Run all tests (exit 1 if fail)
-3. npm run build             # Verify production build
-4. Deploy (if 1-3 pass)
-```
-
-### Manual Pre-Deployment
-```bash
-npm test                     # Full test suite
-npm run build                # Production build
-npm run preview              # Preview production build
-```
-
----
-
-## Known Testing Challenges
-
-### 1. AI Output Parsing
-**Challenge:** AI responses can vary and are hard to validate with only happy-path fixtures.  
-**Workaround:** Expand synthetic fixtures for malformed and edge-case responses.
-
-### 2. Streaming Responses
-**Challenge:** Testing streaming chunks requires special handling  
-**Status:** Not currently tested; supertest handles basic HTTP testing
-
-### 3. Database Isolation
-**Challenge:** File DB writes to disk; can interfere with parallel tests  
-**Workaround:** Use unique DB paths per test or mock file I/O
-
-### 4. React Hook Ordering
-**Challenge:** Hooks called in different render orders may cause state inconsistencies  
-**Status:** Minimal custom hooks reduce complexity; standard patterns used
-
----
-
-## Performance Testing
-
-**Status:** No benchmark/performance test suite is configured yet.
-
-### To Enable (Optional)
-```typescript
-// vitest.config.ts
-import { defineConfig } from "vitest/config";
-
-export default defineConfig({
-  test: {
-    benchmark: {
-      include: ["src/**/*.bench.ts"],
-      include: ["src/**/*.perf.ts"]
-    }
-  }
-});
-```
-
-### Candidate Benchmarks
-- Page generation latency (E2E)
-- Page parsing performance (large drafts)
-- File DB I/O (read/write times)
-- Query performance (PostgreSQL)
-
----
-
-## Debugging Tests
-
-### Verbose Output
-```bash
-npm test -- --reporter=verbose
-```
-
-### Single Test
-```bash
-npm test -- --grep "should clean HTML tags"
-```
-
-### Debug Mode (Node Inspector)
-```bash
-node --inspect-brk ./node_modules/vitest/vitest.mjs
-# Then connect DevTools to chrome://inspect
-```
-
----
+| File | Focus |
+|---|---|
+| `src/hooks/usePageGeneration.test.ts` | Generation success path, remediation after failing evaluation, visible `Consulting Karl...` progress, retry budget of 2 |
+| `src/generationValidation.test.ts` | Page-type/component/placeholder validation |
+| `src/services/pageParser.test.ts` | Structured parse repair flow |
+| `src/services/chatStream.test.ts` | SSE parsing, progress callbacks, Karl tool detection |
+| `src/utils.test.ts` | Prompt contract, quality gate, parsing helpers, overlap detection, exports |
+
+### Canonical IA and content model
+
+| File | Focus |
+|---|---|
+| `src/canonicalIa.test.ts` | Working canonical tree construction |
+| `src/contentModel.test.ts` | Page-type/content-type mapping behavior |
+| `src/hhvcCanonicalWorkingIaSeed.test.ts` | Seed completeness and placement invariants |
+| `src/syncCanonicalWorkingIa.test.ts` | Sync and idempotence behavior |
+
+### Frontend state and UI
+
+| File | Focus |
+|---|---|
+| `src/hooks/usePagesData.test.ts` | Loading, hydration, legacy migration, delete behavior |
+| `src/hooks/usePlanMap.test.ts` | Planned-page loading, seeding, linking, deletion |
+| `src/hooks/useProjectModel.test.ts` | Bulk normalized-model loading |
+| `src/hooks/useQueueRunner.test.ts` | Queue sequencing and stop behavior |
+| `src/hooks/useVersionHistory.test.ts` | Version history UI logic |
+| `src/hooks/useWorkspaceState.test.ts` | Selection/edit buffer workspace state |
+| `src/components/SfGovContentDesignTool.test.tsx` | Studio shell rendering and interaction |
+| `src/components/SfGovPreview.test.tsx` | Preview rendering rules |
+| `src/components/IdealSiteMap.test.tsx` | Reference-only ideal map rendering |
+| `src/components/ui.test.tsx` | Basic UI primitive guarantees |
+
+## What The Current Tests Prove
+
+- The current app contract includes both legacy queue/planned-page behavior and the newer normalized model endpoints.
+- Postgres and file fallback paths both have direct test coverage.
+- The generation flow is not a single API call; it includes parse repair, local validation, evaluation, conditional remediation, and re-evaluation.
+- The frontend shell and key hooks are covered by targeted unit/integration-style tests.
+
+## Practical Test Commands
+
+| Command | Use |
+|---|---|
+| `npm test` | Full test suite |
+| `npm run test:watch` | Watch mode |
+| `npx vitest run src/hooks/usePageGeneration.test.ts` | Single high-value generation test file |
+
+## Testing Caveats
+
+- `src/server.api.test.ts`, `src/server.concepts.test.ts`, and `src/server.file-db.test.ts` set up environment variables in-process; they are not black-box deployed-environment tests.
+- Coverage is configured against `src/`, so backend code living in root `server.js` or `lib/` is exercised indirectly through tests rather than included directly by the coverage include glob.
+- The repo contains Playwright-based UI audit tooling, but the main checked-in automated suite is still Vitest-centric.
+
+## Unknowns
+
+- [TODO] No CI workflow file was inspected in this refresh, so this document does not assert which subsets run automatically in CI versus locally.
 
 ## Evidence
 
-- `vitest.config.ts`: test configuration
-- `src/**/*.test.ts`, `src/**/*.test.tsx`: test files
-- `package.json`: test scripts (`npm test`, `npm run test:watch`)
-- `src/server.api.test.ts`: supertest example (Express API testing)
-- `src/server.file-db.test.ts`: persistence layer testing
-- `scripts/report-fixture-metrics.mjs`: fixture reporting script
+- `package.json`
+- `vitest.config.ts`
+- `src/server.api.test.ts`
+- `src/server.concepts.test.ts`
+- `src/server.file-db.test.ts`
+- `src/persistence.postgres.test.ts`
+- `src/hooks/usePageGeneration.test.ts`
+- `src/generationValidation.test.ts`
+- `src/services/pageParser.test.ts`
+- `src/services/chatStream.test.ts`
+- `src/hooks/usePagesData.test.ts`
+- `src/hooks/usePlanMap.test.ts`
+- `src/hooks/useProjectModel.test.ts`
+- `src/canonicalIa.test.ts`

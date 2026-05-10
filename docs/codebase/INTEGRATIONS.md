@@ -1,387 +1,123 @@
-# INTEGRATIONS.md — External APIs, Services & Dependencies
+# INTEGRATIONS.md — External Systems and Boundaries
 
-## Anthropic Claude API
+## Active Integrations
 
-### Purpose
-AI-powered content generation, evaluation, and refinement for SF.gov pages.
+| Integration | Direction | Purpose |
+|---|---|---|
+| Anthropic Messages API | Server outbound | Generation, evaluation, and refinement |
+| Karl MCP server | Server outbound | Fetch targeted Karl guidance after failing quality gate |
+| Postgres / Neon-style connection string | Server outbound | Primary persistence path |
+| Local JSON file store | Local filesystem | Persistence fallback |
+| DOCX/PDF parsing libraries | In-process | Import text extraction |
 
-### Integration Points
+## Anthropic Integration
 
-#### 1. POST /api/chat (Page Generation)
-```
-POST https://api.anthropic.com/v1/messages
-Headers:
-  - Content-Type: application/json
-  - x-api-key: $ANTHROPIC_API_KEY
-  - anthropic-version: 2023-06-01
-  - anthropic-beta: mcp-client-2025-04-04
+### Endpoints that call Anthropic
 
-Request body:
-{
-  "model": "<frontend-selected model>",
-  "max_tokens": <user-specified>,
-  "system": [{ 
-    "type": "text", 
-    "text": <Karl-enhanced system prompt>,
-    "cache_control": { "type": "ephemeral" }
-  }],
-  "messages": [
-    { "role": "user", "content": "..." },
-    { "role": "assistant", "content": "..." },
-    // ... conversation history
-  ]
-}
-
-Response:
-  HTTP 200 with streaming body (ReadableStream)
-  OR 
-  HTTP error (400, 401, 429, 500, etc.)
-```
-
-**Models Used:**
-- `claude-sonnet-4-6`: Structure/refinement route
-- `claude-haiku-4-5`: Evaluation route
-
-**Timeout:** 60 seconds (retries up to 1 time on failure)
-
-**Prompt Caching:**
-- System prompt cached as ephemeral (request-scoped cache)
-- Reduces latency & token cost on repeated calls
-
-#### 2. POST /api/evaluate (Karl Evaluation)
-```
-Same endpoint, different request:
-  - model: "claude-haiku-4-5" (for speed)
-  - max_tokens: 1500
-  - system: Karl standards rules
-  - messages: page draft + evaluation prompt
-
-Response:
-{
-  "score": <0-100>,
-  "grade": "A" | "B" | "C" | "D" | "F",
-  "summary": "...",
-  "passed": [...],
-  "warnings": [...],
-  "failed": [...]
-}
-```
-
-#### 3. POST /api/improve-structure (Content Refinement)
-```
-Similar flow; uses refinement prompt to enhance page structure.
-```
-
-### Authentication
-- **Method:** API key in `x-api-key` header
-- **Source:** `process.env.ANTHROPIC_API_KEY`
-- **Failure:** 500 error if not configured; app starts but AI endpoints disabled
-
-### Retry Logic
-```javascript
-const postAnthropic = async (body, timeoutMs = 45000, retries = 1) => {
-  let attempt = 0;
-  while (attempt <= retries) {
-    try {
-      const response = await withTimeout(
-        () => fetch("https://api.anthropic.com/v1/messages", { ... }),
-        timeoutMs
-      );
-      return response;
-    } catch (error) {
-      if (attempt === retries) throw error;
-      attempt += 1;
-    }
-  }
-};
-```
-
-### Error Handling
-- Timeouts → Retry once
-- Invalid API key → 401 (returned as-is to frontend)
-- Rate limit (429) → Retry once, then fail
-- Upstream error (500+) → Return 502 to client
-
-### Evidence
-- `server.js`: `/api/chat`, `/api/evaluate`, `/api/improve-structure` routes
-- `lib/karlCitations.js`: system prompt injection with cache control
-- `src/services/chatStream.ts`: frontend streaming response handling
-
----
-
-## Karl Content Standards (SF.gov)
-
-### Purpose
-Ensures all generated pages comply with SF.gov content design rules, component library, and information architecture.
-
-### Integration Method
-**Prompt Injection:** System prompt enhanced via `withKarlCitations()` utility.
-
-```javascript
-// lib/karlCitations.js
-const withKarlCitations = (baseSystemPrompt) => {
-  const karlRules = `
-    REAL KARL PAGE TYPES: Transaction, Information, Step by step, Location, ...
-    REAL KARL COMPONENTS: Address, Media, Profile, Title, Description, ...
-    NAMING RULES: Transactions start with "Report..." or "Fix..."
-    ...
-  `;
-  return baseSystemPrompt + '\n\n' + karlRules;
-};
-```
-
-### What Karl Checks
-- **Page naming** — matches required patterns
-- **Page type** — valid Karl types only
-- **Components** — uses only approved Karl components
-- **User language** — 6th-grade reading level, plain language
-- **Scope** — HHVC-only content; no DBI overlap
-- **CTAs** — correct routing (311, landlord notice, etc.)
-- **Jurisdiction safeguards** — avoids overstating enforcement authority
-
-### Fallback Behavior
-If Karl service is unreachable or unavailable:
-- Log warning
-- Continue with base system prompt (no Karl rules)
-- Page generation proceeds unaffected
-
-### Configuration
-- No explicit configuration needed
-- Rules hardcoded in `src/constants.ts` (SYSTEM_PROMPT, KARL_PAGE_TYPES)
-- Can be updated by editing `constants.ts` and redeploying
-
-### Evidence
-- `lib/karlCitations.js`: `withKarlCitations()` function
-- `src/constants.ts`: `KARL_PAGE_TYPES`, `SYSTEM_PROMPT` (includes full Karl guidance)
-- `server.js`: `/api/evaluate` route uses Karl evaluation rules
-
----
-
-## PostgreSQL Database (Neon)
-
-### Purpose
-Primary persistent storage for pages, todos, page versions, and user preferences.
-
-### Connection Details
-```
-Host: Neon endpoint (from DATABASE_URL)
-Port: 5432
-SSL: Required (sslmode=require)
-Auth: Username + password (pooler credentials)
-```
-
-### Connection Pool
-```javascript
-import pkg from "pg";
-const { Pool } = pkg;
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
-});
-```
-
-### Tables
-
-| Table | Purpose | Key Fields |
-|-------|---------|-----------|
-| `pages` | PageDraft records | id, name, user_type, page_type, draft, created_at, karl_evaluation |
-| `todos` | Task/queue items | id, title, status, page_id, queue_index, created_at |
-| `planned_pages` | HHVC IA reference | name, page_type, user_type |
-| `page_versions` | Version history (snapshots) | id, page_id, snapshot (JSONB), created_at |
-| `user_preferences` | UI state (theme, layout) | user_id, key, value |
-
-### Version Retention Policy
-- **Max snapshots per page:** 50
-- **Eviction:** Oldest snapshots dropped after 50 versions created
-- **Retention constant:** `PAGE_VERSION_RETENTION` (lib/persistence.js)
-
-### Timeout & Connection Limits
-- Pool size uses `pg` defaults unless explicitly configured in persistence setup.
-- API calls to Anthropic are wrapped with route-specific timeout/retry logic in `server.js`.
-
-### Connection Failure Handling
-1. **Automatic fallback:** If connection fails, switch to file-based persistence
-2. **Silent degradation:** No user-facing errors; app continues with file DB
-3. **Env override:** Set `DB_FALLBACK_MODE=file` to skip DB connection attempt entirely
-
-### Evidence
-- `lib/persistence.js`: `pg.Pool` initialization, connection handling, fallback logic
-- `AGENTS.md`: `DATABASE_URL` env var documentation
-- `.env`: current PostgreSQL connection string (Neon)
-
----
-
-## File-Based Persistence (JSON)
-
-### Purpose
-Fallback storage when PostgreSQL is unavailable or when forced via `DB_FALLBACK_MODE=file`.
-
-### File Location
-```
-.local/hhvc-local-db.json
-```
-
-### Schema
-```json
-{
-  "meta": {
-    "nextIds": {
-      "todos": 1,
-      "planned_pages": 1,
-      "user_preferences": 1,
-      "page_versions": 1
-    }
-  },
-  "pages": [ { ...PageDraft }, ... ],
-  "todos": [ { ...TodoItem }, ... ],
-  "planned_pages": [ { ...PlannedPage }, ... ],
-  "user_preferences": [ { ...UserPreference }, ... ],
-  "page_versions": [ { page_id, snapshot, created_at }, ... ]
-}
-```
+| Route | Purpose |
+|---|---|
+| `POST /api/chat` | Main generation and repair chat path |
+| `POST /api/evaluate` | Karl evaluation of generated content |
+| `POST /api/improve-structure` | Revision/refinement pass |
 
 ### Behavior
-- **Read:** Entire file loaded into memory at startup
-- **Write:** Full file rewritten on every mutation (not incremental)
-- **Performance:** Acceptable for development; not recommended for production
-- **Concurrency:** No locking; last-write-wins (unsafe for multi-process)
 
-### Auto-Detection
-```javascript
-// Triggered if:
-// 1. DATABASE_URL not set
-// 2. Database connection fails
-// 3. DB_FALLBACK_MODE=file env var set
-try {
-  await pool.query("SELECT 1");
-  // Use PostgreSQL
-} catch (e) {
-  console.log("Falling back to file-based persistence");
-  // Use .local/hhvc-local-db.json
-}
-```
+- Requests use `fetch()` against `https://api.anthropic.com/v1/messages`.
+- `ANTHROPIC_API_KEY` is required for the AI routes to work.
+- The server wraps outbound calls with timeouts and limited retry behavior.
+- Generation streams back to the browser; evaluation/improvement are request/response calls.
 
-### Evidence
-- `lib/persistence.js`: `createPersistence()`, file I/O logic
-- `.local/hhvc-local-db.json`: actual file (generated at runtime)
+## Karl Guidance Integration
 
----
+The repo uses two Karl-related layers:
 
-## Google Drive API (Legacy)
+1. Local Karl prompt rules and citation helpers.
+2. Remote Karl MCP lookup through `lib/karlMcp.js`.
 
-### Status
-**Deprecated.** Frontend integration removed; backend code remains for backward compatibility.
+### Karl MCP configuration sources
 
-### Current Usage
-- **Backend:** Server still supports uploading to/downloading from Google Drive
-- **Frontend:** No UI for Drive operations
-- **Configuration:** legacy service-account key support remains backend-only (`GOOGLE_SERVICE_ACCOUNT_KEY` path/base64 in current docs)
+- `KARL_MCP_URL`
+- `KARL_MCP_CONFIG_PATH`
+- `.vscode/mcp.json`
+- VS Code user `mcp.json`
 
-### Routes (Disabled for Frontend)
-- `POST /api/drive/upload` [Disabled]
-- `GET /api/drive/list` [Disabled]
+### Karl remediation path
 
-### Deprecation Note
-Drive integration was removed because:
-- Cluttered frontend UI
-- OAuth flow complexity
-- File storage now local/database-backed
+- The frontend first validates and evaluates locally/through standard API routes.
+- Only when the quality gate returns `review_required` does it call `POST /api/karl-remediate`.
+- Karl remediation returns guidance lines; the frontend then feeds those warnings into the improve-structure pass.
 
-Cleanup direction:
-- Remove unused legacy Drive routes from `server.js`.
-- Remove remaining legacy Google credential references from docs.
+## Persistence Integration
 
-### Evidence
-- `server.js`: commented-out or removed Drive routes
-- `.env`: optional Google service-account key configuration (not actively used by core flows)
-- `CLAUDE.md`: notes Drive code removed from frontend
+### Postgres path
 
----
+- `createPersistence()` tries Postgres when `DATABASE_URL` is available and file mode is not forced.
+- Migrations run before the Postgres store is returned.
+- SSL-related query parameters may be normalized before the `pg.Pool` is created.
 
-## External Dependencies (npm)
+### File fallback path
 
-### Production Dependencies
+- If file mode is forced or Postgres is missing/unavailable, the app uses a local JSON store.
+- Default location: `.local/hhvc-local-db.json`
+- File fallback preserves the same high-level API contract exposed by the app.
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `express` | ^4.22.1 | HTTP web framework |
-| `react` | ^18.3.1 | UI framework |
-| `react-dom` | ^18.3.1 | React DOM rendering |
-| `pg` | ^8.20.0 | PostgreSQL client |
-| `html-to-image` | ^1.11.13 | Canvas-based image capture |
-| `html2canvas` | ^1.4.1 | HTML to canvas (PDF export) |
-| `jspdf` | ^4.2.1 | PDF generation |
-| `jszip` | ^3.10.1 | ZIP archive handling (Word parsing) |
-| `mammoth` | ^1.12.0 | Word (.docx) parser |
-| `pdf-parse` | ^2.4.5 | PDF text extraction |
+## CORS and Write Protection
 
-### Dev Dependencies
+### CORS
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `typescript` | ^5.9.3 | Type checking |
-| `vite` | ^5.4.21 | Build tool & dev server |
-| `vitest` | ^3.2.4 | Unit test framework |
-| `supertest` | ^7.1.1 | HTTP assertion library (API testing) |
-| `@vitejs/plugin-react` | ^4.7.0 | React Fast Refresh for Vite |
-| `@types/react` | ^18.3.28 | TypeScript types for React |
-| `@types/pg` | ^8.20.0 | TypeScript types for pg |
+- Default allowed browser origins include `http://localhost:5000` and `http://127.0.0.1:5000`.
+- Extra origins can be supplied through `CORS_ORIGINS`, `CORS_ORIGIN`, `URL`, `DEPLOY_PRIME_URL`, and `DEPLOY_URL`.
 
-### Unused/Deprecated
-- `@types/supertest` (installed but rarely needed)
+### Optional admin-token protection
 
-### Evidence
-- `package.json`: all dependencies listed
-- `package-lock.json`: locked versions for reproducibility
+- When `ADMIN_TOKEN` or `HHVC_ADMIN_TOKEN` is configured, non-GET `/api/*` routes require `x-admin-token`.
+- The frontend can inject this header automatically through `VITE_ADMIN_TOKEN` or the value persisted in local storage.
 
----
+## Imported Content Boundaries
 
-## No Third-Party Integrations
+| Library | Purpose |
+|---|---|
+| `mammoth` | DOCX-to-text extraction |
+| `pdf-parse` | PDF-to-text extraction |
 
-The following are **NOT** used despite common assumptions:
+These are in-process libraries, not remote services.
 
-| Service | Status | Why |
-|---------|--------|-----|
-| **ESLint** | Not configured | TypeScript is primary static analysis |
-| **Prettier** | Not configured | Manual formatting or team preference |
-| **GraphQL** | Not used | REST API via Express sufficient |
-| **WebSockets** | Not used | HTTP streaming sufficient for AI responses |
-| **Redis** | Not used | File/DB fallback handles caching |
-| **Authentication** | Not used | No user auth (single-user tool) |
-| **Monitoring/APM** | Not configured | Logs to stdout; external aggregation possible |
+## Route Surface To Preserve
 
----
+The current externally consumed HTTP surface includes:
 
-## Environment Variables Summary
+- `GET /api/health`
+- `POST /api/chat`
+- `POST /api/evaluate`
+- `POST /api/improve-structure`
+- `POST /api/karl-remediate`
+- `GET/POST/DELETE /api/preferences`
+- `GET/POST/DELETE /api/pages`
+- `PATCH /api/pages/:id/review`
+- `GET /api/pages/:id/versions`
+- `GET /api/pages/:id/versions/:versionId`
+- `POST /api/pages/:id/restore/:versionId`
+- `GET/POST/PATCH/DELETE /api/todos`
+- `GET/POST/PATCH/DELETE /api/planned-pages`
+- `GET/POST/PATCH /api/page-concepts`
+- `GET /api/ia-nodes`
+- `GET /api/page-artifacts`
+- `POST /api/page-artifacts/:id/promote`
+- `GET/POST /api/artifact-variants`
+- `GET /api/reference-examples`
+- `GET/POST/PATCH/DELETE /api/build-queue`
 
-### Required for AI Features
-```bash
-ANTHROPIC_API_KEY=sk-ant-...
-```
+## Unknowns
 
-### Optional for Database
-```bash
-DATABASE_URL=postgresql://...        # If not set, uses file fallback
-DB_FALLBACK_MODE=file                # Force file mode (skip DB attempt)
-```
-
-### Optional for Google Drive (Legacy)
-```bash
-GOOGLE_SERVICE_ACCOUNT_KEY=...   # No longer active in frontend
-```
-
-### Server Startup
-```bash
-node --env-file=.env server.js       # Reads .env at startup only
-```
-
----
+- [TODO] The repo does not show production secrets management or hosted service provisioning details; this file documents application-facing integration code only.
 
 ## Evidence
 
-- `package.json`: dependency list, scripts
-- `server.js`: Anthropic API calls, Express routes
-- `lib/persistence.js`: database connection, file I/O
-- `AGENTS.md`: environment variable documentation
-- `.env`: current configuration (contains secrets)
-- `src/services/chatStream.ts`: streaming API client
+- `server.js`
+- `lib/karlMcp.js`
+- `lib/karlCitations.js`
+- `lib/persistence.js`
+- `lib/migrations/runner.js`
+- `src/hooks/usePageGeneration.ts`
+- `src/utils/api.ts`
+- `src/utils/apiFetch.ts`
