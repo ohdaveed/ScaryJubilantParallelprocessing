@@ -1,12 +1,19 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
 coverage/
+
+# Environment variables
 .env
 .env.*
+
+# Credentials and secrets
 credentials.json
 token.json
 *-service-account*.json
-hhvc-drive-sa..json
+hhvc-drive-sa.json
 
 # IDEs and Editors
 .vscode/*
@@ -18,26 +25,28 @@ hhvc-drive-sa..json
 .cursor/
 *.code-workspace
 
-# AI Tools and Environments
+# AI tools and environments
 .replit
-replit.nix
 replit.md
+replit.nix
 .windsurfrules
-CLAUDE.md
 AGENTS.md
-docs/notes/conversation.md
+CLAUDE.md
 .superdesign/
 .superpowers/
 
+# AI conversation artifacts
+docs/notes/conversation.md
+
 # Local state and databases
 .local/
+hhvc-local-db.json
 lock.json
 skills-lock.json
-hhvc-local-db.json
 
 # Cache and temporary files
-.deno/
 .config/
+.deno/
 .playwright-ui-audit/
 
 # Logs
@@ -50,6 +59,7 @@ pnpm-debug.log*
 # Assets
 attached_assets/
 
-# YoYo AI version control directory
-.yoyo/
+# AI version control directories
+.gstack/
 .worktrees/
+.yoyo/
