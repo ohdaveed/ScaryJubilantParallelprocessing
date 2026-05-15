@@ -41,22 +41,42 @@ export const TodoPanel = memo(function TodoPanel({
   };
 
   const toggle = async (id: number, currentDone: boolean) => {
-    setTodos(prev => prev.map(t => t.id === id ? { ...t, done: !currentDone } : t));
-    try { await todosApi.toggle(id, !currentDone); } catch {}
+    let previous: TodoItem[] = [];
+    setTodos(prev => {
+      previous = prev;
+      return prev.map(t => t.id === id ? { ...t, done: !currentDone } : t);
+    });
+    try {
+      await todosApi.toggle(id, !currentDone);
+    } catch {
+      setTodos(previous);
+    }
   };
 
   const remove = async (id: number) => {
-    setTodos(prev => prev.filter(t => t.id !== id));
-    try { await todosApi.delete(id); } catch {}
+    let previous: TodoItem[] = [];
+    setTodos(prev => {
+      previous = prev;
+      return prev.filter(t => t.id !== id);
+    });
+    try {
+      await todosApi.delete(id);
+    } catch {
+      setTodos(previous);
+    }
   };
 
   const retryFailed = async (id: number) => {
-    setTodos(prev =>
-      prev.map(t => (t.id === id ? { ...t, status: "pending", errorMessage: null } : t))
-    );
+    let previous: TodoItem[] = [];
+    setTodos(prev => {
+      previous = prev;
+      return prev.map(t => (t.id === id ? { ...t, status: "pending", errorMessage: null } : t));
+    });
     try {
       await todosApi.updateQueue(id, { status: "pending", errorMessage: null });
-    } catch {}
+    } catch {
+      setTodos(previous);
+    }
   };
 
   const pending = todos.filter(t => !t.done);

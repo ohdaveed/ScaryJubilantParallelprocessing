@@ -33,7 +33,9 @@ export function useGeneratePageActions({
     async (pageName: string) => {
       const screenshotElement = screenshotRef.current;
       if (!screenshotElement) return;
-      await document.fonts.ready;
+      if (document.fonts?.ready) {
+        await document.fonts.ready.catch(() => {});
+      }
       const filename = `${(clean(pageName) || "page").toLowerCase().replace(/\s+/g, "-")}.png`;
 
       try {

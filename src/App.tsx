@@ -1,5 +1,4 @@
 import React, { lazy, Suspense, useCallback, useRef } from "react";
-import { Outlet } from "react-router-dom";
 import { SfGovContentDesignTool, MAIN_WORKSPACE_PANEL_ID, type ContentDesignTab } from "./components/SfGovContentDesignTool";
 import { useAppWorkspace } from "./hooks/useAppWorkspace";
 import { clean } from "./utils/core";
@@ -22,7 +21,9 @@ export default function App() {
   const screenshotRef = useRef<HTMLDivElement>(null);
   const handleExportScreenshot = useCallback(async (pageName: string) => {
     if (!screenshotRef.current) return;
-    await document.fonts.ready;
+    if (document.fonts?.ready) {
+      await document.fonts.ready.catch(() => {});
+    }
     const filename = (clean(pageName) || "page").toLowerCase().replace(/\s+/g, "-") + ".png";
     try {
       const { toPng } = await import("html-to-image");
@@ -97,7 +98,7 @@ export default function App() {
         activeTabId={workspaceTab}
         onTabChange={handleWorkspaceTab}
         onBrowseLibraryClick={handleBrowseLibraryClick}
-        headerExportDisabled={true}
+        headerExportDisabled={!selected}
         showPreviewExportButton={false}
         onExportClick={handleExportClick}
         userType={userType}
@@ -124,9 +125,7 @@ export default function App() {
         previewSummaryLine={workspaceTab === "generate" ? previewSummaryLine : undefined}
         streamMessage={streamBarMessage}
         streamFooterMeta={streamFooterMetaFull}
-        onExportPreview={() => {
-          // Preview export is intentionally disabled for now.
-        }}
+        onExportPreview={handleExportClick}
         previewSlot={
           <Suspense fallback={<div className="app-preview-loading">Loading…</div>}>
             {workspaceTab === "generate" && <LazyGeneratePage />}
@@ -137,7 +136,7 @@ export default function App() {
         }
       />
       {/* Hidden screenshot ref */}
-      <div ref={screenshotRef} style={{ position: "absolute", top: 0, left: 0, width: 800, visibility: "hidden", pointerEvents: "none", zIndex: -1 }}>
+      <div ref={screenshotRef} style={{ position: "absolute", top: 0, left: -10000, width: 800, pointerEvents: "none", zIndex: -1 }}>
         {selected && (
           <Suspense fallback={null}>
             <LazySfGovPagePreview draft={selected.draft} pageType={selected.pageType} pageTitle={clean(selected.name)} />

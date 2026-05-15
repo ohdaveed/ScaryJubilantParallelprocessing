@@ -210,6 +210,15 @@ export function usePageGeneration(params: UsePageGenerationParams) {
       };
     }
 
+    const feedbackValidation = validateGeneratedPage(feedbackParsed);
+    if (!feedbackValidation.ok) {
+      return {
+        parsed,
+        evaluation,
+        qualityGate: initialQualityGate
+      };
+    }
+
     const reevaluation = await runKarlEvaluation({
       name: feedbackParsed.name,
       pageType: feedbackParsed.pageType,
@@ -321,7 +330,7 @@ export function usePageGeneration(params: UsePageGenerationParams) {
       const improved = await improveStructure(improvedInput, prefTexts);
       if (improved) {
         const improvedParsed = parsePage(improved);
-        if (improvedParsed.valid) {
+        if (improvedParsed.valid && validateGeneratedPage(improvedParsed).ok) {
           parsed = improvedParsed;
         }
       }
@@ -349,6 +358,10 @@ export function usePageGeneration(params: UsePageGenerationParams) {
         evaluation: evaluation ?? null
       });
       parsed = feedbackResult.parsed;
+      const finalValidation = validateGeneratedPage(parsed);
+      if (!finalValidation.ok) {
+        throw new Error(finalValidation.failures.join(" "));
+      }
       page = {
         ...page,
         ...parsed,
@@ -484,6 +497,11 @@ export function usePageGeneration(params: UsePageGenerationParams) {
         setError(`Refined draft parsed with issues (${stringifyParseError(parseResult.parseError)}). Review output before publishing.`);
       }
 
+      const refinedValidation = validateGeneratedPage(parsed);
+      if (!refinedValidation.ok) {
+        throw new Error(refinedValidation.failures.join(" "));
+      }
+
       setStreaming(false);
       setEvaluating(true);
       adv(93, "Running Karl evaluation");
@@ -501,6 +519,10 @@ export function usePageGeneration(params: UsePageGenerationParams) {
         evaluation: evaluation ?? null
       });
       parsed = feedbackResult.parsed;
+      const finalValidation = validateGeneratedPage(parsed);
+      if (!finalValidation.ok) {
+        throw new Error(finalValidation.failures.join(" "));
+      }
 
       const updated: PageDraft = {
         ...selected,

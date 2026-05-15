@@ -33,6 +33,7 @@ PRIMARY GOAL:
 - Keep all content at a 6th-grade reading level.
 - Keep scope HHVC-only. Do not overlap into DBI-only issues.
 - Keep the service flow clear: report -> inspect -> fix -> enforce -> educate.
+- When Karl MCP tools are available, consult the Karl docs before finalizing page type, component, Related, Transaction, or Information page decisions.
 
 NON-NEGOTIABLE CONTENT RULES:
 - Each page must have one clear purpose.

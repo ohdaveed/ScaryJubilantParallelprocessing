@@ -5,7 +5,7 @@ import {
   parseRequestBody
 } from "../lib/requestSchemas.js";
 import { withKarlCitations, enforceKarlCitationsOnEvaluation } from "../lib/karlCitations.js";
-import { fetchKarlGuidance } from "../lib/karlMcp.js";
+import { fetchKarlGuidance, resolveKarlMcpConfig } from "../lib/karlMcp.js";
 import {
   extractJsonObjectFromText,
   extractModelText,
@@ -29,6 +29,36 @@ export const registerAiRoutes = (app, db, {
   applyShortReadCache,
   isObject
 } = {}) => {
+  const attachKarlMcpConnector = async (body, res) => {
+    try {
+      const config = await resolveKarlMcpConfig();
+      if (!config?.url || !String(config.url).startsWith("https://")) return body;
+      const serverName = config.serverName || "sf-gov-and-karl-editor-help-center";
+      const server = {
+        type: "url",
+        url: config.url,
+        name: serverName,
+        ...(config.authorizationToken ? { authorization_token: config.authorizationToken } : {})
+      };
+      return {
+        ...body,
+        mcp_servers: [server],
+        tools: [
+          ...(Array.isArray(body.tools) ? body.tools : []),
+          {
+            type: "mcp_toolset",
+            mcp_server_name: serverName
+          }
+        ]
+      };
+    } catch (error) {
+      logWithRequest?.(res, "generate", "Karl MCP connector unavailable", {
+        error: String(error?.message || error)
+      });
+      return body;
+    }
+  };
+
   // /api/chat — Forward user messages to Anthropic Claude API with streaming support
   app.post("/api/chat", chatLimiter, async (req, res) => {
     if (!anthropicApiKey) {
@@ -97,6 +127,7 @@ ${existingContent}`
     body = { ...body, messages: msgs };
     const systemText = typeof body.system === "string" ? withKarlCitations(body.system) : withKarlCitations("");
     body.system = [{ type: "text", text: systemText, cache_control: { type: "ephemeral" } }];
+    body = await attachKarlMcpConnector(body, res);
 
     try {
       logWithRequest(res, "generate", "forwarding request to anthropic");

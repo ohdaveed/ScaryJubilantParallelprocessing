@@ -64,10 +64,11 @@ export async function streamModelText(options: StreamModelTextOptions): Promise<
 
       try {
         const j = JSON.parse(d) as StreamEvent;
-        if (mode === "generate" && j.type === "content_block_start" && j.content_block?.type === "tool_use") {
+        const blockType = j.content_block?.type || "";
+        if (mode === "generate" && j.type === "content_block_start" && (blockType === "tool_use" || blockType === "mcp_tool_use")) {
           karlHit = true;
           onAdvance(30, "Generating draft");
-          onKarlToolUse(j.content_block.name || "tool");
+          onKarlToolUse(j.content_block?.name || "tool");
         }
         if (mode === "generate" && j.type === "content_block_stop" && !hasStreamText()) {
           onAdvance(50, "Generating draft");
