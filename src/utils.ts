@@ -363,53 +363,6 @@ export const pagesApi = {
   }
 };
 
-export const todosApi = {
-  list: async (): Promise<import("./types").TodoItem[]> => {
-    const res = await fetch(`${API_BASE}/todos`);
-    if (!res.ok) throw new Error(`Failed to load todos: ${res.status}`);
-    const data = await res.json();
-    return data.todos || [];
-  },
-  create: async (
-    topic: string,
-    userType: string,
-    opts?: { plannedId?: number }
-  ): Promise<import("./types").TodoItem> => {
-    const res = await fetch(`${API_BASE}/todos`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ topic, userType, ...(opts?.plannedId != null ? { plannedId: opts.plannedId } : {}) })
-    });
-    if (!res.ok) throw new Error(`Failed to create todo: ${res.status}`);
-    return res.json();
-  },
-  toggle: async (id: number, done: boolean): Promise<void> => {
-    const res = await fetch(`${API_BASE}/todos/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ done })
-    });
-    if (!res.ok) throw new Error(`Failed to update todo: ${res.status}`);
-  },
-  updateQueue: async (id: number, fields: {
-    status: import("./types").TodoStatus;
-    errorMessage?: string | null;
-    builtPageId?: string | null;
-    karlGrade?: string | null;
-  }): Promise<void> => {
-    const res = await fetch(`${API_BASE}/todos/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(fields)
-    });
-    if (!res.ok) throw new Error(`Failed to update todo queue status: ${res.status}`);
-  },
-  delete: async (id: number): Promise<void> => {
-    const res = await fetch(`${API_BASE}/todos/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error(`Failed to delete todo: ${res.status}`);
-  }
-};
-
 export const runKarlEvaluation = async (page: {
   name: string;
   pageType: string;
