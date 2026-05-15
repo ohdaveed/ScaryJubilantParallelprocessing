@@ -2,7 +2,7 @@ import React, { memo, useState, useEffect } from "react";
 import { PageDraft, TodoItem, UserType } from "../types";
 import { USER_TYPES } from "../constants";
 import { APP_INPUT_SM_MB6_CLASS, APP_INPUT_SM_MB8_CLASS, Btn, Card } from "./ui";
-import { todosApi } from "../utils/api";
+import { todosApi } from "../api";
 import { useQueueRunner } from "../hooks/useQueueRunner";
 
 export const IdealTabQueuePanel = memo(function IdealTabQueuePanel({

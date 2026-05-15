@@ -1,7 +1,7 @@
 import React, { memo } from "react";
 import { PageDraft } from "../types";
 import { Badge, Btn } from "./ui";
-import { clean } from "../utils";
+import { clean } from "../utils/core";
 
 export const SuccessState = memo(function SuccessState({ page, onView }: { page: PageDraft; onView: () => void }) {
   const ev = page.karlEvaluation;

@@ -1,9 +1,10 @@
 import React, { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import "./SfGovContentDesignTool.css";
 import { pageTypeToDotClass } from "./sfGovContentDesignTool/pageTypeDots";
-import { PAGE_TYPE_DESCRIPTIONS } from "../constants";
+import { PAGE_TYPE_DESCRIPTIONS, USER_TYPES } from "../constants";
 import { PageTypeButton } from "./features/PageTypeButton";
 import { QuickPickItem } from "./features/QuickPickItem";
+import { UserType } from "../types";
 
 export { normalizePageTypeKey, pageTypeToDotClass } from "./sfGovContentDesignTool/pageTypeDots";
 
@@ -43,8 +44,8 @@ export type SfGovContentDesignToolProps = {
   onTabChange?: (id: string) => void;
   onSettingsClick?: () => void;
   onExportClick?: () => void;
-  userType: string;
-  onUserTypeChange?: (value: string) => void;
+  userType: UserType;
+  onUserTypeChange?: (value: UserType) => void;
   userTypeOptions?: readonly string[];
   pageTypeOptions?: readonly string[];
   activePageType: string;
@@ -93,8 +94,6 @@ export type SfGovContentDesignToolProps = {
   /** Use a taller textarea for long topics (HHVC) instead of a single-line input. */
   pageGoalInputMode?: "input" | "textarea";
 };
-
-const DEFAULT_USER_TYPES = ["Resident", "Business Owner", "Contractor", "City Employee"] as const;
 
 const DEFAULT_PAGE_TYPES = [
   "Transaction",
@@ -184,7 +183,7 @@ export function SfGovContentDesignTool({
   onExportClick,
   userType,
   onUserTypeChange,
-  userTypeOptions = DEFAULT_USER_TYPES,
+  userTypeOptions = USER_TYPES,
   pageTypeOptions = DEFAULT_PAGE_TYPES,
   activePageType,
   onPageTypeChange,
@@ -430,7 +429,7 @@ export function SfGovContentDesignTool({
                   id={userFieldId}
                   className="field-select"
                   value={userType}
-                  onChange={(e) => onUserTypeChange?.(e.target.value)}
+                  onChange={(e) => onUserTypeChange?.(e.target.value as UserType)}
                 >
                   {userTypeOptions.map((opt) => (
                     <option key={opt} value={opt}>

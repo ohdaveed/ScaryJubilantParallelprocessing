@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from "react";
 import type { PageDraft, TodoItem, TodoStatus } from "../types";
-import { todosApi } from "../utils/api";
+import { todosApi } from "../api";
 
 type QueueUpdate = {
   status: TodoStatus;

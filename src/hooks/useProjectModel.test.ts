@@ -3,13 +3,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useProjectModel } from "./useProjectModel";
 
-vi.mock("../utils/api", () => ({
+vi.mock("../api", () => ({
   projectModelApi: {
     load: vi.fn()
   }
 }));
 
-import { projectModelApi } from "../utils/api";
+import { projectModelApi } from "../api";
 
 const emptyModel = { concepts: [], nodes: [], artifacts: [], variants: [], references: [], queue: [] };
 

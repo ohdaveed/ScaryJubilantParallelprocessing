@@ -1,8 +1,11 @@
 import { useState, useCallback, useMemo } from "react";
-import { PageDraft, ReviewStatus, UserPreference, VerificationState } from "../types";
-import { clean, findOverlappingPageIds, getVerificationState } from "../utils";
-import { preferencesApi, pagesApi } from "../utils/api";
+import { PageDraft, ReviewStatus, UserPreference, VerificationState, PlannedPage, UserType, PageType } from "../types";
+import { clean } from "../utils/core";
+import { findOverlappingPageIds } from "../utils/search";
+import { getVerificationState } from "../utils/viewState";
+import { preferencesApi, pagesApi } from "../api";
 import { replacePageDraftInRaw } from "../utils/parsing";
+import { USER_TYPES } from "../constants";
 
 export interface WorkspaceState {
   search: string;
@@ -17,6 +20,16 @@ export interface WorkspaceState {
   draftEditSaving: boolean;
   draftEditError: string;
   copied: boolean;
+  // Generation state
+  topic: string;
+  userType: UserType;
+  notes: string;
+  pendingPageType: string; // Keep as string for now to match UI chip usage
+  pendingPlannedId: number | null;
+  preferences: UserPreference[];
+  selected: PageDraft | null;
+  refineInput: string;
+  topicTouched: boolean;
 }
 
 export interface WorkspaceActions {
@@ -38,6 +51,16 @@ export interface WorkspaceActions {
   setDraftEditBuffer: React.Dispatch<React.SetStateAction<string>>;
   setDraftEditError: React.Dispatch<React.SetStateAction<string>>;
   setDraftEditSaving: React.Dispatch<React.SetStateAction<boolean>>;
+  // Generation actions
+  setTopic: React.Dispatch<React.SetStateAction<string>>;
+  setUserType: React.Dispatch<React.SetStateAction<UserType>>;
+  setNotes: React.Dispatch<React.SetStateAction<string>>;
+  setPendingPageType: React.Dispatch<React.SetStateAction<string>>;
+  setPendingPlannedId: React.Dispatch<React.SetStateAction<number | null>>;
+  setPreferences: React.Dispatch<React.SetStateAction<UserPreference[]>>;
+  setSelected: React.Dispatch<React.SetStateAction<PageDraft | null>>;
+  setRefineInput: React.Dispatch<React.SetStateAction<string>>;
+  setTopicTouched: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export function useWorkspaceState() {
@@ -53,6 +76,17 @@ export function useWorkspaceState() {
   const [draftEditSaving, setDraftEditSaving] = useState(false);
   const [draftEditError, setDraftEditError] = useState("");
   const [copied, setCopied] = useState(false);
+
+  // Generation state
+  const [topic, setTopic] = useState("");
+  const [userType, setUserType] = useState<UserType>(USER_TYPES[0]);
+  const [notes, setNotes] = useState("");
+  const [pendingPageType, setPendingPageType] = useState("");
+  const [pendingPlannedId, setPendingPlannedId] = useState<number | null>(null);
+  const [preferences, setPreferences] = useState<UserPreference[]>([]);
+  const [selected, setSelected] = useState<PageDraft | null>(null);
+  const [refineInput, setRefineInput] = useState("");
+  const [topicTouched, setTopicTouched] = useState(false);
 
   const togglePageSelection = useCallback((id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -96,7 +130,7 @@ export function useWorkspaceState() {
   const saveMockupDraft = useCallback(async (
     selected: PageDraft | null,
     setPages: React.Dispatch<React.SetStateAction<PageDraft[]>>,
-    setSelected: (p: PageDraft | null) => void
+    setSelectedFn: (p: PageDraft | null) => void
   ) => {
     if (!selected || draftEditSaving) return;
     setDraftEditSaving(true);
@@ -106,7 +140,7 @@ export function useWorkspaceState() {
       const updated: PageDraft = { ...selected, draft: draftEditBuffer, raw: newRaw };
       await pagesApi.save(selected.id, updated, { notes: "Manual draft edit", trigger: "manual" });
       setPages(prev => prev.map(p => p.id === selected.id ? updated : p));
-      setSelected(updated);
+      setSelectedFn(updated);
       setMockupEditOpen(false);
       setDraftEditBuffer("");
     } catch {
@@ -128,7 +162,16 @@ export function useWorkspaceState() {
     draftEditBuffer,
     draftEditSaving,
     draftEditError,
-    copied
+    copied,
+    topic,
+    userType,
+    notes,
+    pendingPageType,
+    pendingPlannedId,
+    preferences,
+    selected,
+    refineInput,
+    topicTouched
   };
 
   const actions: WorkspaceActions = {
@@ -149,7 +192,16 @@ export function useWorkspaceState() {
     setMockupEditOpen,
     setDraftEditBuffer,
     setDraftEditError,
-    setDraftEditSaving
+    setDraftEditSaving,
+    setTopic,
+    setUserType,
+    setNotes,
+    setPendingPageType,
+    setPendingPlannedId,
+    setPreferences,
+    setSelected,
+    setRefineInput,
+    setTopicTouched
   };
 
   return { state, actions };

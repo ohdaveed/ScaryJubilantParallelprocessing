@@ -4,22 +4,28 @@ import { renderHook, act } from "@testing-library/react";
 import { useWorkspaceState } from "./useWorkspaceState";
 import type { PageDraft } from "../types";
 
-vi.mock("../utils/api", () => ({
-  pagesApi: { save: vi.fn() },
-  preferencesApi: {}
+vi.mock("../api/pages", () => ({
+  pagesApi: { save: vi.fn() }
+}));
+vi.mock("../api/preferences", () => ({
+  preferencesApi: { create: vi.fn(), list: vi.fn(), delete: vi.fn() }
 }));
 
 vi.mock("../utils/parsing", () => ({
   replacePageDraftInRaw: vi.fn((raw: string, draft: string) => `${raw}|${draft}`)
 }));
 
-vi.mock("../utils", () => ({
+vi.mock("../utils/core", () => ({
   clean: vi.fn((s: string) => s),
+}));
+vi.mock("../utils/search", () => ({
   findOverlappingPageIds: vi.fn(() => new Set<string>()),
+}));
+vi.mock("../utils/viewState", () => ({
   getVerificationState: vi.fn(() => "unverified")
 }));
 
-import { pagesApi } from "../utils/api";
+import { pagesApi } from "../api/pages";
 
 const makePage = (id: string, draft = "draft text"): PageDraft =>
   ({ id, name: id, raw: "PAGE NAME: " + id, draft, contentHydrated: true }) as unknown as PageDraft;
@@ -128,6 +134,8 @@ describe("useWorkspaceState", () => {
     vi.mocked(pagesApi.save).mockRejectedValue(new Error("Server error"));
     const { result } = renderHook(() => useWorkspaceState());
     const page = makePage("page_1");
+    
+    act(() => result.current.actions.openMockupEditor(page, (v) => result.current.actions.setDraftEditBuffer(v)));
     act(() => result.current.actions.setDraftEditBuffer("edited"));
 
     await act(async () => {

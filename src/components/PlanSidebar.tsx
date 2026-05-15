@@ -2,7 +2,7 @@ import React, { memo, useMemo, useState } from "react";
 import { PageDraft, PageType, PlannedPage, UserType } from "../types";
 import { PAGE_TYPES, USER_TYPES } from "../constants";
 import { APP_INPUT_SM_MB6_CLASS, APP_INPUT_SM_MB8_CLASS, Badge, Btn, Card, Divider } from "./ui";
-import { clean } from "../utils";
+import { clean } from "../utils/core";
 
 export const PlanSidebar = memo(function PlanSidebar({ planned, pages, selectedPlanned, onSelectPlanned, onAdd, onDelete, onGenerate, onViewPage, onLinkExistingPage, onUnlinkPage }: {
   planned: PlannedPage[];

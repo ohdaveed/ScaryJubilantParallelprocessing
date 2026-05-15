@@ -1,9 +1,9 @@
 import { RefObject, useCallback } from "react";
-import { clean } from "../utils";
+import { clean } from "../utils/core";
 
 type UseGeneratePageActionsOptions = {
   selectedDraftText?: string;
-  screenshotRef: RefObject<HTMLDivElement>;
+  screenshotRef: RefObject<HTMLDivElement | null>;
   setCopied: (value: boolean) => void;
 };
 

@@ -1,20 +1,24 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import { buildGenerationUserPrompt, PROMPT_CONTRACT_VERSION } from "./constants";
+import { evaluateQualityGate } from "./utils/contentModel";
+import { overlapTitleKey, findOverlappingPageIds } from "./utils/search";
 import {
-  evaluateQualityGate,
-  findOverlappingPageIds,
   formatVersionOrMonth,
+  sanitizeFilename,
+  generateZip,
+  renderPageAsPNG,
+  renderPageAsPDF
+} from "./utils/export";
+import {
   getVerificationLabel,
   getVerificationState,
-  generateZip,
+} from "./utils/viewState";
+import {
   parsePage,
   parseStructuredPage,
   replacePageDraftInRaw,
-  renderPageAsPDF,
-  renderPageAsPNG,
-  sanitizeFilename,
   structuredToRawPage
-} from "./utils";
+} from "./utils/parsing";
 import type { PageDraft, StructuredPageOutput } from "./types";
 import goldenPages from "./fixtures/golden-pages.json";
 

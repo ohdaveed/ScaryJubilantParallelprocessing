@@ -26,7 +26,8 @@
         {
           "pattern": [
             {
-              "regexp": "."
+              "regexp": "(.+)",
+              "message": 1
             }
           ],
           "background": {
@@ -62,7 +63,8 @@
         {
           "pattern": [
             {
-              "regexp": "."
+              "regexp": "(.+)",
+              "message": 1
             }
           ],
           "background": {

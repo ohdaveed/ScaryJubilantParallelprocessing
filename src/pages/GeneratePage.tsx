@@ -1,14 +1,15 @@
 import React, { Suspense, lazy, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useWorkspace } from "../context/WorkspaceContext";
 import { USER_TYPES, GENERATABLE_PAGE_TYPES } from "../constants";
-import { clean, getExportReadiness } from "../utils";
+import { clean } from "../utils/core";
+import { getExportReadiness } from "../utils/viewState";
 import { Badge, Btn, Card, IssueResolutionPanel, ComponentChips, RelPanel, ProgressBar, DeleteConfirmationModal } from "../components/ui";
 import { StreamRenderer } from "../components/StreamRenderer";
 import { EvaluatingState } from "../components/EvaluatingState";
 import { SuccessState } from "../components/SuccessState";
 import { useGeneratePageActions } from "../hooks/useGeneratePageActions";
 import { useNavigate } from "react-router-dom";
-import { preferencesApi, pagesApi } from "../utils/api";
+import { preferencesApi, pagesApi } from "../api";
 import packageJson from "../../package.json";
 
 const LazySfGovPagePreview = lazy(() => import("../components/SfGovPreview").then((m) => ({ default: m.SfGovPagePreview })));

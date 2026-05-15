@@ -1,7 +1,6 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
-import { usePlanMap } from "./usePlanMap";
 import type { PlannedPage, PageDraft } from "../types";
 
 const makePlanned = (id: number, name: string, parentId: number | null = null): PlannedPage =>
@@ -14,7 +13,7 @@ vi.mock("../constants", () => ({
   ]
 }));
 
-vi.mock("../utils/api", () => ({
+vi.mock("../api/pages", () => ({
   plannedPagesApi: {
     list: vi.fn(),
     create: vi.fn(),
@@ -23,7 +22,22 @@ vi.mock("../utils/api", () => ({
   },
   pagesApi: {
     save: vi.fn()
+  }
+}));
+
+vi.mock("../api", () => ({
+  plannedPagesApi: {
+    list: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn()
   },
+  pagesApi: {
+    save: vi.fn()
+  }
+}));
+
+vi.mock("../utils/contentModel", () => ({
   skeletonToPageDraft: vi.fn((tmpl: any) => ({
     id: `skel_${tmpl.name}`,
     name: tmpl.name,
@@ -31,7 +45,8 @@ vi.mock("../utils/api", () => ({
   }) as unknown as PageDraft)
 }));
 
-import { plannedPagesApi, pagesApi } from "../utils/api";
+import { plannedPagesApi, pagesApi } from "../api/pages";
+import { usePlanMap } from "./usePlanMap";
 
 describe("usePlanMap", () => {
   beforeEach(() => vi.clearAllMocks());

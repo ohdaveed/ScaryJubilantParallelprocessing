@@ -2,7 +2,8 @@ import React from "react";
 import { PageDraft, PlannedPage, ReviewStatus, VerificationState } from "../../types";
 import { Badge, Btn, Card } from "../ui";
 import { artifactKindFromPage, artifactRoleLabel } from "../../utils/contentModel";
-import { clean, getVerificationLabel, getVerificationState } from "../../utils";
+import { clean } from "../../utils/core";
+import { getVerificationLabel, getVerificationState } from "../../utils/viewState";
 import { TYPE_META } from "../../constants";
 
 type LibraryPageCardProps = {

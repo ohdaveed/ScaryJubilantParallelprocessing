@@ -1,7 +1,8 @@
 import { Dispatch, SetStateAction, useCallback, useEffect, useState } from "react";
 import { PageDraft, PlannedPage } from "../types";
 import { SITEMAP_SKELETON } from "../constants";
-import { pagesApi, plannedPagesApi, skeletonToPageDraft } from "../utils/api";
+import { pagesApi, plannedPagesApi } from "../api/pages";
+import { skeletonToPageDraft } from "../utils/contentModel";
 
 export function usePlanMap(setPages: Dispatch<SetStateAction<PageDraft[]>>) {
   const [plannedPages, setPlannedPages] = useState<PlannedPage[]>([]);

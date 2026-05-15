@@ -1,6 +1,26 @@
-import { formatVersionOrMonth, sanitizeFilename } from "./core";
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
 
-export async function generateZip(files: Array<{ blob: Blob; filename: string }>): Promise<Blob> {
+export function formatVersionOrMonth(page: { version?: string; created_at?: string; createdAt?: string }): string {
+  if (page.version && page.version.trim() !== "") {
+    return page.version;
+  }
+  const dateStr = page.created_at || page.createdAt || "";
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "Unknown";
+  return `${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
+}
+
+export function sanitizeFilename(filename: string): string {
+  const sanitized = filename.replace(/[\\/"*?<>|:]/g, "").replace(/\s+/g, " ").trim();
+  return sanitized || "untitled";
+}
+
+export async function generateZip(
+  files: Array<{ blob: Blob; filename: string }>
+): Promise<Blob> {
   const JSZip = (await import("jszip")).default;
   const zip = new JSZip();
   for (const { blob, filename } of files) {
@@ -30,11 +50,11 @@ export async function renderPageAsPDF(
 ): Promise<{ blob: Blob; filename: string }> {
   const element = document.getElementById(elementId);
   if (!element) throw new Error("Element not found");
-  const { toCanvas } = await import("html-to-image");
+  const html2canvas = (await import("html2canvas")).default;
   const { jsPDF } = await import("jspdf");
   const version = formatVersionOrMonth(page);
   const filename = `${sanitizeFilename(page.name)}_${version}.pdf`;
-  const canvas = await toCanvas(element);
+  const canvas = await html2canvas(element);
   if (canvas.width === 0 || canvas.height === 0) throw new Error("Element rendered to empty canvas");
   const imgData = canvas.toDataURL("image/png");
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });

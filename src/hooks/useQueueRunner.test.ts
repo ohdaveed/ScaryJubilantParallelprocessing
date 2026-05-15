@@ -5,7 +5,7 @@ import { renderHook, act } from '@testing-library/react';
 import type { TodoItem, PageDraft } from '../types';
 
 // Mock dependencies
-vi.mock('../utils', () => ({
+vi.mock('../api', () => ({
   todosApi: {
     updateQueue: vi.fn().mockResolvedValue(undefined)
   }

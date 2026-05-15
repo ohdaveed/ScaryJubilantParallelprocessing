@@ -3,7 +3,7 @@ import { PageDraft, PlannedPage, TodoItem, UserType } from "../types";
 import { USER_TYPES } from "../constants";
 import { APP_INPUT_SM_MB6_CLASS, APP_INPUT_SM_MB8_CLASS, Btn, Card } from "./ui";
 import { useQueueRunner } from "../hooks/useQueueRunner";
-import { todosApi } from "../utils/api";
+import { todosApi } from "../api";
 
 export const TodoPanel = memo(function TodoPanel({
   generateForQueue,

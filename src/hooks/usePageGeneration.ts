@@ -1,8 +1,16 @@
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from "react";
-import { PageDraft, PlannedPage, UserPreference } from "../types";
+import { PageDraft, PlannedPage, UserPreference, UserType } from "../types";
 import { SYSTEM_PROMPT, STRUCTURED_OUTPUT_RULES, buildGenerationUserPrompt, buildRefineUserPrompt, USER_TYPES } from "../constants";
 import { clean, isPest } from "../utils/core";
-import { evaluateQualityGate, fetchKarlRemediation, improveStructure, pagesApi, preferencesApi, runKarlEvaluation, versionsApi } from "../utils/api";
+import {
+  pagesApi,
+  preferencesApi,
+  versionsApi,
+  runKarlEvaluation,
+  fetchKarlRemediation,
+  improveStructure
+} from "../api";
+import { evaluateQualityGate } from "../utils/contentModel";
 import { parsePage } from "../utils/parsing";
 import { streamModelText as streamModelTextService } from "../services/chatStream";
 import { repairAndParseStructured as repairAndParseStructuredService } from "../services/pageParser";
@@ -49,20 +57,51 @@ type UsePageGenerationParams = {
   setPages: Dispatch<SetStateAction<PageDraft[]>>;
   plannedPages: PlannedPage[];
   linkPlannedPage: (plannedId: number, builtPageId: string) => void | Promise<void>;
+  state: {
+    topic: string;
+    userType: UserType;
+    notes: string;
+    pendingPageType: string;
+    pendingPlannedId: number | null;
+    preferences: UserPreference[];
+    selected: PageDraft | null;
+    refineInput: string;
+    topicTouched: boolean;
+  };
+  actions: {
+    setTopic: Dispatch<SetStateAction<string>>;
+    setNotes: Dispatch<SetStateAction<string>>;
+    setTopicTouched: Dispatch<SetStateAction<boolean>>;
+    setPendingPlannedId: Dispatch<SetStateAction<number | null>>;
+    setPendingPageType: Dispatch<SetStateAction<string>>;
+    setSelected: Dispatch<SetStateAction<PageDraft | null>>;
+    setRefineInput: Dispatch<SetStateAction<string>>;
+    setPreferences: Dispatch<SetStateAction<UserPreference[]>>;
+  };
 };
 
 export function usePageGeneration(params: UsePageGenerationParams) {
-  const { pages, setPages, plannedPages, linkPlannedPage } = params;
-
-  const [topic, setTopic] = useState("");
-  const [userType, setUserType] = useState(USER_TYPES[0]);
-  const [notes, setNotes] = useState("");
-  const [pendingPageType, setPendingPageType] = useState("");
-  const [pendingPlannedId, setPendingPlannedId] = useState<number | null>(null);
-  const [preferences, setPreferences] = useState<UserPreference[]>([]);
-  const [selected, setSelected] = useState<PageDraft | null>(null);
-  const [refineInput, setRefineInput] = useState("");
-  const [topicTouched, setTopicTouched] = useState(false);
+  const { pages, setPages, plannedPages, linkPlannedPage, state, actions } = params;
+  const {
+    topic,
+    userType,
+    notes,
+    pendingPageType,
+    pendingPlannedId,
+    preferences,
+    selected,
+    refineInput
+  } = state;
+  const {
+    setTopic,
+    setNotes,
+    setTopicTouched,
+    setPendingPlannedId,
+    setPendingPageType,
+    setSelected,
+    setRefineInput,
+    setPreferences
+  } = actions;
 
   const [loading, setLoading] = useState(false);
   const [streaming, setStreaming] = useState(false);
@@ -511,32 +550,6 @@ export function usePageGeneration(params: UsePageGenerationParams) {
   ]);
 
   return {
-    state: {
-      topic,
-      userType,
-      notes,
-      pendingPageType,
-      pendingPlannedId,
-      preferences,
-      pages,
-      selected,
-      plannedPages,
-      refineInput,
-      topicTouched
-    },
-    actions: {
-      setPages,
-      setSelected,
-      setPendingPlannedId,
-      setPendingPageType,
-      setTopic,
-      setNotes,
-      setTopicTouched,
-      setPreferences,
-      setRefineInput,
-      linkPlannedPage,
-      setUserType
-    },
     loading,
     streaming,
     evaluating,

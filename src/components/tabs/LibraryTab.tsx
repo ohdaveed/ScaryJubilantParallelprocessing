@@ -3,7 +3,8 @@ import { PAGE_TYPES } from "../../constants";
 import { PageDraft, PlannedPage, ReviewStatus, VerificationState } from "../../types";
 import { Badge, Btn, Card, DeleteConfirmationModal, UI_INPUT_CLASS } from "../ui";
 import { artifactKindFromPage, artifactRoleLabel } from "../../utils/contentModel";
-import { clean, getVerificationLabel, getVerificationState } from "../../utils";
+import { clean } from "../../utils/core";
+import { getVerificationLabel, getVerificationState } from "../../utils/viewState";
 import { LibraryPageCard } from "./LibraryPageCard";
 
 type LibraryTabProps = {

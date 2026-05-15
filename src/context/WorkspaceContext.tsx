@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useCallback, useEffect, useRef, useMemo, Dispatch, SetStateAction } from "react";
-import type { IANode, PageConcept, PageDraft, PlannedPage, ReferenceExample, TodoItem, UserPreference } from "../types";
+import type { IANode, PageConcept, PageDraft, PlannedPage, ReferenceExample, TodoItem, UserPreference, UserType } from "../types";
 import { usePagesData } from "../hooks/usePagesData";
 import { usePlanMap } from "../hooks/usePlanMap";
 import { usePageGeneration } from "../hooks/usePageGeneration";
 import { useVersionHistory } from "../hooks/useVersionHistory";
 import { useWorkspaceState, WorkspaceState, WorkspaceActions } from "../hooks/useWorkspaceState";
-import { preferencesApi } from "../utils/api";
+import { preferencesApi } from "../api";
 import { useProjectModel } from "../hooks/useProjectModel";
-import { clean } from "../utils";
+import { clean } from "../utils/core";
 
 export interface WorkspaceContextValue {
   pages: PageDraft[];
@@ -53,7 +53,7 @@ export interface WorkspaceContextValue {
   regenerate: (page: PageDraft) => void;
   refine: () => Promise<void>;
   topic: string;
-  userType: string;
+  userType: UserType;
   notes: string;
   selected: PageDraft | null;
   topicTouched: boolean;
@@ -62,7 +62,7 @@ export interface WorkspaceContextValue {
   setPreferences: React.Dispatch<React.SetStateAction<UserPreference[]>>;
   setSelected: (p: PageDraft | null) => void;
   setTopic: (v: string) => void;
-  setUserType: (v: string) => void;
+  setUserType: (v: UserType) => void;
   setNotes: (v: string) => void;
   setTopicTouched: (v: boolean) => void;
   setRefineInput: (v: string) => void;
@@ -102,9 +102,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     deletePlannedPage
   } = usePlanMap(setPages);
 
+  const { state: wsState, actions: wsActions } = useWorkspaceState();
+
   const {
-    state: genState,
-    actions: genActions,
     loading,
     streaming,
     evaluating,
@@ -120,7 +120,33 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     generate,
     regenerate,
     refine
-  } = usePageGeneration({ pages, setPages, plannedPages, linkPlannedPage });
+  } = usePageGeneration({
+    pages,
+    setPages,
+    plannedPages,
+    linkPlannedPage,
+    state: {
+      topic: wsState.topic,
+      userType: wsState.userType,
+      notes: wsState.notes,
+      pendingPageType: wsState.pendingPageType,
+      pendingPlannedId: wsState.pendingPlannedId,
+      preferences: wsState.preferences,
+      selected: wsState.selected,
+      refineInput: wsState.refineInput,
+      topicTouched: wsState.topicTouched
+    },
+    actions: {
+      setTopic: wsActions.setTopic,
+      setNotes: wsActions.setNotes,
+      setTopicTouched: wsActions.setTopicTouched,
+      setPendingPlannedId: wsActions.setPendingPlannedId,
+      setPendingPageType: wsActions.setPendingPageType,
+      setSelected: wsActions.setSelected,
+      setRefineInput: wsActions.setRefineInput,
+      setPreferences: wsActions.setPreferences
+    }
+  });
 
   const {
     historyPageId,
@@ -131,10 +157,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     restoreVersion: restoreVersionFromHistory
   } = useVersionHistory();
 
-  const { state: wsState, actions: wsActions } = useWorkspaceState();
-
-  const { topic, userType, notes, selected, topicTouched, refineInput, preferences } = genState;
-  const { setSelected, setTopic, setUserType, setNotes, setTopicTouched, setRefineInput, setPreferences } = genActions;
+  const { topic, userType, notes, selected, topicTouched, refineInput, preferences } = wsState;
+  const { setSelected, setTopic, setUserType, setNotes, setTopicTouched, setRefineInput, setPreferences } = wsActions;
 
   useEffect(() => {
     setPreferences([]);
@@ -220,10 +244,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     justGenerated, generate, regenerate, refine,
     topic, userType, notes, selected, topicTouched, refineInput,
     preferences, setPreferences,
-    // REFACTORED: Kept public context setter contract string-based while page/user constants are now stricter unions internally.
     setSelected,
     setTopic,
-    setUserType: (value: string) => setUserType(value as any),
+    setUserType,
     setNotes,
     setTopicTouched,
     setRefineInput,

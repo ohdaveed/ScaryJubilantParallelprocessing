@@ -2,9 +2,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { usePageGeneration } from './usePageGeneration';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { fetchKarlRemediation, improveStructure, pagesApi, preferencesApi, runKarlEvaluation, versionsApi, evaluateQualityGate } from '../utils/api';
-import { isPest } from '../utils/core';
-import { parsePage } from '../utils/parsing';
+import { UserType, UserPreference, PageDraft, PlannedPage } from "../types";
+import {
+  fetchKarlRemediation,
+  improveStructure,
+  pagesApi,
+  preferencesApi,
+  runKarlEvaluation,
+  versionsApi
+} from "../api";
+import { evaluateQualityGate } from "../utils/contentModel";
+import { isPest } from "../utils/core";
+import { parsePage } from "../utils/parsing";
 import { validateGeneratedPage } from '../generationValidation';
 import { streamModelText } from '../services/chatStream';
 
@@ -25,7 +34,7 @@ vi.mock('../utils/core', () => ({
   clean: vi.fn((value: string) => value)
 }));
 
-vi.mock('../utils/api', () => ({
+vi.mock('../api', () => ({
   pagesApi: { save: vi.fn().mockResolvedValue(undefined) },
   preferencesApi: { create: vi.fn().mockResolvedValue(undefined) },
   versionsApi: { list: vi.fn().mockResolvedValue([]) },
@@ -36,6 +45,9 @@ vi.mock('../utils/api', () => ({
   }),
   improveStructure: vi.fn().mockResolvedValue(null),
   runKarlEvaluation: vi.fn().mockResolvedValue({ grade: 'A' }),
+}));
+
+vi.mock('../utils/contentModel', () => ({
   evaluateQualityGate: vi.fn().mockReturnValue({ status: 'pass', reasons: ['Meets automatic quality gate.'] })
 }));
 
@@ -48,11 +60,46 @@ vi.mock('../generationValidation', () => ({
 }));
 
 describe('usePageGeneration', () => {
+  const defaultState: {
+    topic: string;
+    userType: UserType;
+    notes: string;
+    pendingPageType: string;
+    pendingPlannedId: number | null;
+    preferences: UserPreference[];
+    selected: PageDraft | null;
+    refineInput: string;
+    topicTouched: boolean;
+  } = {
+    topic: '',
+    userType: 'Resident / tenant',
+    notes: '',
+    pendingPageType: '',
+    pendingPlannedId: null,
+    preferences: [],
+    selected: null,
+    refineInput: '',
+    topicTouched: false
+  };
+
+  const defaultActions = {
+    setTopic: vi.fn(),
+    setNotes: vi.fn(),
+    setTopicTouched: vi.fn(),
+    setPendingPlannedId: vi.fn(),
+    setPendingPageType: vi.fn(),
+    setSelected: vi.fn(),
+    setRefineInput: vi.fn(),
+    setPreferences: vi.fn()
+  };
+
   const defaultParams = {
     pages: [],
     setPages: vi.fn(),
     plannedPages: [],
-    linkPlannedPage: vi.fn()
+    linkPlannedPage: vi.fn(),
+    state: defaultState,
+    actions: defaultActions
   };
 
   beforeEach(() => {
@@ -65,37 +112,35 @@ describe('usePageGeneration', () => {
     expect(result.current.loading).toBe(false);
     expect(result.current.streaming).toBe(false);
     expect(result.current.error).toBe('');
-    expect(result.current.state.topic).toBe('');
+    // topic is now external state, but generate check still uses it
   });
 
   it('should not generate if topic is empty', async () => {
     const { result } = renderHook(() => usePageGeneration(defaultParams));
 
     const page = await act(async () => {
-      // Call generate without setting a topic
       return await result.current.generate();
     });
 
     expect(page).toBeNull();
-    expect(result.current.state.topicTouched).toBe(true);
+    expect(defaultActions.setTopicTouched).toHaveBeenCalledWith(true);
   });
 
   it('should generate a page successfully', async () => {
-    const { result } = renderHook(() => usePageGeneration(defaultParams));
+    const params = {
+      ...defaultParams,
+      state: { ...defaultState, topic: 'Test Topic' }
+    };
+    const { result } = renderHook(() => usePageGeneration(params));
 
     let page: any;
-    await act(async () => {
-      // Set topic via actions first
-      result.current.actions.setTopic('Test Topic');
-    });
-
     await act(async () => {
       page = await result.current.generate({ quiet: true });
     });
 
     expect(page).toBeDefined();
     expect(page?.name).toBe('Test Page');
-    expect(defaultParams.setPages).toHaveBeenCalled();
+    expect(params.setPages).toHaveBeenCalled();
   });
 
   it('should improve the page again when Karl evaluation fails checks', async () => {
@@ -145,13 +190,13 @@ describe('usePageGeneration', () => {
       .mockReturnValueOnce({ status: 'review_required', reasons: ['1 evaluator checks failed.'] } as never)
       .mockReturnValueOnce({ status: 'pass', reasons: ['Meets automatic quality gate.'] } as never);
 
-    const { result } = renderHook(() => usePageGeneration(defaultParams));
+    const params = {
+      ...defaultParams,
+      state: { ...defaultState, topic: 'Test Topic' }
+    };
+    const { result } = renderHook(() => usePageGeneration(params));
 
     let page: any;
-    await act(async () => {
-      result.current.actions.setTopic('Test Topic');
-    });
-
     await act(async () => {
       page = await result.current.generate({ quiet: true });
     });
@@ -223,11 +268,11 @@ describe('usePageGeneration', () => {
       error: null
     } as never);
 
-    const { result } = renderHook(() => usePageGeneration(defaultParams));
-
-    await act(async () => {
-      result.current.actions.setTopic('Test Topic');
-    });
+    const params = {
+      ...defaultParams,
+      state: { ...defaultState, topic: 'Test Topic' }
+    };
+    const { result } = renderHook(() => usePageGeneration(params));
 
     await act(async () => {
       await result.current.generate({ quiet: true });
@@ -312,11 +357,11 @@ describe('usePageGeneration', () => {
       resolveKarlRemediation = resolve;
     }) as never);
 
-    const { result } = renderHook(() => usePageGeneration(defaultParams));
-
-    await act(async () => {
-      result.current.actions.setTopic('Test Topic');
-    });
+    const params = {
+      ...defaultParams,
+      state: { ...defaultState, topic: 'Test Topic' }
+    };
+    const { result } = renderHook(() => usePageGeneration(params));
 
     let generationPromise: Promise<unknown>;
     act(() => {
@@ -349,11 +394,11 @@ describe('usePageGeneration', () => {
       .mockReturnValueOnce({ ok: false, failures: ['Invalid page type'], warnings: [] } as never)
       .mockReturnValueOnce({ ok: true, failures: [], warnings: [] } as never);
 
-    const { result } = renderHook(() => usePageGeneration(defaultParams));
-
-    await act(async () => {
-      result.current.actions.setTopic('Test Topic');
-    });
+    const params = {
+      ...defaultParams,
+      state: { ...defaultState, topic: 'Test Topic' }
+    };
+    const { result } = renderHook(() => usePageGeneration(params));
 
     let page;
     await act(async () => {

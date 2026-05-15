@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ArtifactVariant, BuildQueueItem, IANode, PageArtifact, PageConcept, ReferenceExample } from "../types";
-import { projectModelApi } from "../utils/api";
+import { projectModelApi } from "../api";
 
 type ProjectModelState = {
   concepts: PageConcept[];

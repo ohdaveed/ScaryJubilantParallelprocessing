@@ -7,14 +7,14 @@ import type { PageVersion } from "../types";
 const makeVersion = (id: number, versionNumber: number): PageVersion =>
   ({ id, versionNumber, pageId: "page_1", trigger: "manual", createdAt: "2026-01-01T00:00:00Z" }) as PageVersion;
 
-vi.mock("../utils/api", () => ({
+vi.mock("../api", () => ({
   versionsApi: {
     list: vi.fn(),
     restore: vi.fn()
   }
 }));
 
-import { versionsApi } from "../utils/api";
+import { versionsApi } from "../api";
 
 describe("useVersionHistory", () => {
   beforeEach(() => {

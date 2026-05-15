@@ -354,7 +354,6 @@ describe("API validation guards", () => {
       expect(res.body.isFile || res.body.isPostgres).toBe(true);
     }
   });
-  });
 
   it("rejects duplicate canonical concept titles", async () => {
     const title = `Report a dead bird duplicate ${Date.now()}`;

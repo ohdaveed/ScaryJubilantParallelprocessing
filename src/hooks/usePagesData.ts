@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { PageDraft, TodoItem } from "../types";
 import { lsLegacy } from "../utils/core";
-import { pagesApi, todosApi } from "../utils/api";
+import { pagesApi, todosApi } from "../api";
 
 export function usePagesData() {
   const [pages, setPages] = useState<PageDraft[]>([]);

@@ -36,7 +36,7 @@ export default function PlanPage() {
 
   const generateFromPlanned = useCallback(async (p: any) => {
     try {
-      const { todosApi } = await import("../utils/api");
+      const { todosApi } = await import("../api");
       await todosApi.create(p.name, p.userType, { plannedId: p.id });
     } catch (err) {
       console.error("Failed to enqueue planned page:", err);

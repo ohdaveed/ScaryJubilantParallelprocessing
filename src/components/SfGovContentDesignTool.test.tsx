@@ -15,7 +15,7 @@ describe("SfGovContentDesignTool", () => {
       <SfGovContentDesignTool
         tabs={tabs}
         activeTabId="generate"
-        userType="Resident"
+        userType="Resident / tenant"
         activePageType="Transaction"
         pageGoal="Apply for a business permit"
         additionalContext="Test context"
@@ -35,7 +35,7 @@ describe("SfGovContentDesignTool", () => {
       <SfGovContentDesignTool
         tabs={tabs}
         activeTabId="generate"
-        userType="Resident"
+        userType="Resident / tenant"
         activePageType="Transaction"
         pageGoal=""
         additionalContext=""
@@ -53,7 +53,7 @@ describe("SfGovContentDesignTool", () => {
       <SfGovContentDesignTool
         tabs={tabs}
         activeTabId="generate"
-        userType="Resident"
+        userType="Resident / tenant"
         activePageType="Transaction"
         pageGoal="Apply for a business permit"
         additionalContext="Include permit wait times and eligibility details."
@@ -74,7 +74,7 @@ describe("SfGovContentDesignTool", () => {
       <SfGovContentDesignTool
         tabs={tabs}
         activeTabId="generate"
-        userType="Resident"
+        userType="Resident / tenant"
         activePageType="Transaction"
         pageGoal="Apply for a business permit"
         additionalContext=""
@@ -91,7 +91,7 @@ describe("SfGovContentDesignTool", () => {
       <SfGovContentDesignTool
         tabs={tabs}
         activeTabId="generate"
-        userType="Resident"
+        userType="Resident / tenant"
         activePageType="Transaction"
         pageGoal="Apply for a business permit"
         additionalContext=""

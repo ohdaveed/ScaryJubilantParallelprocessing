@@ -7,7 +7,7 @@ import type { PageDraft } from "../types";
 const mockPage = (id: string, name = "Test Page"): PageDraft =>
   ({ id, name, raw: `PAGE NAME: ${name}`, contentHydrated: false }) as unknown as PageDraft;
 
-vi.mock("../utils/api", () => ({
+vi.mock("../api", () => ({
   pagesApi: {
     list: vi.fn(),
     get: vi.fn(),
@@ -29,7 +29,7 @@ vi.mock("../utils/core", () => ({
   }
 }));
 
-import { pagesApi } from "../utils/api";
+import { pagesApi } from "../api";
 import { lsLegacy } from "../utils/core";
 
 describe("usePagesData", () => {
