@@ -21,8 +21,8 @@ export const todosApi = {
     });
   },
 
-  updateQueue: async (id: number, fields: { status: string; errorMessage?: string | null; builtPageId?: string | null; karlGrade?: string | null }): Promise<void> => {
-    await request<void>(`/todos/${id}`, {
+  updateQueue: async (id: number, fields: { status: string; errorMessage?: string | null; builtPageId?: string | null; karlGrade?: string | null }): Promise<TodoItem> => {
+    return request<TodoItem>(`/todos/${id}`, {
       method: "PATCH",
       body: JSON.stringify(fields)
     });

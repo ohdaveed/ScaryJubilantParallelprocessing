@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { PageDraft, PageVersion } from "../types";
 import { versionsApi } from "../api";
 
@@ -6,17 +6,22 @@ export function useVersionHistory() {
   const [historyPageId, setHistoryPageId] = useState<string | null>(null);
   const [historyVersions, setHistoryVersions] = useState<PageVersion[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const openRequestRef = useRef(0);
 
   const openHistory = useCallback(async (pageId: string) => {
+    const requestId = openRequestRef.current + 1;
+    openRequestRef.current = requestId;
     setHistoryPageId(pageId);
     setHistoryLoading(true);
     try {
       const versions = await versionsApi.list(pageId);
+      if (openRequestRef.current !== requestId) return;
       setHistoryVersions(versions);
     } catch {
+      if (openRequestRef.current !== requestId) return;
       setHistoryVersions([]);
     }
-    setHistoryLoading(false);
+    if (openRequestRef.current === requestId) setHistoryLoading(false);
   }, []);
 
   const restoreVersion = useCallback(async (

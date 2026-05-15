@@ -64,9 +64,12 @@ export function useQueueRunner({ todos, setTodos, generate }: UseQueueRunnerPara
   const [currentItemId, setCurrentItemId] = useState<number | null>(null);
   const stopRef = useRef(false);
   const todosRef = useRef(todos);
+  const updateSequenceRef = useRef<Record<number, number>>({});
   todosRef.current = todos;
 
   const applyUpdate = useCallback((id: number, fields: QueueUpdate) => {
+    const sequence = (updateSequenceRef.current[id] ?? 0) + 1;
+    updateSequenceRef.current[id] = sequence;
     setCurrentItemId(fields.status === "generating" ? id : null);
     setTodos((prev) =>
       prev.map((t) =>
@@ -82,7 +85,33 @@ export function useQueueRunner({ todos, setTodos, generate }: UseQueueRunnerPara
           : t
       )
     );
-    todosApi.updateQueue(id, fields).catch(() => {});
+    void todosApi.updateQueue(id, fields).then((persisted) => {
+      if (updateSequenceRef.current[id] !== sequence) return;
+      setTodos((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                ...persisted,
+                done: persisted.done ?? (persisted.status === "done" ? true : t.done)
+              }
+            : t
+        )
+      );
+    }).catch(() => {
+      if (updateSequenceRef.current[id] !== sequence) return;
+      setTodos((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                status: "failed",
+                errorMessage: `Could not save queue status "${fields.status}". Refresh before continuing.`
+              }
+            : t
+        )
+      );
+    });
   }, [setTodos]);
 
   const start = useCallback(async () => {

@@ -3,15 +3,32 @@
  * Requires the Express app to be importable (file-DB mode, no real Anthropic key needed).
  */
 import request from "supertest";
-import { beforeAll, describe, expect, it } from "vitest";
+import { rm } from "node:fs/promises";
+import { join } from "node:path";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 let app: any;
+const storagePath = join(process.cwd(), ".local", "server-concepts.test.json");
 
 beforeAll(async () => {
   process.env.NODE_ENV = "test";
   process.env.ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "test-key";
+  process.env.DB_FALLBACK_MODE = "file";
+  process.env.LOCAL_DB_PATH = storagePath;
+  process.env.DATABASE_URL = "postgresql://127.0.0.1:1/unreachable";
+
+  await rm(storagePath, { force: true });
+  vi.resetModules();
+
   const mod = await import("../server.js");
   app = mod.app;
+});
+
+afterAll(async () => {
+  await rm(storagePath, { force: true });
+  delete process.env.DB_FALLBACK_MODE;
+  delete process.env.LOCAL_DB_PATH;
+  delete process.env.DATABASE_URL;
 });
 
 // ── /api/page-concepts ──────────────────────────────────────────────────────

@@ -407,6 +407,6 @@ describe('usePageGeneration', () => {
 
     expect(page).toBeDefined();
     expect(vi.mocked(streamModelText)).toHaveBeenCalledTimes(2);
-    expect(vi.mocked(validateGeneratedPage)).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(validateGeneratedPage)).toHaveBeenCalledTimes(3);
   });
 });

@@ -2,6 +2,16 @@ import { apiFetch } from "../utils/apiFetch";
 
 const API_BASE = "/api";
 
+export class ApiError extends Error {
+  httpStatus: number;
+
+  constructor(status: number, message?: string) {
+    super(message || `${status}`);
+    this.name = "ApiError";
+    this.httpStatus = status;
+  }
+}
+
 /**
  * A minimalist API request wrapper that handles repetitive fetch logic,
  * error checking, and JSON parsing.
@@ -18,8 +28,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    // Minimalist: just throw the status code
-    throw new Error(`${res.status}`);
+    throw new ApiError(res.status);
   }
 
   // Handle 204 No Content

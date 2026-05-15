@@ -2,14 +2,27 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { runQueue, useQueueRunner } from './useQueueRunner';
 import { renderHook, act } from '@testing-library/react';
+import { useState } from 'react';
 import type { TodoItem, PageDraft } from '../types';
 
 // Mock dependencies
 vi.mock('../api', () => ({
   todosApi: {
-    updateQueue: vi.fn().mockResolvedValue(undefined)
+    updateQueue: vi.fn().mockImplementation(async (id: number, fields: Partial<TodoItem>) => ({
+      id,
+      topic: 'A',
+      userType: 'U',
+      status: fields.status,
+      done: fields.status === 'done',
+      errorMessage: fields.errorMessage ?? null,
+      builtPageId: fields.builtPageId ?? null,
+      karlGrade: fields.karlGrade ?? null,
+      plannedId: null
+    }))
   }
 }));
+
+import { todosApi } from '../api';
 
 describe('runQueue (pure function)', () => {
   it('should process pending todos and skip non-pending ones', async () => {
@@ -99,6 +112,45 @@ describe('useQueueRunner', () => {
       await result.current.start();
     });
     
-    expect(setTodos).toHaveBeenCalledTimes(2); // status: generating, status: done
+    expect(setTodos).toHaveBeenCalledTimes(4); // optimistic + persisted updates for generating and done
+  });
+
+  it('does not let stale persistence responses regress queue status', async () => {
+    const todos: TodoItem[] = [
+      { id: 1, topic: 'A', userType: 'U', status: 'pending', done: false, errorMessage: null, builtPageId: null, karlGrade: null, plannedId: null },
+    ];
+    let resolveGenerating: (todo: TodoItem) => void = () => {};
+    vi.mocked(todosApi.updateQueue)
+      .mockImplementationOnce(() => new Promise<TodoItem>((resolve) => {
+        resolveGenerating = resolve;
+      }))
+      .mockResolvedValueOnce({
+        ...todos[0],
+        status: 'done',
+        done: true,
+        builtPageId: 'page_A',
+        karlGrade: 'B'
+      });
+    const generate = vi.fn().mockResolvedValue({ id: 'page_A', karlEvaluation: { grade: 'B' } } as unknown as PageDraft);
+
+    const { result } = renderHook(() => {
+      const [items, setItems] = useState(todos);
+      return {
+        items,
+        runner: useQueueRunner({ todos: items, setTodos: setItems, generate })
+      };
+    });
+
+    await act(async () => {
+      await result.current.runner.start();
+    });
+    expect(result.current.items[0].status).toBe('done');
+
+    await act(async () => {
+      resolveGenerating({ ...todos[0], status: 'generating' });
+    });
+
+    expect(result.current.items[0].status).toBe('done');
+    expect(result.current.items[0].builtPageId).toBe('page_A');
   });
 });

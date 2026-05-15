@@ -57,6 +57,34 @@ describe("useVersionHistory", () => {
     expect(result.current.historyLoading).toBe(false);
   });
 
+  it("openHistory ignores stale responses from older requests", async () => {
+    let resolveFirst: (versions: PageVersion[]) => void = () => {};
+    vi.mocked(versionsApi.list)
+      .mockImplementationOnce(() => new Promise<PageVersion[]>((resolve) => {
+        resolveFirst = resolve;
+      }))
+      .mockResolvedValueOnce([makeVersion(2, 1)]);
+
+    const { result } = renderHook(() => useVersionHistory());
+
+    let firstRequest: Promise<void>;
+    await act(async () => {
+      firstRequest = result.current.openHistory("page_1");
+    });
+
+    await act(async () => {
+      await result.current.openHistory("page_2");
+    });
+
+    await act(async () => {
+      resolveFirst([makeVersion(1, 1)]);
+      await firstRequest;
+    });
+
+    expect(result.current.historyPageId).toBe("page_2");
+    expect(result.current.historyVersions[0].id).toBe(2);
+  });
+
   it("restoreVersion calls onRestored and closes history when confirmed", async () => {
     const restoredDraft = { id: "page_1", name: "Restored" } as any;
     vi.mocked(versionsApi.restore).mockResolvedValue(restoredDraft);

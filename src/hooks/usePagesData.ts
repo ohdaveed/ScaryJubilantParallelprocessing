@@ -89,9 +89,14 @@ export function usePagesData() {
   }, [pages]);
 
   const deletePage = useCallback(async (id: string) => {
-    await pagesApi.delete(id).catch(() => {});
+    const previous = pages;
     setPages((prev) => prev.filter((x) => x.id !== id));
-  }, []);
+    try {
+      await pagesApi.delete(id);
+    } catch {
+      setPages(previous);
+    }
+  }, [pages]);
 
   return {
     pages,

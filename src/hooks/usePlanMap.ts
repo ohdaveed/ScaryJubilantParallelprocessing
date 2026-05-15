@@ -86,13 +86,15 @@ export function usePlanMap(setPages: Dispatch<SetStateAction<PageDraft[]>>) {
   }, [plannedPages, selectedPlanned]);
 
   const linkPlannedPage = useCallback(async (plannedId: number, builtPageId: string | null) => {
+    const previous = plannedPages;
+    setPlannedPages((prev) => prev.map((p) => (p.id === plannedId ? { ...p, builtPageId } : p)));
     try {
       const updated = await plannedPagesApi.update(plannedId, { builtPageId });
       setPlannedPages((prev) => prev.map((p) => (p.id === plannedId ? updated : p)));
     } catch {
-      // Keep linking non-blocking.
+      setPlannedPages(previous);
     }
-  }, []);
+  }, [plannedPages]);
 
   const addPlannedPage = useCallback(async (name: string, pageType: string, userType: string, parentId: number | null) => {
     try {
@@ -104,6 +106,8 @@ export function usePlanMap(setPages: Dispatch<SetStateAction<PageDraft[]>>) {
   }, []);
 
   const deletePlannedPage = useCallback(async (id: number) => {
+    const previous = plannedPages;
+    const previousSelected = selectedPlanned;
     setPlannedPages((prev) =>
       prev
         .filter((p) => p.id !== id)
@@ -113,9 +117,10 @@ export function usePlanMap(setPages: Dispatch<SetStateAction<PageDraft[]>>) {
     try {
       await plannedPagesApi.delete(id);
     } catch {
-      // Ignore delete failures here; list can be refreshed later.
+      setPlannedPages(previous);
+      setSelectedPlanned(previousSelected);
     }
-  }, []);
+  }, [plannedPages, selectedPlanned]);
 
   return {
     plannedPages,

@@ -36,6 +36,23 @@ class FakePool {
       return { rows: [] };
     }
 
+    // Legacy todo-to-build-queue migration; the fake pool does not model todos.
+    if (sql.includes("legacy-todos-migration")) {
+      return { rows: [] };
+    }
+
+    if (sql.startsWith("DROP TABLE IF EXISTS todos")) {
+      return { rows: [] };
+    }
+
+    if (
+      (sql.startsWith("INSERT INTO page_concepts") && params.length === 0) ||
+      sql.startsWith("UPDATE page_concepts child") ||
+      sql.startsWith("DROP TABLE IF EXISTS planned_pages")
+    ) {
+      return { rows: [] };
+    }
+
     if (sql.startsWith("SELECT COUNT(*) FROM reference_examples")) {
       return { rows: [{ count: String(this.referenceExamples.length) }] };
     }

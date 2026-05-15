@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { usePagesData } from "./usePagesData";
 import type { PageDraft } from "../types";
+import { ApiError } from "../api/client";
 
 const mockPage = (id: string, name = "Test Page"): PageDraft =>
   ({ id, name, raw: `PAGE NAME: ${name}`, contentHydrated: false }) as unknown as PageDraft;
@@ -110,7 +111,7 @@ describe("usePagesData", () => {
 
   it("hydratePage removes page from list on 404", async () => {
     vi.mocked(pagesApi.list).mockResolvedValue([mockPage("page_1")]);
-    vi.mocked(pagesApi.get).mockRejectedValue({ httpStatus: 404 });
+    vi.mocked(pagesApi.get).mockRejectedValue(new ApiError(404));
 
     const { result } = renderHook(() => usePagesData());
     await waitFor(() => expect(result.current.pagesLoading).toBe(false));
@@ -121,6 +122,21 @@ describe("usePagesData", () => {
     });
 
     expect(result.current.pages).toHaveLength(0);
+  });
+
+  it("deletePage restores the page when the API delete fails", async () => {
+    vi.mocked(pagesApi.list).mockResolvedValue([mockPage("page_1"), mockPage("page_2")]);
+    vi.mocked(pagesApi.delete).mockRejectedValue(new Error("delete failed"));
+
+    const { result } = renderHook(() => usePagesData());
+    await waitFor(() => expect(result.current.pagesLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.deletePage("page_1");
+    });
+
+    expect(result.current.pages).toHaveLength(2);
+    expect(result.current.pages.map((page) => page.id)).toEqual(["page_1", "page_2"]);
   });
 
   it("deletePage removes the page optimistically", async () => {

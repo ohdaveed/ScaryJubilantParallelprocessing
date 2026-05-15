@@ -25,18 +25,6 @@ vi.mock("../api/pages", () => ({
   }
 }));
 
-vi.mock("../api", () => ({
-  plannedPagesApi: {
-    list: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn()
-  },
-  pagesApi: {
-    save: vi.fn()
-  }
-}));
-
 vi.mock("../utils/contentModel", () => ({
   skeletonToPageDraft: vi.fn((tmpl: any) => ({
     id: `skel_${tmpl.name}`,
@@ -50,6 +38,11 @@ import { usePlanMap } from "./usePlanMap";
 
 describe("usePlanMap", () => {
   beforeEach(() => vi.clearAllMocks());
+
+  const renderUsePlanMap = () => {
+    const setPages = vi.fn();
+    return renderHook(() => usePlanMap(setPages));
+  };
 
   it("loads existing planned pages and skips seeding when list is non-empty", async () => {
     const existing = [makePlanned(1, "Root page"), makePlanned(2, "Child page", 1)];
@@ -87,7 +80,7 @@ describe("usePlanMap", () => {
   it("sets empty array when initial list fetch fails", async () => {
     vi.mocked(plannedPagesApi.list).mockRejectedValue(new Error("Network error"));
 
-    const { result } = renderHook(() => usePlanMap(vi.fn()));
+    const { result } = renderUsePlanMap();
 
     await waitFor(() => expect(result.current.plannedLoading).toBe(false));
     expect(result.current.plannedPages).toHaveLength(0);
@@ -98,7 +91,7 @@ describe("usePlanMap", () => {
     vi.mocked(plannedPagesApi.list).mockResolvedValue(pages);
     vi.mocked(plannedPagesApi.update).mockResolvedValue({ ...pages[0], builtPageId: "page_abc" });
 
-    const { result } = renderHook(() => usePlanMap(vi.fn()));
+    const { result } = renderUsePlanMap();
     await waitFor(() => expect(result.current.plannedLoading).toBe(false));
 
     await act(async () => {
@@ -112,7 +105,7 @@ describe("usePlanMap", () => {
     vi.mocked(plannedPagesApi.list).mockResolvedValue([makePlanned(1, "Root page")]);
     vi.mocked(plannedPagesApi.update).mockRejectedValue(new Error("Server error"));
 
-    const { result } = renderHook(() => usePlanMap(vi.fn()));
+    const { result } = renderUsePlanMap();
     await waitFor(() => expect(result.current.plannedLoading).toBe(false));
 
     await expect(
@@ -126,14 +119,14 @@ describe("usePlanMap", () => {
     const newPage = makePlanned(2, "New page");
     vi.mocked(plannedPagesApi.create).mockResolvedValue(newPage);
 
-    const { result } = renderHook(() => usePlanMap(vi.fn()));
+    const { result } = renderUsePlanMap();
     await waitFor(() => expect(result.current.plannedLoading).toBe(false));
 
     await act(async () => {
       await result.current.addPlannedPage("New page", "Information", "General public", null);
     });
 
-    expect(result.current.plannedPages).toHaveLength(2);
+    await waitFor(() => expect(result.current.plannedPages).toHaveLength(2));
     expect(result.current.plannedPages[1].name).toBe("New page");
   });
 
@@ -142,7 +135,7 @@ describe("usePlanMap", () => {
     vi.mocked(plannedPagesApi.list).mockResolvedValue(pages);
     vi.mocked(plannedPagesApi.delete).mockResolvedValue(undefined as any);
 
-    const { result } = renderHook(() => usePlanMap(vi.fn()));
+    const { result } = renderUsePlanMap();
     await waitFor(() => expect(result.current.plannedLoading).toBe(false));
 
     await act(async () => {
@@ -154,17 +147,16 @@ describe("usePlanMap", () => {
     expect(remaining.find((p) => p.id === 2)?.parentId).toBeNull();
   });
 
-  it("deletePlannedPage swallows API errors silently", async () => {
+  it("deletePlannedPage restores the page when the API delete fails", async () => {
     vi.mocked(plannedPagesApi.list).mockResolvedValue([makePlanned(1, "Root page")]);
     vi.mocked(plannedPagesApi.delete).mockRejectedValue(new Error("Server error"));
 
-    const { result } = renderHook(() => usePlanMap(vi.fn()));
+    const { result } = renderUsePlanMap();
     await waitFor(() => expect(result.current.plannedLoading).toBe(false));
 
     await expect(
       act(async () => { await result.current.deletePlannedPage(1); })
     ).resolves.not.toThrow();
-    // Optimistic removal still happened
-    expect(result.current.plannedPages).toHaveLength(0);
+    expect(result.current.plannedPages).toHaveLength(1);
   });
 });
